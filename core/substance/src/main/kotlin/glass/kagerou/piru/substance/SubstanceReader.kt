@@ -648,6 +648,25 @@ class SubstanceReader(
     }
 
     /**
+     * The whole SubFxOnEx descriptor vocabulary — every `subjective_effect_concepts`
+     * row, id keyed by the caller.
+     *
+     * Read whole and unfiltered: there is no source column to rank and no language
+     * to bridge — the table is the fixed English vocabulary the reports spell out
+     * ("Vocabulary: SubFxOnEx."), not reference prose. A missing table throws, for
+     * the reason [localizedNames] sets out.
+     */
+    fun subjectiveEffectConcepts(): List<SubjectiveEffectConcept> =
+        db.query(
+            "SELECT id, name, domain FROM subjective_effect_concepts ORDER BY position",
+        ).mapNotNull { row ->
+            val id = row.string("id") ?: return@mapNotNull null
+            val name = row.string("name") ?: return@mapNotNull null
+            val domain = row.string("domain") ?: return@mapNotNull null
+            SubjectiveEffectConcept(id = id, name = name, domain = domain)
+        }
+
+    /**
      * One `ester_pk` row in full — the depot curve's own columns, which the
      * engine's [EsterRecord] deliberately does not carry.
      *

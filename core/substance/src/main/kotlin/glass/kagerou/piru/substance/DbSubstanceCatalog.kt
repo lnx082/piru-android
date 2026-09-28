@@ -85,6 +85,9 @@ class DbSubstanceCatalog private constructor(
     private val regionalNames: Map<String, RegionalSubstanceName.Variant> by lazy { reader.regionalNames() }
     private val productDurations: Map<String, DurationProfile> by lazy { reader.productDurations() }
     private val esters: Map<String, List<EsterRecord>> by lazy { reader.estersByParentUID() }
+    private val descriptorConcepts: Map<String, SubjectiveEffectConcept> by lazy {
+        reader.subjectiveEffectConcepts().associateBy { it.id }
+    }
 
     /** The `localized_names` tag this catalog resolves titles for, or null in English. */
     private val nameLanguage: String? = LocalizedSubstanceName.languageFor(language)
@@ -92,6 +95,14 @@ class DbSubstanceCatalog private constructor(
     // MARK: - SubstanceCatalog
 
     override fun lookup(name: String): Substance? = byName[name.lowercase()]
+
+    /**
+     * A note's descriptor concept id resolved to its canonical English name and
+     * domain, or null when the id is unknown. The reports call this through their
+     * `descriptorResolver` so a note whose concept is no longer in the catalog
+     * simply omits the descriptor rather than printing an id.
+     */
+    fun descriptorConcept(id: String): SubjectiveEffectConcept? = descriptorConcepts[id]
 
     /**
      * The **full** per-substance record — mechanism, receptor bindings, chemistry
@@ -142,6 +153,50 @@ class DbSubstanceCatalog private constructor(
             idToSubstance = byID,
             limit = limit,
         )
+
+    // MARK: - Category browse
+
+    /**
+     * Every category that has at least one substance, most populated first.
+     *
+     * A substance counts toward its primary category **and** toward each of its
+     * [Substance.extraBrowseCategories] — a curated multi-class compound appears
+     * under every home it belongs to, which is the point of the browse grid. The
+     * count is the card's badge; the members behind it are [substancesIn].
+     *
+     * Ties break by enum order, so a rebuild lists the same categories in the
+     * same order rather than in whichever order the map happened to hand them
+     * back.
+     */
+    fun categorySummary(): List<Pair<SubstanceCategory, Int>> {
+        val counts = mutableMapOf<SubstanceCategory, Int>()
+        for (substance in byID.values) {
+            counts[substance.category] = (counts[substance.category] ?: 0) + 1
+            for (extra in substance.extraBrowseCategories) {
+                counts[extra] = (counts[extra] ?: 0) + 1
+            }
+        }
+        return counts.toList()
+            .sortedWith(
+                compareByDescending<Pair<SubstanceCategory, Int>> { it.second }
+                    .thenBy { it.first.ordinal },
+            )
+    }
+
+    /**
+     * The substances that appear under [category] in the browse, popularity first.
+     *
+     * A curated multi-class compound is listed under each of its browse homes, not
+     * only its primary category. Popularity first is the upstream browse sort — the
+     * long tail (score 0) falls to the end, then alphabetical.
+     */
+    fun substancesIn(category: SubstanceCategory): List<Substance> =
+        byID.values
+            .filter { it.category == category || category in it.extraBrowseCategories }
+            .sortedWith(
+                compareByDescending<Substance> { it.popularity }
+                    .thenBy { it.displayTitle.lowercase() },
+            )
 
     // MARK: - Pharmacology
 

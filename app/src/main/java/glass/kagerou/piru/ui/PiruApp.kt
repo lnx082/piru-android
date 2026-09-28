@@ -53,6 +53,7 @@ import glass.kagerou.piru.ui.insights.PatternsScreen
 import glass.kagerou.piru.ui.insights.ReportsScreen
 import glass.kagerou.piru.ui.insights.SteadyStateProjectionScreen
 import glass.kagerou.piru.ui.insights.UsageScreen
+import glass.kagerou.piru.ui.library.CategoryBrowseScreen
 import glass.kagerou.piru.ui.library.LibraryScreen
 import glass.kagerou.piru.ui.meds.LogMedicationsScreen
 import glass.kagerou.piru.ui.meds.MedDetailScreen
@@ -280,8 +281,8 @@ private fun AppTab.outlinedIcon(): ImageVector = when (this) {
  * claim the `when` blocks check at compile time: Kotlin refuses an incomplete
  * `when` over an enum, so adding a tool without a screen stops the build rather
  * than producing a route that crashes on a restore. The final `else` covers the
- * library routes — the category, tag and favourites browsings — which are still
- * reached through the Library's own screens rather than as pushes.
+ * library routes that still have no destination — the tag row, favorites and the
+ * user's own substances — which read user data rather than the read-only catalog.
  */
 @Composable
 private fun DefaultDestination(route: PushRoute, navigator: AppNavigator) {
@@ -337,9 +338,12 @@ private fun DefaultDestination(route: PushRoute, navigator: AppNavigator) {
             PushRoute.InsightKind.STEADY_STATE_PROJECTION -> SteadyStateProjectionScreen(navigator)
         }
 
-        // The library browse routes are still reached through the Library's own
-        // screens rather than as pushes, so they name themselves here rather than
-        // pretending to have a destination.
+        is PushRoute.LibraryCategory -> CategoryBrowseScreen(route.category, navigator)
+
+        // The remaining library browse routes — the tag row, favorites and the
+        // user's own substances — read user data (Room) rather than the read-only
+        // catalog, so they name themselves here rather than pretending to have a
+        // destination.
         else -> NotPortedYet(null, "Not ported yet", route.key())
     }
 }

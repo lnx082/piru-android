@@ -1,5 +1,6 @@
 package glass.kagerou.piru.ui.tools
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,7 +11,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import glass.kagerou.piru.R
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
 import glass.kagerou.piru.ui.nav.AppNavigator
@@ -52,10 +55,9 @@ fun ToolsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     ) {
         item {
             Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Tools", style = MaterialTheme.typography.headlineSmall)
+                Text(stringResource(R.string.tools_title), style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    "Instruments over your own log and the catalog. None of them " +
-                        "recommends a dose — they read what you have already taken.",
+                    stringResource(R.string.tools_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -65,7 +67,7 @@ fun ToolsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         for (group in TOOL_GROUPS) {
             item {
                 Text(
-                    group.title,
+                    stringResource(group.titleRes),
                     style = MaterialTheme.typography.labelLarge,
                     color = PiruTheme.colors.secondaryLabel,
                     modifier = Modifier.padding(top = 12.dp),
@@ -78,9 +80,9 @@ fun ToolsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                         onClick = { navigator.push(tool.destination) },
                     ) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(tool.title, style = MaterialTheme.typography.titleSmall)
+                            Text(stringResource(tool.titleRes), style = MaterialTheme.typography.titleSmall)
                             Text(
-                                tool.detail,
+                                stringResource(tool.detailRes),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = PiruTheme.colors.secondaryLabel,
                             )
@@ -96,9 +98,9 @@ fun ToolsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                 onClick = { navigator.push(PushRoute.Settings) },
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Settings", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.tools_settings_title), style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "Substance colours, health data, notifications, and about this build.",
+                        stringResource(R.string.tools_settings_detail),
                         style = MaterialTheme.typography.bodyMedium,
                         color = PiruTheme.colors.secondaryLabel,
                     )
@@ -116,13 +118,13 @@ fun ToolsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
  */
 private data class ToolEntry(
     val kind: PushRoute.ToolKind?,
-    val title: String,
-    val detail: String,
+    @StringRes val titleRes: Int,
+    @StringRes val detailRes: Int,
     val route: PushRoute? = null,
 ) {
     val destination: PushRoute get() = route ?: PushRoute.Tool(requireNotNull(kind))
 }
-private data class ToolGroup(val title: String, val tools: List<ToolEntry>)
+private data class ToolGroup(@StringRes val titleRes: Int, val tools: List<ToolEntry>)
 
 /**
  * The fourteen tools, grouped.
@@ -134,67 +136,67 @@ private data class ToolGroup(val title: String, val tools: List<ToolEntry>)
  */
 private val TOOL_GROUPS = listOf(
     ToolGroup(
-        "What is in me",
+        R.string.tools_group_in_me,
         listOf(
             ToolEntry(
                 PushRoute.ToolKind.BODY_LOAD,
-                "In your body",
-                "How much of each dose is still on board right now, and how much has cleared.",
+                R.string.tools_body_load_title,
+                R.string.tools_body_load_detail,
             ),
             ToolEntry(
                 PushRoute.ToolKind.TOLERANCE,
-                "Tolerance",
-                "One card per mechanism class, replayed from your log.",
+                R.string.tools_tolerance_title,
+                R.string.tools_tolerance_detail,
             ),
             ToolEntry(
                 PushRoute.ToolKind.HALF_LIFE,
-                "Half-life",
-                "When a dose is half gone, and how it decays from there.",
+                R.string.tools_half_life_title,
+                R.string.tools_half_life_detail,
             ),
             ToolEntry(
                 PushRoute.ToolKind.INJECTION_LEVELS,
-                "Injection levels",
-                "Estimated serum levels from logged esters, against your own lab results.",
+                R.string.tools_injection_levels_title,
+                R.string.tools_injection_levels_detail,
             ),
             ToolEntry(
                 PushRoute.ToolKind.STEADY_STATE,
-                "Steady state",
-                "Where a regularly repeated dose settles, from the cadence you actually keep.",
+                R.string.tools_steady_state_title,
+                R.string.tools_steady_state_detail,
             ),
         ),
     ),
     ToolGroup(
-        "What happens if",
+        R.string.tools_group_what_if,
         listOf(
             ToolEntry(
                 PushRoute.ToolKind.INTERACTIONS,
-                "Interactions",
-                "Check a combination against the catalog's rules, and see the two curves overlap.",
+                R.string.tools_interactions_title,
+                R.string.tools_interactions_detail,
             ),
             ToolEntry(
                 PushRoute.ToolKind.EQUIVALENCE,
-                "Equivalence",
-                "Opioid milligrams against morphine, and benzodiazepines against diazepam.",
+                R.string.tools_equivalence_title,
+                R.string.tools_equivalence_detail,
             ),
             ToolEntry(
                 PushRoute.ToolKind.ALCOHOL,
-                "Alcohol",
-                "Build a night drink by drink and watch the curve, which clears at a flat rate.",
+                R.string.tools_alcohol_title,
+                R.string.tools_alcohol_detail,
             ),
         ),
     ),
     ToolGroup(
-        "What have I got",
+        R.string.tools_group_have_got,
         listOf(
             ToolEntry(
                 PushRoute.ToolKind.INVENTORY,
-                "Inventory",
-                "What you have on hand, replayed from your doses and your restocks.",
+                R.string.tools_inventory_title,
+                R.string.tools_inventory_detail,
             ),
         ),
     ),
     ToolGroup(
-        "What I take",
+        R.string.tools_group_take,
         listOf(
             // Not a ToolKind: it is a route of its own, because the meds hub is a
             // destination rather than an instrument over the log. It is listed
@@ -202,39 +204,39 @@ private val TOOL_GROUPS = listOf(
             // card is where it lives, which is not where you would go hunting.
             ToolEntry(
                 kind = null,
-                title = "My Meds",
-                detail = "The medications you take on a schedule, and how they have been going.",
+                titleRes = R.string.tools_my_meds_title,
+                detailRes = R.string.tools_my_meds_detail,
                 route = PushRoute.MyMeds,
             ),
         ),
     ),
     ToolGroup(
-        "Reference",
+        R.string.tools_group_reference,
         listOf(
             ToolEntry(
                 PushRoute.ToolKind.DRUG_CLASS,
-                "Drug classes",
-                "Browse by mechanism — what a class does, and what belongs to it.",
+                R.string.tools_drug_class_title,
+                R.string.tools_drug_class_detail,
             ),
             ToolEntry(
                 PushRoute.ToolKind.IDENTIFY,
-                "Identify a pill",
-                "Work out what an unmarked tablet or blotter is.",
+                R.string.tools_identify_title,
+                R.string.tools_identify_detail,
             ),
             ToolEntry(
                 PushRoute.ToolKind.COMEDOWN,
-                "Comedown guide",
-                "What a come-down is, and what tends to help.",
+                R.string.tools_comedown_title,
+                R.string.tools_comedown_detail,
             ),
             ToolEntry(
                 PushRoute.ToolKind.HELP,
-                "Help",
-                "What to do when something goes wrong, and when to call someone.",
+                R.string.tools_help_title,
+                R.string.tools_help_detail,
             ),
             ToolEntry(
                 PushRoute.ToolKind.EDUCATION,
-                "Education cards",
-                "Short explanations of the ideas the rest of the app assumes.",
+                R.string.tools_education_title,
+                R.string.tools_education_detail,
             ),
         ),
     ),

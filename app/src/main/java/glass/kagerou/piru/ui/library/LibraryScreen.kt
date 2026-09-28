@@ -19,11 +19,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
 import glass.kagerou.piru.R
 import glass.kagerou.piru.model.Substance
+import glass.kagerou.piru.model.SubstanceCategory
+import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
 import glass.kagerou.piru.ui.labels.CoreLabels
 import glass.kagerou.piru.ui.nav.AppNavigator
@@ -33,17 +36,18 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * The library: search across the whole catalog, then in.
+ * The library: browse by category, or search the whole catalog, then in.
  *
  * Ported from `Library/SubstanceLibraryView` and `LibraryBrowseView` — 1,188
- * lines that are mostly the browse grid: a category card per class with its
- * count, a tag row, the "Common" cut across categories, favorites, and the
- * user's own substances. This draws the **search** half, which is the half the
- * substance detail needs to be reachable at all.
+ * lines that are mostly the browse grid. When the query is blank this draws the
+ * category browse: a card per class with its count, most populated first,
+ * opening [CategoryBrowseScreen]. Type anything and it becomes the search the
+ * substance detail needs to be reachable from.
  *
- * The browse grid is a screen of its own over `categorySummary()`, which the
- * reader already provides — it is layout work rather than data work, which is why
- * it can follow without touching anything below it.
+ * The tag row, the "Common" cut, favorites and the user's own substances are the
+ * parts of `LibraryBrowseView` that read user data (Room) rather than the
+ * read-only catalog, so they are not here yet; the category grid is the whole of
+ * the catalog-backed browse.
  */
 @Composable
 fun LibraryScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
@@ -51,10 +55,12 @@ fun LibraryScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     val app = context.applicationContext as PiruApplication
     var query by remember { mutableStateOf("") }
     var results by remember { mutableStateOf<List<Substance>>(emptyList()) }
+    var categories by remember { mutableStateOf<List<Pair<SubstanceCategory, Int>>>(emptyList()) }
     var ready by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        withContext(Dispatchers.Default) { app.catalog() }
+        val catalog = withContext(Dispatchers.Default) { app.catalog() }
+        categories = withContext(Dispatchers.Default) { catalog.categorySummary() }
         ready = true
     }
 
@@ -89,12 +95,7 @@ fun LibraryScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                 modifier = Modifier.padding(top = 16.dp),
             )
         } else if (query.isBlank()) {
-            Text(
-                stringResource(R.string.shell_library_hint),
-                style = MaterialTheme.typography.bodyMedium,
-                color = PiruTheme.colors.secondaryLabel,
-                modifier = Modifier.padding(top = 16.dp),
-            )
+            CategoryGrid(categories, navigator)
         } else if (results.isEmpty()) {
             Text(
                 stringResource(R.string.shell_library_no_matches, query),
@@ -134,6 +135,54 @@ fun LibraryScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                             )
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * The blank-query half of the library: a card per category, most populated first.
+ *
+ * Each card names the class and its count and opens the members list. The sort is
+ * the catalog's own ([DbSubstanceCatalog.categorySummary]): by count descending,
+ * then enum order — so the list does not reshuffle between two builds of the same
+ * catalog.
+ */
+@Composable
+private fun CategoryGrid(
+    categories: List<Pair<SubstanceCategory, Int>>,
+    navigator: AppNavigator,
+    modifier: Modifier = Modifier,
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize().padding(top = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = FAB_CLEARANCE),
+    ) {
+        item {
+            Text(
+                stringResource(R.string.shell_library_categories),
+                style = MaterialTheme.typography.labelLarge,
+                color = PiruTheme.colors.secondaryLabel,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+        }
+        items(categories, key = { it.first.wireValue }) { (category, count) ->
+            PiruCard(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = { navigator.push(PushRoute.LibraryCategory(category)) },
+            ) {
+                Row(
+                    modifier = Modifier.padding(14.dp).fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(CoreLabels.category(category), style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        pluralStringResource(R.plurals.shell_library_category_count, count, count),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = PiruTheme.colors.secondaryLabel,
+                    )
                 }
             }
         }

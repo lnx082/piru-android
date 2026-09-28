@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ==================== 页头 ==================== -->
+
+    <string name="tools_title">工具</string>
+    <string name="tools_subtitle">架设在你自己的记录与数据目录之上的仪器。它们都不推荐剂量——它们只是读出你已经记下的内容。</string>
+
+    <!-- ==================== 分组标题 ==================== -->
+
+    <string name="tools_group_in_me">我体内有什么</string>
+    <string name="tools_group_what_if">如果……会怎样</string>
+    <string name="tools_group_have_got">我手头有什么</string>
+    <string name="tools_group_take">我在服用的</string>
+    <string name="tools_group_reference">参考</string>
+
+    <!-- ==================== 我体内有什么 ==================== -->
+
+    <string name="tools_body_load_title">你体内</string>
+    <string name="tools_body_load_detail">每一剂现在还有多少在体内，已经清除了多少。</string>
+    <string name="tools_tolerance_title">耐受性</string>
+    <string name="tools_tolerance_detail">每个机制类别一张卡片，从你的记录回放。</string>
+    <string name="tools_half_life_title">半衰期</string>
+    <string name="tools_half_life_detail">一剂什么时候少掉一半，之后又怎样衰减。</string>
+    <string name="tools_injection_levels_title">注射水平</string>
+    <string name="tools_injection_levels_detail">根据记录的酯类估算血清水平，对照你自己的化验结果。</string>
+    <string name="tools_steady_state_title">稳态</string>
+    <string name="tools_steady_state_detail">按你实际保持的节奏，规律重复的剂量最终落在哪里。</string>
+
+    <!-- ==================== 如果……会怎样 ==================== -->
+
+    <string name="tools_interactions_title">相互作用</string>
+    <string name="tools_interactions_detail">用数据目录的规则检查一个组合，并看两条曲线如何重叠。</string>
+    <string name="tools_equivalence_title">等效换算</string>
+    <string name="tools_equivalence_detail">阿片类毫克数对吗啡，苯二氮䓬类对地西泮。</string>
+    <string name="tools_alcohol_title">酒精</string>
+    <string name="tools_alcohol_detail">一杯一杯搭出一晚的饮酒，看曲线以恒定速率清除。</string>
+
+    <!-- ==================== 我手头有什么 ==================== -->
+
+    <string name="tools_inventory_title">库存</string>
+    <string name="tools_inventory_detail">你手头有什么，从你的剂量和补货记录回放。</string>
+
+    <!-- ==================== 我在服用的 ==================== -->
+
+    <string name="tools_my_meds_title">我的用药</string>
+    <string name="tools_my_meds_detail">你按日程服用的药物，以及它们的进展。</string>
+
+    <!-- ==================== 参考 ==================== -->
+
+    <string name="tools_drug_class_title">药物类别</string>
+    <string name="tools_drug_class_detail">按机制浏览——一类药物做什么，哪些属于它。</string>
+    <string name="tools_identify_title">识别药片</string>
+    <string name="tools_identify_detail">弄清楚一片没有标记的药片或印纸是什么。</string>
+    <string name="tools_comedown_title">下头指南</string>
+    <string name="tools_comedown_detail">下头是什么，以及什么通常有帮助。</string>
+    <string name="tools_help_title">获取帮助</string>
+    <string name="tools_help_detail">出了问题时该怎么做，以及什么时候该打电话找人。</string>
+    <string name="tools_education_title">学习卡片</string>
+    <string name="tools_education_detail">对 App 其余部分默认你懂的那些概念的简短解释。</string>
+
+    <!-- ==================== 设置卡片 ==================== -->
+
+    <string name="tools_settings_title">设置</string>
+    <string name="tools_settings_detail">物质颜色、健康数据、通知，以及关于这个版本。</string>
+
+</resources>

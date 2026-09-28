@@ -35,3 +35,7 @@ keystore.properties
 # db/fetch-db.sh verifies it against db/manifest.json's sha256, and both of
 # those are tracked; only the 18 MB database itself is not.
 db/piru-substances.sqlite
+
+# Built APKs staged for handing to someone. A build artifact — the release one
+# carries the signing identity's fingerprint and is not something to version.
+dist/

@@ -202,8 +202,14 @@
     <string name="shell_library_title">Library</string>
     <string name="shell_library_field_label">Search substances</string>
     <string name="shell_library_opening">Opening the catalog…</string>
-    <string name="shell_library_hint">Search by name or by any of the names a substance is known under. The catalog carries 1,689 substances and every alias they ship with.</string>
     <string name="shell_library_no_matches">Nothing in the catalog matches “%1$s”.</string>
+
+    <!-- The category grid's header, and the badge counting a category's members. -->
+    <string name="shell_library_categories">Categories</string>
+    <plurals name="shell_library_category_count">
+        <item quantity="one">%1$d substance</item>
+        <item quantity="other">%1$d substances</item>
+    </plurals>
 
     <!-- ==================== Substance detail ==================== -->
 
@@ -285,6 +291,7 @@
     <string name="shell_health_allow">Allow access</string>
     <string name="shell_health_change_access">Change access</string>
     <string name="shell_health_open_settings">Open Health Connect</string>
+    <string name="shell_health_open_failed">Health Connect could not be opened on this device. It may need to be installed or updated.</string>
     <string name="shell_health_what_is_read">What is read</string>
     <string name="shell_health_type_heart_rate">Heart rate</string>
     <string name="shell_health_type_heart_rate_detail">Plotted against your doses, so the curve shows what your body did around each one.</string>

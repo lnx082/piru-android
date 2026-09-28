@@ -1,5 +1,6 @@
 package glass.kagerou.piru.ui.insights
 
+import android.content.Intent
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,6 +27,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -39,6 +41,9 @@ import glass.kagerou.piru.PiruApplication
 import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.data.entity.SessionEntity
+import glass.kagerou.piru.data.entity.SessionNoteEntity
+import glass.kagerou.piru.data.report.ReportBuilder
+import glass.kagerou.piru.engine.report.TripReport
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
 import glass.kagerou.piru.ui.labels.appLocale
@@ -52,6 +57,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
 import java.util.UUID
+import kotlinx.coroutines.launch
 
 /**
  * Choosing what a report would cover, and seeing what that scope holds.
@@ -59,14 +65,14 @@ import java.util.UUID
  * Ported from `Views/Insights/ReportsView.swift` (570 lines) and
  * `ReportsModel.swift` (286 lines) — the scope half of them.
  *
- * ## The export half is deliberately not wired
+ * ## The export half: text wired, images not
  * Upstream's five exports are a UIKit `UIGraphicsPDFRenderer`, a
  * `UIGraphicsImageRenderer` twice over, and two Markdown strings, all handed to
- * a `UIActivityViewController`. Android's equivalent is an `ACTION_SEND` intent
- * with a `FileProvider` URI for the files and `EXTRA_TEXT` for the strings.
- * **None of that is in this build.** Rather than a card that looks like it will
- * share something and does not, each export row states plainly that it is not
- * connected to the system share sheet yet, and the row is inert.
+ * a `UIActivityViewController`. The two Markdown exports — the session snapshot
+ * and the trip report — are wired here to an `ACTION_SEND` intent carrying
+ * `EXTRA_TEXT`. The three image exports are not: they need a `FileProvider` URI
+ * for a rendered bitmap, and a row that looks like it will share something and
+ * does not is worse than one that says it is not connected yet.
  *
  * What *is* here is the part that decides what a report would contain: the mode,
  * the session or date scope, the substance filter, and a summary of the result.
@@ -102,6 +108,8 @@ fun ReportsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     var sessions by remember { mutableStateOf<List<SessionEntity>>(emptyList()) }
     var dosesBySession by remember { mutableStateOf<Map<UUID, List<DoseEntryEntity>>>(emptyMap()) }
     var allEntries by remember { mutableStateOf<List<DoseEntryEntity>>(emptyList()) }
+    var allNotes by remember { mutableStateOf<List<SessionNoteEntity>>(emptyList()) }
+    var notesBySession by remember { mutableStateOf<Map<UUID, List<SessionNoteEntity>>>(emptyMap()) }
     var sessionsWithNotes by remember { mutableStateOf<Set<UUID>>(emptySet()) }
     var loaded by remember { mutableStateOf(false) }
 
@@ -113,9 +121,12 @@ fun ReportsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         val doses = app.database.doseEntryDao().all()
         dosesBySession = doses.filter { it.sessionId != null }.groupBy { it.sessionId!! }
         allEntries = doses
+        val notes = app.database.sessionNoteDao().all()
+        allNotes = notes
+        notesBySession = notes.filter { it.sessionId != null }.groupBy { it.sessionId!! }
         // A session "has notes" when at least one of them carries something —
         // the same test the trip report itself runs before it builds anything.
-        sessionsWithNotes = app.database.sessionNoteDao().all()
+        sessionsWithNotes = notes
             .filter { it.hasContent && it.sessionId != null }
             .mapNotNull { it.sessionId }
             .toSet()
@@ -179,6 +190,39 @@ fun ReportsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         }
     }
 
+    // Notes belonging to the scope: the selected sessions' notes, or every note
+    // whose timestamp falls in the date range.
+    val scopeNotes = remember(mode, selectedSessions, customStart, customEnd, allNotes, notesBySession) {
+        when (mode) {
+            ReportMode.LATEST -> selectedSessions.flatMap { notesBySession[it].orEmpty() }
+            ReportMode.BY_DATE -> {
+                val from = customStart.atStartOfDay(zone).toInstant()
+                val to = customEnd.plusDays(1).atStartOfDay(zone).toInstant()
+                allNotes.filter { it.timestamp.toInstant() >= from && it.timestamp.toInstant() < to }
+            }
+        }
+    }
+
+    // The sessions a trip report can be built for: they have notes, and their
+    // entries are in scope. LATEST reads the picker; BY_DATE reads the range.
+    val tripSessions = remember(mode, selectedSessions, customStart, customEnd, sessions, dosesBySession, sessionsWithNotes) {
+        when (mode) {
+            ReportMode.LATEST -> sessions.filter {
+                selectedSessions.contains(it.id) && sessionsWithNotes.contains(it.id)
+            }
+            ReportMode.BY_DATE -> {
+                val from = customStart.atStartOfDay(zone).toInstant()
+                val to = customEnd.plusDays(1).atStartOfDay(zone).toInstant()
+                sessions.filter { s ->
+                    sessionsWithNotes.contains(s.id) &&
+                        dosesBySession[s.id].orEmpty().any {
+                            it.timestamp.toInstant() >= from && it.timestamp.toInstant() < to
+                        }
+                }
+            }
+        }
+    }
+
     val substancesInScope = remember(scopeEntries) {
         scopeEntries.map { it.substance }.toSet().sorted()
     }
@@ -197,6 +241,65 @@ fun ReportsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     }
 
     val includedCount = substanceFilter?.size ?: substancesInScope.size
+
+    // The share half of the export. `catalog()` is suspending, so the report is
+    // built in a coroutine when the row is tapped, then handed to the system
+    // share sheet as plain text. `locale` and `zone` are resolved here — not in
+    // the coroutine — because `appLocale()` reads Compose state.
+    val locale = appLocale()
+    val shareScope = rememberCoroutineScope()
+
+    fun shareText(text: String) {
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
+        }
+        context.startActivity(
+            Intent.createChooser(intent, context.getString(R.string.toolsb_reports_share_chooser)),
+        )
+    }
+
+    val onShareMarkdown: () -> Unit = {
+        shareScope.launch {
+            val catalog = app.catalog()
+            val weightKg = app.profile().weightKgOrDefault()
+            val resolver = { id: String ->
+                catalog.descriptorConcept(id)?.let { TripReport.Descriptor(it.id, it.name, it.domain) }
+            }
+            val export = ReportBuilder.sessionStateExport(
+                entries = scopeEntries,
+                notes = scopeNotes,
+                catalog = catalog,
+                checker = catalog.interactionChecker,
+                weightKg = weightKg,
+                descriptorResolver = resolver,
+            )
+            export?.markdown(locale, zone)?.let { shareText(it) }
+        }
+    }
+
+    val onShareTrip: () -> Unit = {
+        shareScope.launch {
+            val catalog = app.catalog()
+            val weightKg = app.profile().weightKgOrDefault()
+            val resolver = { id: String ->
+                catalog.descriptorConcept(id)?.let { TripReport.Descriptor(it.id, it.name, it.domain) }
+            }
+            val reports = tripSessions.map { session ->
+                ReportBuilder.tripReport(
+                    session = session,
+                    doses = dosesBySession[session.id].orEmpty(),
+                    notes = notesBySession[session.id].orEmpty(),
+                    catalog = catalog,
+                    weightKg = weightKg,
+                    descriptorResolver = resolver,
+                ).markdown(locale, zone)
+            }
+            if (reports.isNotEmpty()) {
+                shareText(reports.joinToString("\n\n---\n\n"))
+            }
+        }
+    }
 
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -297,7 +400,9 @@ fun ReportsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                     mode = mode,
                     selectedSessionCount = selectedSessions.size,
                     entriesInScope = scopeEntries,
-                    sessionCountWithNotes = selectedSessions.count { sessionsWithNotes.contains(it) },
+                    sessionCountWithNotes = tripSessions.size,
+                    onShareMarkdown = onShareMarkdown,
+                    onShareTrip = onShareTrip,
                 )
             }
 
@@ -512,13 +617,11 @@ private fun ScopeLine(label: String, value: String) {
 // MARK: - Exports
 
 /**
- * The five exports, each named and each explicitly not wired up.
- *
- * The shapes and the descriptions are upstream's, because they are what a report
- * *will* be one day and naming them keeps the scope legible. The rows are inert:
- * a card that looks tappable and does nothing is worse than one that says what
- * is missing, and "share a broken file" is the one failure mode this screen must
- * not have.
+ * The five exports. The two text exports — Markdown and the trip report — are
+ * wired to the system share sheet; the three image exports stay inert and say
+ * so. A card that looks tappable and does nothing is worse than one that names
+ * what is missing, and "share a broken file" is the one failure mode this screen
+ * must not have.
  */
 @Composable
 private fun ExportList(
@@ -526,6 +629,8 @@ private fun ExportList(
     selectedSessionCount: Int,
     entriesInScope: List<DoseEntryEntity>,
     sessionCountWithNotes: Int,
+    onShareMarkdown: () -> Unit,
+    onShareTrip: () -> Unit,
 ) {
     InsightsSectionCard(
         title = stringResource(R.string.toolsb_reports_exports_title),
@@ -551,6 +656,7 @@ private fun ExportList(
             ExportRow(
                 title = stringResource(R.string.toolsb_reports_export_markdown_title),
                 description = stringResource(R.string.toolsb_reports_export_markdown_desc),
+                onClick = if (entriesInScope.isNotEmpty()) onShareMarkdown else null,
             )
             ExportRow(
                 title = stringResource(R.string.toolsb_reports_export_trip_title),
@@ -559,6 +665,7 @@ private fun ExportList(
                     1 -> stringResource(R.string.toolsb_reports_export_trip_one)
                     else -> stringResource(R.string.toolsb_reports_export_trip_many, sessionCountWithNotes)
                 },
+                onClick = if (sessionCountWithNotes > 0) onShareTrip else null,
             )
             Text(
                 stringResource(R.string.toolsb_reports_export_in_scope, entriesInScope.size),
@@ -570,21 +677,27 @@ private fun ExportList(
 }
 
 @Composable
-private fun ExportRow(title: String, description: String) {
+private fun ExportRow(
+    title: String,
+    description: String,
+    onClick: (() -> Unit)? = null,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(PiruTheme.colors.secondaryLabel.copy(alpha = 0.08f))
+            .clickable(enabled = onClick != null) { onClick?.invoke() }
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(3.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(title, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
             Text(
-                stringResource(R.string.toolsb_reports_not_wired_up),
+                if (onClick != null) stringResource(R.string.toolsb_reports_share)
+                else stringResource(R.string.toolsb_reports_not_wired_up),
                 style = MaterialTheme.typography.labelSmall,
-                color = PiruTheme.colors.secondaryLabel,
+                color = if (onClick != null) PiruTheme.colors.accent else PiruTheme.colors.secondaryLabel,
             )
         }
         Text(description, style = MaterialTheme.typography.labelSmall, color = PiruTheme.colors.secondaryLabel)

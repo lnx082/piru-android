@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copy for the tools hub — the screen that lists every tool and sends the user
+  on to it.
+
+  Alongside values-zh/strings_tools_hub.xml. See docs/localization.md.
+
+  The group titles and the one-liners are written as the question the tool
+  answers rather than as a description of its screen, which is why they are
+  separate from the inner screens' own copy in strings_tools_a.xml /
+  strings_tools_b.xml. A hub is read by someone deciding which of fourteen
+  things to open, and the decision is made on the question, not the mechanism.
+-->
+<resources>
+
+    <!-- ==================== Header ==================== -->
+
+    <string name="tools_title">Tools</string>
+    <string name="tools_subtitle">Instruments over your own log and the catalog. None of them recommends a dose — they read what you have already taken.</string>
+
+    <!-- ==================== Group titles ==================== -->
+
+    <string name="tools_group_in_me">What is in me</string>
+    <string name="tools_group_what_if">What happens if</string>
+    <string name="tools_group_have_got">What have I got</string>
+    <string name="tools_group_take">What I take</string>
+    <string name="tools_group_reference">Reference</string>
+
+    <!-- ==================== What is in me ==================== -->
+
+    <string name="tools_body_load_title">In your body</string>
+    <string name="tools_body_load_detail">How much of each dose is still on board right now, and how much has cleared.</string>
+    <string name="tools_tolerance_title">Tolerance</string>
+    <string name="tools_tolerance_detail">One card per mechanism class, replayed from your log.</string>
+    <string name="tools_half_life_title">Half-life</string>
+    <string name="tools_half_life_detail">When a dose is half gone, and how it decays from there.</string>
+    <string name="tools_injection_levels_title">Injection levels</string>
+    <string name="tools_injection_levels_detail">Estimated serum levels from logged esters, against your own lab results.</string>
+    <string name="tools_steady_state_title">Steady state</string>
+    <string name="tools_steady_state_detail">Where a regularly repeated dose settles, from the cadence you actually keep.</string>
+
+    <!-- ==================== What happens if ==================== -->
+
+    <string name="tools_interactions_title">Interactions</string>
+    <string name="tools_interactions_detail">Check a combination against the catalog\'s rules, and see the two curves overlap.</string>
+    <string name="tools_equivalence_title">Equivalence</string>
+    <string name="tools_equivalence_detail">Opioid milligrams against morphine, and benzodiazepines against diazepam.</string>
+    <string name="tools_alcohol_title">Alcohol</string>
+    <string name="tools_alcohol_detail">Build a night drink by drink and watch the curve, which clears at a flat rate.</string>
+
+    <!-- ==================== What have I got ==================== -->
+
+    <string name="tools_inventory_title">Inventory</string>
+    <string name="tools_inventory_detail">What you have on hand, replayed from your doses and your restocks.</string>
+
+    <!-- ==================== What I take ==================== -->
+
+    <string name="tools_my_meds_title">My Meds</string>
+    <string name="tools_my_meds_detail">The medications you take on a schedule, and how they have been going.</string>
+
+    <!-- ==================== Reference ==================== -->
+
+    <string name="tools_drug_class_title">Drug classes</string>
+    <string name="tools_drug_class_detail">Browse by mechanism — what a class does, and what belongs to it.</string>
+    <string name="tools_identify_title">Identify a pill</string>
+    <string name="tools_identify_detail">Work out what an unmarked tablet or blotter is.</string>
+    <string name="tools_comedown_title">Comedown guide</string>
+    <string name="tools_comedown_detail">What a come-down is, and what tends to help.</string>
+    <string name="tools_help_title">Help</string>
+    <string name="tools_help_detail">What to do when something goes wrong, and when to call someone.</string>
+    <string name="tools_education_title">Education cards</string>
+    <string name="tools_education_detail">Short explanations of the ideas the rest of the app assumes.</string>
+
+    <!-- ==================== Settings card ==================== -->
+
+    <string name="tools_settings_title">Settings</string>
+    <string name="tools_settings_detail">Substance colours, health data, notifications, and about this build.</string>
+
+</resources>

@@ -472,7 +472,7 @@
     <string name="toolsb_reports_scope_sessions">Sessions</string>
     <string name="toolsb_reports_filter_count">%1$d of %2$d</string>
     <string name="toolsb_reports_exports_title">Exports</string>
-    <string name="toolsb_reports_exports_subtitle">Not connected to the system share sheet yet</string>
+    <string name="toolsb_reports_exports_subtitle">Text exports are connected to the share sheet; the image exports are not yet</string>
     <string name="toolsb_reports_export_journal_title">Journal summary</string>
     <string name="toolsb_reports_export_journal_desc">Your entries, your meds and dose trends, as one document</string>
     <string name="toolsb_reports_export_session_images_title">Session images</string>
@@ -488,6 +488,8 @@
     <string name="toolsb_reports_export_trip_many">Notes at their T+ offsets, descriptors by domain — %1$d sessions with notes</string>
     <string name="toolsb_reports_export_in_scope">%1$d entries are in scope.</string>
     <string name="toolsb_reports_not_wired_up">Not wired up</string>
+    <string name="toolsb_reports_share">Share</string>
+    <string name="toolsb_reports_share_chooser">Share report</string>
     <string name="toolsb_hormone_title">Hormone Levels</string>
     <string name="toolsb_hormone_analyte_label">Hormone</string>
     <string name="toolsb_hormone_serum_estradiol">Estimated serum estradiol</string>

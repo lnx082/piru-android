@@ -1,7 +1,10 @@
 package glass.kagerou.piru.ui.settings
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.health.connect.client.HealthConnectClient
 import glass.kagerou.piru.PiruApplication
 import glass.kagerou.piru.R
 import glass.kagerou.piru.data.UserProfileStore
@@ -83,7 +87,11 @@ fun HealthConnectScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {
         loaded = true
     }
 
-    val launcher = rememberLauncherForActivityResult(health.permissionContract()) {
+    // Held once rather than rebuilt every recomposition: the contract is a
+    // stable object and `rememberLauncherForActivityResult` expects the same
+    // instance across passes.
+    val permissionContract = remember { health.permissionContract() }
+    val launcher = rememberLauncherForActivityResult(permissionContract) {
         // The system hands back the granted set directly rather than the app
         // re-reading it, so there is no window where the screen shows a stale
         // answer. Whatever comes back is what is true, including an empty set.
@@ -158,7 +166,22 @@ fun HealthConnectScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {
                                 color = PiruTheme.colors.secondaryLabel,
                             )
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(onClick = { launcher.launch(health.requiredPermissions) }) {
+                                Button(onClick = {
+                                    // A tap must never be a no-op. On a device
+                                    // where the SDK reports itself available but
+                                    // no activity actually handles the request
+                                    // (an OEM build or an emulator without Play
+                                    // services), `launch` throws — say so rather
+                                    // than letting the button feel dead.
+                                    runCatching { launcher.launch(health.requiredPermissions) }
+                                        .onFailure {
+                                            Toast.makeText(
+                                                context,
+                                                R.string.shell_health_open_failed,
+                                                Toast.LENGTH_SHORT,
+                                            ).show()
+                                        }
+                                }) {
                                     Text(
                                         if (granted.isEmpty()) {
                                             stringResource(R.string.shell_health_allow)
@@ -343,10 +366,22 @@ private fun Notice(title: String, body: String) {
     }
 }
 
-/** Hand off to Health Connect's own settings, where the grants are actually managed. */
+/**
+ * Hand off to Health Connect's own settings, where the grants are actually
+ * managed.
+ *
+ * The previous version swallowed the failure silently, so on a device without a
+ * real Health Connect the button did nothing at all. Now it uses the documented
+ * constant and, when no activity handles it, falls back to Health Connect's
+ * Play Store listing — and only if that too is absent does it say so.
+ */
 private fun openHealthConnectSettings(context: Context) {
-    val intent = Intent("androidx.health.ACTION_HEALTH_CONNECT_SETTINGS").apply {
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    val intent = Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS)
+    try {
+        context.startActivity(intent)
+    } catch (e: ActivityNotFoundException) {
+        val market = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=com.google.android.apps.healthdata"))
+        runCatching { context.startActivity(market) }
+            .onFailure { Toast.makeText(context, R.string.shell_health_open_failed, Toast.LENGTH_SHORT).show() }
     }
-    runCatching { context.startActivity(intent) }
 }

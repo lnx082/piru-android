@@ -176,8 +176,13 @@
     <string name="shell_library_title">物质库</string>
     <string name="shell_library_field_label">搜索物质</string>
     <string name="shell_library_opening">正在打开目录…</string>
-    <string name="shell_library_hint">按名称、或该物质任何一个已知的别名搜索。目录收录 1,689 种物质及其全部别名。</string>
     <string name="shell_library_no_matches">目录中没有匹配“%1$s”的内容。</string>
+
+    <!-- 分类网格的标题，以及计算某个分类成员数量的角标。 -->
+    <string name="shell_library_categories">类别</string>
+    <plurals name="shell_library_category_count">
+        <item quantity="other">%1$d 种物质</item>
+    </plurals>
 
     <!-- ==================== 物质详情 ==================== -->
 
@@ -259,6 +264,7 @@
     <string name="shell_health_allow">允许访问</string>
     <string name="shell_health_change_access">更改访问权限</string>
     <string name="shell_health_open_settings">打开 Health Connect</string>
+    <string name="shell_health_open_failed">无法在此设备上打开 Health Connect。它可能需要安装或更新。</string>
     <string name="shell_health_what_is_read">读取的内容</string>
     <string name="shell_health_type_heart_rate">心率</string>
     <string name="shell_health_type_heart_rate_detail">与你的剂量一起绘制，让曲线显示每一剂前后你的身体在做什么。</string>
