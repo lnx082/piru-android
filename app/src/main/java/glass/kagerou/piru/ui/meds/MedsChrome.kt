@@ -2,7 +2,6 @@ package glass.kagerou.piru.ui.meds
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -26,6 +25,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import glass.kagerou.piru.model.DoseFrequency
 import glass.kagerou.piru.ui.theme.PiruTheme
 import java.time.Instant
 import java.time.LocalTime
@@ -89,6 +89,24 @@ internal fun andList(names: List<String>): String = when (names.size) {
 internal val captionSecondaryStyle: TextStyle
     @Composable @ReadOnlyComposable
     get() = MaterialTheme.typography.bodySmall.copy(color = PiruTheme.colors.secondaryLabel)
+
+/**
+ * The cadence a med is on, in the short form upstream's `DoseFrequency.shortLabel`
+ * carries.
+ *
+ * `DoseFrequency` in this port holds only the wire value, and the long name
+ * `displayName` belongs to the form's picker rather than to a row subtitle. When
+ * the model gains `shortLabel` this is where it plugs in; `AdherenceScreen` keeps
+ * its own copy of the same ladder for the same reason.
+ */
+internal fun frequencyShortLabel(frequency: DoseFrequency): String = when (frequency) {
+    DoseFrequency.DAILY -> "Daily"
+    DoseFrequency.EVERY_OTHER_DAY -> "Every 2 days"
+    DoseFrequency.WEEKLY -> "Weekly"
+    DoseFrequency.BIWEEKLY -> "Biweekly"
+    DoseFrequency.MONTHLY -> "Monthly"
+    DoseFrequency.SPECIFIC_DAYS -> "Custom days"
+}
 
 // MARK: - Capsule chip
 
@@ -177,6 +195,9 @@ internal enum class MedsGlyphKind {
     MOON,
     BOX,
     CHEVRON_RIGHT,
+    CLOSE,
+    CHECK,
+    CALENDAR_MINUS,
     LEAF,
     BELL,
     BELL_OFF,
@@ -252,6 +273,38 @@ private fun DrawScope.drawGlyph(kind: MedsGlyphKind, tint: Color) {
         MedsGlyphKind.CHEVRON_RIGHT -> {
             drawLine(tint, Offset(w * 0.34f, h * 0.18f), Offset(w * 0.68f, h * 0.5f), strokeWidth = stroke, cap = StrokeCap.Round)
             drawLine(tint, Offset(w * 0.68f, h * 0.5f), Offset(w * 0.34f, h * 0.82f), strokeWidth = stroke, cap = StrokeCap.Round)
+        }
+
+        MedsGlyphKind.CLOSE -> {
+            drawLine(tint, Offset(w * 0.22f, h * 0.22f), Offset(w * 0.78f, h * 0.78f), strokeWidth = stroke, cap = StrokeCap.Round)
+            drawLine(tint, Offset(w * 0.78f, h * 0.22f), Offset(w * 0.22f, h * 0.78f), strokeWidth = stroke, cap = StrokeCap.Round)
+        }
+
+        MedsGlyphKind.CHECK -> {
+            drawLine(tint, Offset(w * 0.16f, h * 0.54f), Offset(w * 0.40f, h * 0.78f), strokeWidth = stroke * 1.3f, cap = StrokeCap.Round)
+            drawLine(tint, Offset(w * 0.40f, h * 0.78f), Offset(w * 0.86f, h * 0.22f), strokeWidth = stroke * 1.3f, cap = StrokeCap.Round)
+        }
+
+        MedsGlyphKind.CALENDAR_MINUS -> {
+            // Upstream's `calendar.badge.minus`: a calendar card with two
+            // binding ticks above it and a dash where a date would be.
+            drawRoundRect(
+                color = tint,
+                topLeft = Offset(w * 0.12f, h * 0.24f),
+                size = Size(w * 0.76f, h * 0.66f),
+                cornerRadius = CornerRadius(w * 0.10f),
+                style = Stroke(width = stroke),
+            )
+            drawLine(tint, Offset(w * 0.12f, h * 0.42f), Offset(w * 0.88f, h * 0.42f), strokeWidth = stroke * 0.8f)
+            drawLine(tint, Offset(w * 0.30f, h * 0.10f), Offset(w * 0.30f, h * 0.30f), strokeWidth = stroke, cap = StrokeCap.Round)
+            drawLine(tint, Offset(w * 0.70f, h * 0.10f), Offset(w * 0.70f, h * 0.30f), strokeWidth = stroke, cap = StrokeCap.Round)
+            drawLine(
+                tint,
+                Offset(w * 0.32f, h * 0.68f),
+                Offset(w * 0.68f, h * 0.68f),
+                strokeWidth = stroke,
+                cap = StrokeCap.Round,
+            )
         }
 
         MedsGlyphKind.LEAF -> {

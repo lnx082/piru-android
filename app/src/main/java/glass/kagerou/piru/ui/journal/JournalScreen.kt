@@ -31,6 +31,7 @@ import glass.kagerou.piru.model.P3Color
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
 import glass.kagerou.piru.ui.nav.AppNavigator
+import glass.kagerou.piru.ui.meds.MyMedsCard
 import glass.kagerou.piru.ui.nav.PushRoute
 import glass.kagerou.piru.ui.theme.PiruTheme
 import java.time.Instant
@@ -121,6 +122,20 @@ fun JournalScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                     color = PiruTheme.colors.secondaryLabel,
                 )
             }
+        }
+
+        // Above the loading and empty branches, not after the timeline graph.
+        // The graph renders only when there are doses, so a card placed there
+        // would disappear on an empty log — which is exactly the fresh install
+        // this card exists for. `MyMedsCard` draws nothing when no med is due, so
+        // it costs nothing on the days it has nothing to say.
+        item {
+            MyMedsCard(
+                navigator = navigator,
+                onOpenMyMeds = { navigator.push(PushRoute.MyMeds) },
+                onOpenMed = { navigator.push(PushRoute.MedDetail(it.rowId)) },
+                onOpenRestock = { id -> navigator.push(PushRoute.InventoryItemForm(id = id)) },
+            )
         }
 
         if (loading) {

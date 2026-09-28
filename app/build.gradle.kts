@@ -1,3 +1,8 @@
+// Explicit, because the `java` extension Gradle installs on the project shadows
+// the `java` package inside this script — `java.util.Properties` resolves to a
+// property lookup on that extension and fails with "Unresolved reference 'util'".
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -31,9 +36,58 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    /**
+     * The release signing identity, read from `keystore.properties` at the repo
+     * root — which is gitignored, and must stay that way.
+     *
+     * Deliberately **absent rather than defaulted**. A release build with no
+     * signing config still produces an APK; it is unsigned and cannot be
+     * installed over anything, which is a confusing failure a long way from its
+     * cause. This reads the file when it exists and says nothing when it does
+     * not, so `assembleDebug` works on a fresh clone and `assembleRelease`
+     * without a keystore fails at the point of signing with a message naming the
+     * missing file.
+     *
+     * To make one:
+     *   keytool -genkeypair -v -keystore piru-release.jks -alias piru \
+     *           -keyalg RSA -keysize 4096 -validity 10000
+     * then write `storeFile`, `storePassword`, `keyAlias`, `keyPassword` into
+     * `keystore.properties`. **Back the file up somewhere you will still have it
+     * in five years.**
+     */
+    val keystorePropertiesFile = rootProject.file("keystore.properties")
+    val keystoreProperties = Properties().apply {
+        if (keystorePropertiesFile.exists()) keystorePropertiesFile.inputStream().use { load(it) }
+    }
+
+    signingConfigs {
+        if (keystorePropertiesFile.exists()) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // R8, and the reason it is worth the trouble here: this app is mostly
+            // *generated* code — Room's DAOs, kotlinx.serialization's serializers,
+            // Compose's compiler output — and all three are exactly what a shrinker
+            // gets wrong by default. The failure mode is the bad one: a debug build
+            // that works, a release build that throws `NoSuchMethodError` on the
+            // first database query, and nothing in between to point at it.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 }

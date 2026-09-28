@@ -1,0 +1,1198 @@
+package glass.kagerou.piru.ui.settings
+
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.dp
+import androidx.core.app.NotificationManagerCompat
+import glass.kagerou.piru.BuildConfig
+import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.data.backup.BackupCrypto
+import glass.kagerou.piru.data.export.DataExportImport
+import glass.kagerou.piru.data.export.ExportFormat
+import glass.kagerou.piru.data.recovery.StoreRecovery
+import glass.kagerou.piru.notifications.PiruNotifications
+import glass.kagerou.piru.ui.components.FAB_CLEARANCE
+import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.theme.PiruTheme
+import java.io.File
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+/**
+ * Everything about the user's data: what is on this device, export and import,
+ * the encryption, the recoverable copies, and the destructive action at the
+ * bottom.
+ *
+ * Ported from `Piru/Views/Settings/DataStorageView.swift` (818 lines) and
+ * `DataStorageModel.swift` (297 lines).
+ *
+ * ## Sections, in the source's order
+ * [LocalStorageSection] → [ExportImportSection] → [SubstanceDatabaseSection] →
+ * [HowEncryptionWorksSection] → [RecoverableCopiesSection] →
+ * [DeleteEverythingSection]. The order is not decoration: the destructive action
+ * is last and the thing it destroys is described first.
+ *
+ * ## `ICloudBackupSection` is absent, and that is the upstream's own choice
+ * The iOS file carries `ICloudBackupSection()` **commented out**, gated for App
+ * Store review (Guideline 5.1.3(ii)) — the section offered a second, automatic
+ * copy of the journal and the reviewer read the copy as a reason to require an
+ * account. It is not ported here because it has nothing to port *to*: there is no
+ * iCloud on Android, no `CKContainer`, and the whole feature is a private CloudKit
+ * database plus an iCloud Keychain item that holds the envelope key. A surface
+ * that looked like it — a toggle, a "last backup" row — would be a promise this
+ * platform cannot keep.
+ *
+ * ## What is deliberately *not* offered
+ * - **Automatic backup.** Upstream's is "encrypt and write to iCloud Drive when
+ *   you leave the app", and the key lives in the iCloud Keychain. There is no
+ *   Android counterpart and this screen says so rather than substituting a local
+ *   scheduled export: a file in the app's own storage is not the thing a user
+ *   means by "backup", and calling it one would be a false assurance about the
+ *   only copy of a years-long log.
+ * - **Device-key encrypted backups.** [BackupCrypto] recognizes the envelope and
+ *   refuses it, because the key is in an Apple service. The export sheet says so
+ *   in as many words; see [HowEncryptionWorksSection].
+ *
+ * ## SAF, not a storage permission
+ * Export and import go through the Storage Access Framework —
+ * `CreateDocument("application/json")` and `OpenDocument` — so the user picks the
+ * destination and grants exactly that one file. `WRITE_EXTERNAL_STORAGE` would
+ * add a permission that does nothing on API 30+, which is this build's floor, and
+ * would put a scarier dialog in front of the same operation.
+ */
+@Composable
+fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {}) {
+    val context = LocalContext.current
+    val app = context.applicationContext as PiruApplication
+    val scope = rememberCoroutineScope()
+
+    var counts by remember { mutableStateOf<LocalCounts?>(null) }
+    var storeBytes by remember { mutableStateOf(0L) }
+    var substanceCount by remember { mutableStateOf(0) }
+    var recoverable by remember { mutableStateOf<List<StoreRecovery.RecoverableCopy>>(emptyList()) }
+    var loadingRecoverable by remember { mutableStateOf(true) }
+
+    var busy by remember { mutableStateOf(false) }
+    var generating by remember { mutableStateOf(false) }
+    var notice by remember { mutableStateOf<Notice?>(null) }
+
+    // The plain export waiting for a destination, and the encrypted one. The
+    // content is built *before* the picker opens, so a large library's encode runs
+    // behind a spinner rather than after the user has already chosen a file.
+    var pendingPlainExport by remember { mutableStateOf<String?>(null) }
+    var pendingEncryptedExport by remember { mutableStateOf<ByteArray?>(null) }
+
+    // A picked encrypted backup, until its passphrase opens it. Held as the raw
+    // bytes so a wrong passphrase can be retried without asking for the file
+    // again.
+    var lockedBackup by remember { mutableStateOf<ByteArray?>(null) }
+    var askingForBackupPassphrase by remember { mutableStateOf(false) }
+
+    // The payload a restore is about to apply, and the copy it came from.
+    var pendingPayload by remember { mutableStateOf<String?>(null) }
+    var pendingCopy by remember { mutableStateOf<StoreRecovery.RecoverableCopy?>(null) }
+    var askingStrategy by remember { mutableStateOf(false) }
+    var askingDelete by remember { mutableStateOf(false) }
+    var askingExportOptions by remember { mutableStateOf(false) }
+    var askingCreatePassphrase by remember { mutableStateOf(false) }
+
+    var reload by remember { mutableStateOf(0) }
+
+    suspend fun reloadCounts() {
+        val db = app.database
+        val colors = db.substanceColorDao().all()
+        counts = LocalCounts(
+            entries = db.doseEntryDao().count().toInt(),
+            sessions = db.sessionDao().all().size,
+            meds = db.dailyDoseItemDao().all().size,
+            quickLog = db.quickLogDoseDao().all().size,
+            favorites = db.favoriteSubstanceDao().all().size,
+            inventory = db.inventoryDao().all().size,
+            customColors = colors.count { !it.usesDefault || it.isLegacy },
+        )
+        storeBytes = storeSize(context)
+        substanceCount = runCatching { app.substanceCount() }.getOrDefault(0)
+    }
+
+    suspend fun reloadRecoverable() {
+        loadingRecoverable = true
+        recoverable = withContext(Dispatchers.IO) { StoreRecovery.forContext(context).recoverableStores() }
+        loadingRecoverable = false
+    }
+
+    LaunchedEffect(reload) {
+        reloadCounts()
+        reloadRecoverable()
+    }
+
+    /**
+     * Failures here are all "the file could not be written", and they are the one
+     * thing this screen must never swallow: the user believes their data is now in
+     * a file.
+     */
+    fun report(title: String, message: String) {
+        notice = Notice(title, message)
+    }
+
+    // The contracts are remembered rather than built in the composition body:
+    // `rememberLauncherForActivityResult` re-registers its launcher when the
+    // contract's identity changes, and a contract built inline is a new object on
+    // every recomposition. The same trap is called out in
+    // `NotificationSettingsScreen`.
+    val plainExportContract = remember { ActivityResultContracts.CreateDocument(MIME_JSON) }
+    val encryptedExportContract = remember { ActivityResultContracts.CreateDocument(MIME_BINARY) }
+    val importContract = remember { ActivityResultContracts.OpenDocument() }
+
+    val plainExporter = rememberLauncherForActivityResult(plainExportContract) { uri ->
+        val text = pendingPlainExport
+        pendingPlainExport = null
+        if (uri == null || text == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val wrote = withContext(Dispatchers.IO) { writeText(context, uri, text) }
+            if (!wrote) report("Export Failed", "The file could not be written to the location you chose.")
+        }
+    }
+
+    val encryptedExporter = rememberLauncherForActivityResult(encryptedExportContract) { uri ->
+        val bytes = pendingEncryptedExport
+        pendingEncryptedExport = null
+        if (uri == null || bytes == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val wrote = withContext(Dispatchers.IO) { writeBytes(context, uri, bytes) }
+            if (!wrote) report("Export Failed", "The file could not be written to the location you chose.")
+        }
+    }
+
+    /** Classify, validate and hold a payload for the merge-or-replace choice. */
+    suspend fun prepareRestoreFrom(text: String, from: StoreRecovery.RecoverableCopy?) {
+        try {
+            DataExportImport.validate(text)
+        } catch (error: Throwable) {
+            report("Import Failed", DataExportImport.importErrorMessage(error))
+            return
+        }
+        pendingPayload = text
+        pendingCopy = from
+        askingStrategy = true
+    }
+
+    val importer = rememberLauncherForActivityResult(importContract) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            busy = true
+            val bytes = withContext(Dispatchers.IO) { readBytes(context, uri) }
+            busy = false
+            if (bytes == null) {
+                report("Import Failed", "The file could not be read.")
+                return@launch
+            }
+            val asText = bytes.toString(Charsets.UTF_8)
+            // An encrypted backup is decided by `BackupCrypto`, not by the JSON
+            // classifier: `classify` throws `Encrypted` for the same file, but the
+            // envelope is the thing that knows whether this build can open it.
+            val inspection = runCatching { BackupCrypto.inspect(bytes) }.getOrNull()
+            when (inspection) {
+                is BackupCrypto.Inspection.DeviceKey -> report(
+                    "Can't Open This Backup",
+                    "This is a device-key backup, made by the iOS app with a key kept in " +
+                        "your iCloud Keychain. The key is not in the file, and Android has " +
+                        "no equivalent store for it, so this build can't open it. Its " +
+                        "passphrase backups open normally.",
+                )
+                is BackupCrypto.Inspection.Passphrase -> {
+                    lockedBackup = bytes
+                    askingForBackupPassphrase = true
+                }
+                null -> prepareRestoreFrom(text = asText, from = null)
+            }
+        }
+    }
+
+    fun applyRestore(replace: Boolean, payload: String) {
+        scope.launch {
+            busy = true
+            try {
+                // A replace takes a snapshot first, which is what makes the
+                // destructive half reversible — upstream says the same in the
+                // dialog's own message.
+                if (replace) {
+                    val snapshot = withContext(Dispatchers.IO) {
+                        snapshotNow(app, "prerestore")
+                    }
+                    if (snapshot == null) {
+                        report(
+                            "Restore Failed",
+                            "A recovery copy of your current data could not be written, so " +
+                                "nothing was replaced.",
+                        )
+                        return@launch
+                    }
+                    DataExportImport.deleteAll(app.database)
+                }
+                val report = DataExportImport.importJSON(
+                    text = payload,
+                    db = app.database,
+                    catalog = runCatching { app.catalog() }.getOrNull(),
+                )
+                app.refreshLiveStores()
+                onChanged()
+                reload++
+                notice = Notice(if (replace) "Restore Complete" else "Import Complete", describe(report))
+            } catch (error: Throwable) {
+                report("Restore Failed", DataExportImport.importErrorMessage(error))
+            } finally {
+                busy = false
+                pendingPayload = null
+                pendingCopy = null
+            }
+        }
+    }
+
+    LazyColumn(
+        modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(bottom = FAB_CLEARANCE),
+    ) {
+        item {
+            Text(
+                "Data & Backup",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(top = 16.dp),
+            )
+        }
+
+        item { LocalStorageSection(counts, storeBytes) }
+
+        item {
+            ExportImportSection(
+                generating = generating || busy,
+                onExport = { askingExportOptions = true },
+                onImport = {
+                    // Three types rather than one: a Piru file is `application/json`
+                    // on most providers, nothing at all on some, and an encrypted
+                    // backup is neither. The picker is allowed to show everything
+                    // because `classify` and `BackupCrypto` decide what the file
+                    // is — which is knowledge the user came here without.
+                    importer.launch(arrayOf(MIME_JSON, MIME_BINARY, MIME_ANY))
+                },
+            )
+        }
+
+        item { SubstanceDatabaseSection(substanceCount) }
+
+        item { HowEncryptionWorksSection() }
+
+        item { RecoverableCopiesSection(recoverable, loadingRecoverable) { copy ->
+            // Nothing is written until the user confirms in the dialog below.
+            scope.launch {
+                busy = true
+                val text = withContext(Dispatchers.IO) { StoreRecovery.forContext(context).read(copy) }
+                busy = false
+                if (text == null) {
+                    report("Restore Failed", "That copy could not be read.")
+                    return@launch
+                }
+                prepareRestoreFrom(text, copy)
+            }
+        } }
+
+        item {
+            DeleteEverythingSection(enabled = !busy && !generating) { askingDelete = true }
+        }
+    }
+
+    // MARK: - Dialogs
+
+    if (askingExportOptions) {
+        AlertDialog(
+            onDismissRequest = { askingExportOptions = false },
+            title = { Text("Export") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    ExportOption("Piru Backup", "A complete backup you can restore into Piru") {
+                        askingExportOptions = false
+                        scope.launch {
+                            generating = true
+                            val text = runCatching {
+                                withContext(Dispatchers.Default) {
+                                    DataExportImport.exportJSON(
+                                        ExportFormat.PIRU,
+                                        app.database,
+                                        appVersion(),
+                                    )
+                                }
+                            }.getOrNull()
+                            generating = false
+                            if (text == null) {
+                                report("Export Failed", "The export could not be built.")
+                                return@launch
+                            }
+                            pendingPlainExport = text
+                            plainExporter.launch(DataExportImport.exportFilename())
+                        }
+                    }
+                    ExportOption(
+                        "PsychonautWiki Format",
+                        "For importing into the PsychonautWiki app. Plain JSON, and it " +
+                            "does not carry inventory, favorites or sessions' notes.",
+                    ) {
+                        askingExportOptions = false
+                        scope.launch {
+                            generating = true
+                            val text = runCatching {
+                                withContext(Dispatchers.Default) {
+                                    DataExportImport.exportJSON(
+                                        ExportFormat.PSY_LOG,
+                                        app.database,
+                                        appVersion(),
+                                    )
+                                }
+                            }.getOrNull()
+                            generating = false
+                            if (text == null) {
+                                report("Export Failed", "The export could not be built.")
+                                return@launch
+                            }
+                            pendingPlainExport = text
+                            plainExporter.launch(DataExportImport.exportFilename())
+                        }
+                    }
+                    ExportOption(
+                        "Encrypted Backup",
+                        "Passphrase-protected — save or send it anywhere",
+                    ) {
+                        askingExportOptions = false
+                        askingCreatePassphrase = true
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = { TextButton(onClick = { askingExportOptions = false }) { Text("Cancel") } },
+        )
+    }
+
+    if (askingCreatePassphrase) {
+        PassphraseSheet(
+            onDismiss = { askingCreatePassphrase = false },
+            onSubmit = { passphrase ->
+                askingCreatePassphrase = false
+                scope.launch {
+                    generating = true
+                    val bytes = runCatching {
+                        withContext(Dispatchers.Default) {
+                            val plaintext = DataExportImport.exportJSON(
+                                ExportFormat.PIRU,
+                                app.database,
+                                appVersion(),
+                            ).toByteArray(Charsets.UTF_8)
+                            BackupCrypto.encrypt(plaintext, passphrase, appVersion())
+                        }
+                    }.getOrNull()
+                    generating = false
+                    if (bytes == null) {
+                        report("Export Failed", "The encrypted backup could not be built.")
+                        return@launch
+                    }
+                    pendingEncryptedExport = bytes
+                    encryptedExporter.launch(BackupCrypto.AUTOMATIC_FILENAME)
+                }
+            },
+        )
+    }
+
+    if (askingForBackupPassphrase) {
+        val bytes = lockedBackup
+        OpenBackupDialog(
+            onDismiss = {
+                askingForBackupPassphrase = false
+                lockedBackup = null
+            },
+            onPassphrase = { passphrase ->
+                askingForBackupPassphrase = false
+                lockedBackup = null
+                if (bytes == null) return@OpenBackupDialog
+                scope.launch {
+                    busy = true
+                    val plaintext = runCatching {
+                        withContext(Dispatchers.Default) {
+                            BackupCrypto.decrypt(bytes, passphrase).toString(Charsets.UTF_8)
+                        }
+                    }.getOrElse { error ->
+                        busy = false
+                        val failure = (error as? BackupCrypto.BackupException)?.failure
+                        report(
+                            "Restore Failed",
+                            when (failure) {
+                                // One message for both, because GCM cannot tell a
+                                // wrong passphrase from a tampered file.
+                                BackupCrypto.Failure.DECRYPTION_FAILED ->
+                                    "That passphrase did not open this backup."
+                                BackupCrypto.Failure.DEVICE_KEY_UNAVAILABLE ->
+                                    "This build can't open a device-key backup."
+                                else -> "This file is not a readable Piru backup."
+                            },
+                        )
+                        return@launch
+                    }
+                    busy = false
+                    prepareRestoreFrom(plaintext, null)
+                }
+            },
+        )
+    }
+
+    if (askingStrategy) {
+        val copy = pendingCopy
+        AlertDialog(
+            onDismissRequest = { askingStrategy = false; pendingPayload = null; pendingCopy = null },
+            title = { Text("Restore Backup") },
+            text = {
+                Text(
+                    buildString {
+                        val takenAt = copy?.timestamp
+                        if (takenAt != null) {
+                            append("This replaces your current data with the copy taken ${whenText(takenAt)}. ")
+                        }
+                        append(
+                            "Merge keeps your current entries and adds the backup's. Replace " +
+                                "deletes your current data first (a recovery copy is taken " +
+                                "automatically) and restores only the backup.",
+                        )
+                    },
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    askingStrategy = false
+                    pendingPayload?.let { applyRestore(replace = false, payload = it) }
+                }) { Text("Merge With Current Data") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    askingStrategy = false
+                    pendingPayload?.let { applyRestore(replace = true, payload = it) }
+                }) { Text("Replace Everything") }
+            },
+        )
+    }
+
+    if (askingDelete) {
+        AlertDialog(
+            onDismissRequest = { askingDelete = false },
+            title = { Text("Delete Everything") },
+            text = {
+                Text(
+                    "This deletes your journal, profile, schedules, inventory, custom " +
+                        "presets and local recovery copies. Exported files and device " +
+                        "backups are not affected.",
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    askingDelete = false
+                    scope.launch { deleteEverything(app, onDeleted = { reload++ }, onMessage = ::report) }
+                }) { Text("Delete") }
+            },
+            dismissButton = { TextButton(onClick = { askingDelete = false }) { Text("Cancel") } },
+        )
+    }
+
+    notice?.let { current ->
+        AlertDialog(
+            onDismissRequest = { notice = null },
+            title = { Text(current.title) },
+            text = { Text(current.message) },
+            confirmButton = { TextButton(onClick = { notice = null }) { Text("OK") } },
+        )
+    }
+}
+
+// MARK: - On This Device
+
+/** What this device holds, as the first section counts it. */
+private data class LocalCounts(
+    val entries: Int,
+    val sessions: Int,
+    val meds: Int,
+    val quickLog: Int,
+    val favorites: Int,
+    val inventory: Int,
+    val customColors: Int,
+)
+
+private data class Notice(val title: String, val message: String)
+
+@Composable
+private fun LocalStorageSection(counts: LocalCounts?, storeBytes: Long) {
+    SectionCard(
+        title = "On This Device",
+        footer = "Everything Piru stores in the app on this device. Device backups made by " +
+            "your phone's own settings include it.",
+    ) {
+        CountRow("Entries", counts?.entries)
+        CountRow("Sessions", counts?.sessions)
+        CountRow("Daily Medications", counts?.meds)
+        CountRow("Quick-Log Shortcuts", counts?.quickLog)
+        CountRow("Favorites", counts?.favorites)
+        CountRow("Inventory", counts?.inventory)
+        CountRow("Custom Colours", counts?.customColors)
+        CountRow("Store Size", formatted = byteString(storeBytes))
+    }
+}
+
+@Composable
+private fun CountRow(title: String, count: Int? = null, formatted: String? = null) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Text(title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+        Text(
+            formatted ?: count?.toString().orEmpty(),
+            style = MaterialTheme.typography.bodyLarge,
+            color = PiruTheme.colors.secondaryLabel,
+        )
+    }
+}
+
+// MARK: - Export & Import
+
+/**
+ * The three ways out and the one way in.
+ *
+ * One import row for every format, because the file decides: `classify` names the
+ * importer and `BackupCrypto` names the envelope, so the user does not have to
+ * know which kind of file they are holding — which is exactly the knowledge they
+ * came here without.
+ */
+@Composable
+private fun ExportImportSection(
+    generating: Boolean,
+    onExport: () -> Unit,
+    onImport: () -> Unit,
+) {
+    SectionCard(
+        title = "Export & Import",
+        footer = "Piru and PsychonautWiki files are plain, unencrypted JSON. Imports add to " +
+            "your journal and skip duplicates. Encrypted restores can merge or replace. " +
+            "Inventory is included in Piru and encrypted backups, but not in " +
+            "PsychonautWiki files.\n\n" +
+            "Automatic backup is not available here. On iOS it writes an encrypted copy to " +
+            "your private iCloud Drive whenever you leave the app; Android has no " +
+            "equivalent, so backups are made here when you make them.",
+    ) {
+        ActionRow(
+            title = "Export…",
+            subtitle = "Piru, PsychonautWiki, or an encrypted backup",
+            showSpinner = generating,
+            onClick = onExport,
+        )
+        ActionRow(
+            title = "Import…",
+            subtitle = "A Piru or PsychonautWiki file, or an encrypted backup",
+            enabled = !generating,
+            onClick = onImport,
+        )
+    }
+}
+
+// MARK: - Substance database
+
+/**
+ * A row that reports the catalog's size without pretending to open a screen.
+ *
+ * Upstream pushes `SubstanceDatabaseView`, which is where the source-priority
+ * editor lives. This build browses the catalog from the Library tab and has no
+ * source-priority screen, so the row names the tab and the footer says what is
+ * missing rather than half-describing a screen that does not exist. A card that
+ * looks tappable and is not is worse than a plain sentence.
+ */
+@Composable
+private fun SubstanceDatabaseSection(substanceCount: Int) {
+    SectionCard(
+        title = "Substance Database",
+        footer = "Which source wins when they disagree. The source-priority editor is not " +
+            "in this build; the bundled catalog supplies each substance's own sources, " +
+            "listed on its detail screen.",
+    ) {
+        CountRow("Substances in the bundled catalog", count = substanceCount)
+        Text(
+            "Browse it from the Library tab.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = PiruTheme.colors.secondaryLabel,
+        )
+    }
+}
+
+// MARK: - How encryption works
+
+@Composable
+private fun HowEncryptionWorksSection() {
+    SectionCard(title = "How Encryption Works") {
+        HowItWorksRow(
+            "Strong encryption",
+            "Sealed with AES-256-GCM. Tampering is detected and refused.",
+        )
+        HowItWorksRow(
+            "Passphrase backups",
+            "Encrypted exports turn your passphrase into a key with 600,000 rounds of " +
+                "PBKDF2. Piru keeps no copy of the passphrase and cannot recover it. " +
+                "Plain exports are unencrypted.",
+        )
+        HowItWorksRow(
+            "Restores keep a snapshot",
+            "Replacing your data on restore takes a recoverable copy first.",
+        )
+        HowItWorksRow(
+            "Device-key backups don't open here",
+            "The iOS app can also seal a backup with a key it keeps in your iCloud " +
+                "Keychain. That key never enters the file, and Android has no equivalent " +
+                "key store, so this build recognises those backups and refuses them " +
+                "rather than failing with what looks like a wrong passphrase.",
+        )
+    }
+}
+
+@Composable
+private fun HowItWorksRow(title: String, detail: String) {
+    Column(modifier = Modifier.padding(vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+        Text(detail, style = MaterialTheme.typography.bodyMedium, color = PiruTheme.colors.secondaryLabel)
+    }
+}
+
+// MARK: - Recoverable copies
+
+/**
+ * Copies set aside before something destructive.
+ *
+ * A copy marked [StoreRecovery.RecoverableCopy.isIntentional] is one the **user**
+ * caused. It is listed here so they can roll back a delete they regret, and it is
+ * why the recovery machinery never resurrects one by itself.
+ */
+@Composable
+private fun RecoverableCopiesSection(
+    stores: List<StoreRecovery.RecoverableCopy>,
+    loading: Boolean,
+    onSelect: (StoreRecovery.RecoverableCopy) -> Unit,
+) {
+    SectionCard(
+        title = "Recoverable Copies",
+        footer = "Copies taken before a restore, or before Delete Everything, appear here " +
+            "ready to restore. Piru never restores one by itself: a copy you asked for " +
+            "exists so that a delete stays deleted.",
+    ) {
+        when {
+            loading -> Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                CircularProgressIndicator()
+                Text(
+                    "Checking for recoverable copies…",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = PiruTheme.colors.secondaryLabel,
+                )
+            }
+
+            stores.isEmpty() -> Text(
+                "No recoverable copies on this device.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = PiruTheme.colors.secondaryLabel,
+            )
+
+            else -> for (store in stores) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            StoreRecovery.reasonTitle(store.reason) +
+                                if (store.isIntentional) "" else " (automatic)",
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                        Text(
+                            copySubtitle(store),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = PiruTheme.colors.secondaryLabel,
+                        )
+                    }
+                    if (store.rowCount > 0) {
+                        TextButton(onClick = { onSelect(store) }) { Text("Restore") }
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Delete
+
+@Composable
+private fun DeleteEverythingSection(enabled: Boolean, onDelete: () -> Unit) {
+    SectionCard(
+        title = "Danger Zone",
+        footer = "Deletes journal records, profile, schedules, inventory, custom presets " +
+            "and local recovery copies.",
+    ) {
+        TextButton(onClick = onDelete, enabled = enabled) {
+            Text("Delete Everything", color = PiruTheme.colors.dangerText)
+        }
+    }
+}
+
+// MARK: - Rows
+
+@Composable
+private fun ActionRow(
+    title: String,
+    subtitle: String,
+    showSpinner: Boolean = false,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
+    PiruCard(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = if (enabled) onClick else null,
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(title, style = MaterialTheme.typography.titleSmall)
+                Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = PiruTheme.colors.secondaryLabel)
+            }
+            if (showSpinner) CircularProgressIndicator()
+        }
+    }
+}
+
+@Composable
+private fun ExportOption(title: String, subtitle: String, onClick: () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        TextButton(onClick = onClick) {
+            Column {
+                Text(title, style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = PiruTheme.colors.secondaryLabel,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionCard(title: String, footer: String? = null, content: @Composable () -> Unit) {
+    PiruCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+            content()
+            if (footer != null) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
+                Text(
+                    footer,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = PiruTheme.colors.secondaryLabel,
+                )
+            }
+        }
+    }
+}
+
+// MARK: - Passphrase
+
+/**
+ * The minimum length for a **new** passphrase.
+ *
+ * A backup file is offline-attackable forever, so the floor is deliberately above
+ * the eight characters a login screen would accept; the 600,000-round PBKDF2
+ * raises the cost per guess on top of it.
+ */
+internal const val PASSPHRASE_MIN_LENGTH: Int = 12
+
+/**
+ * Whether a new passphrase may be used.
+ *
+ * Both halves matter and neither is a formality: the length is the only thing
+ * standing between a stolen file and its contents, and the confirmation is what
+ * stops a typo from becoming a backup nobody can open. Split out from the sheet so
+ * it can be tested without a composition.
+ */
+internal fun passphraseIsValid(passphrase: String, confirmation: String): Boolean =
+    passphrase.length >= PASSPHRASE_MIN_LENGTH && passphrase == confirmation
+
+/**
+ * Sets the passphrase that seals a new encrypted backup.
+ *
+ * Entered twice with live length and match feedback, which an alert has no room
+ * for. Ported from `PassphraseSheet`.
+ */
+@Composable
+private fun PassphraseSheet(onDismiss: () -> Unit, onSubmit: (String) -> Unit) {
+    var passphrase by remember { mutableStateOf("") }
+    var confirmation by remember { mutableStateOf("") }
+    val valid = passphraseIsValid(passphrase, confirmation)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Set a Passphrase") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = passphrase,
+                    onValueChange = { passphrase = it },
+                    label = { Text("Passphrase") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        autoCorrectEnabled = false,
+                        capitalization = KeyboardCapitalization.None,
+                        imeAction = ImeAction.Next,
+                    ),
+                )
+                OutlinedTextField(
+                    value = confirmation,
+                    onValueChange = { confirmation = it },
+                    label = { Text("Confirm Passphrase") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        autoCorrectEnabled = false,
+                        capitalization = KeyboardCapitalization.None,
+                        imeAction = ImeAction.Done,
+                    ),
+                )
+                Text(
+                    strengthFooter(passphrase, confirmation),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = when {
+                        passphrase.isNotEmpty() && passphrase.length < PASSPHRASE_MIN_LENGTH ->
+                            PiruTheme.colors.cautionText
+                        valid -> PiruTheme.colors.successText
+                        else -> PiruTheme.colors.secondaryLabel
+                    },
+                )
+                HorizontalDivider()
+                Text(
+                    "If you lose this passphrase, the backup can't be recovered. There is no reset.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = PiruTheme.colors.cautionText,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSubmit(passphrase) }, enabled = valid) { Text("Encrypt") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+/**
+ * The sheet's own feedback line.
+ *
+ * Four states in the source's order, and the wording is the source's: a short
+ * passphrase is told it is short, a mismatched pair is told it does not match
+ * yet, and a good one is confirmed rather than merely not-complained-about.
+ */
+internal fun strengthFooter(passphrase: String, confirmation: String): String = when {
+    passphrase.isEmpty() ->
+        "Use at least $PASSPHRASE_MIN_LENGTH characters. A phrase of several words is " +
+            "stronger and easier to remember than a short password."
+    passphrase.length < PASSPHRASE_MIN_LENGTH ->
+        "Too short — use at least $PASSPHRASE_MIN_LENGTH characters."
+    passphrase != confirmation -> "Passphrases don't match yet."
+    else -> "Passphrases match."
+}
+
+/**
+ * Asks for the passphrase of a picked encrypted backup.
+ *
+ * One field, because there is nothing to confirm — the file already exists and the
+ * passphrase either opens it or does not.
+ */
+@Composable
+private fun OpenBackupDialog(onDismiss: () -> Unit, onPassphrase: (String) -> Unit) {
+    var passphrase by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Encrypted Backup") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    "This backup is passphrase-protected. Enter the passphrase it was made with.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                OutlinedTextField(
+                    value = passphrase,
+                    onValueChange = { passphrase = it },
+                    label = { Text("Passphrase") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        autoCorrectEnabled = false,
+                        capitalization = KeyboardCapitalization.None,
+                        imeAction = ImeAction.Done,
+                    ),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onPassphrase(passphrase) }, enabled = passphrase.isNotEmpty()) {
+                Text("Open")
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+// MARK: - The delete flow
+
+/**
+ * Delete Everything, in the source's order.
+ *
+ * `DataStorageModel.deleteAllData` is a sequence, not a set, and the order is
+ * copied step by step. Every step that has **no counterpart in this build** is
+ * named in [DELETE_STEPS_WITHOUT_COUNTERPART] rather than quietly dropped: a
+ * reader comparing the two has to be able to see what was left out and why.
+ */
+private suspend fun deleteEverything(
+    app: PiruApplication,
+    onDeleted: () -> Unit,
+    onMessage: (String, String) -> Unit,
+) {
+    val context = app.applicationContext
+    var cleanupErrors = mutableListOf<String>()
+
+    // 1. `DoseLogService.cancelPendingBookkeeping()` — no counterpart.
+    // 2. The rows.
+    try {
+        DataExportImport.deleteAll(app.database)
+    } catch (error: Throwable) {
+        onMessage("Delete Failed", error.message ?: "The data could not be deleted.")
+        return
+    }
+    // 3. `JournalResetGeneration.advance()` — no counterpart.
+    // 4. `DoseLogService.changed()` — the tolerance cache's invalidation, which
+    //    here is dropping the memoized replay and grouping.
+    app.invalidateRepositoryCaches()
+    // 5. `PhoneSyncCoordinator.journalWasDeleted()` — iOS-only.
+    // 6. `ActiveSessionManager.clearSession()` — no counterpart.
+    // 7. `DayResolveCache.clear()` — no counterpart.
+    // 8. The notification choices.
+    app.notificationPreferences().resetAfterDeletion()
+    // 9. `CustomSubstanceStore.resetAfterDeletion()` — the store *is* the table,
+    //    which step 2 already emptied.
+    // 10. `CustomUnitStore.configure(container:)` — no table, no counterpart.
+    // 11. `SearchHistoryStore.clear()` — no counterpart.
+    // 12. `QuickLogManager.suppressedRecents = []` — no counterpart.
+
+    // 13-14. The per-piece cleanup upstream runs in a loop and reports together.
+    for (cleanup in listOf<Pair<String, suspend () -> Unit>>(
+        "the profile" to { app.profile().resetAfterDeletion() },
+        "the recovery copies" to { StoreRecovery.forContext(context).deleteRecoveryCopies().getOrThrow() },
+        // `JournalDeriveCache.clear()`, `TimelineStripCache.clear()` and
+        // `BodyLevelsTrailCache.clear()` are the three other entries here. This
+        // build keeps none of those caches — every reading is derived on the
+        // frame that draws it — so there is nothing to clear.
+    )) {
+        runCatching { cleanup.second() }.onFailure { cleanupErrors += "${cleanup.first}: ${it.message}" }
+    }
+
+    // 15. Every pending and delivered notification.
+    runCatching {
+        val scheduled = PiruNotifications.scheduledIdentifiers(context)
+        if (scheduled.isNotEmpty()) PiruNotifications.cancel(context, scheduled)
+        NotificationManagerCompat.from(context).cancelAll()
+    }.onFailure { cleanupErrors += "notifications: ${it.message}" }
+    // 16. `LiveActivityManager.deleteJournalActivities()` — no live activities.
+    // 17. `BackupManager.disableAndRemoveBackup()` — there is no automatic backup
+    //     to disable or remove.
+    // 18. `WidgetCenter.reloadAllTimelines()` — there are no widgets.
+    // 19. The listing, refreshed by the caller.
+
+    onDeleted()
+    if (cleanupErrors.isNotEmpty()) {
+        onMessage("Delete Failed", cleanupErrors.joinToString("\n"))
+    }
+}
+
+/**
+ * The steps of the upstream delete that this build has no counterpart for.
+ *
+ * Written out because the alternative — deleting the lines and saying nothing —
+ * makes the port look like it does more than it does. Each is a real behaviour on
+ * iOS and each is absent for a reason, not by omission.
+ */
+private val DELETE_STEPS_WITHOUT_COUNTERPART: List<String> = listOf(
+    "DoseLogService.cancelPendingBookkeeping() — there is no dose-log service to book-keep for",
+    "JournalResetGeneration.advance() — the store-swap machinery it guards does not exist here",
+    "PhoneSyncCoordinator.journalWasDeleted() — iOS-only, no paired-phone mirror",
+    "ActiveSessionManager.clearSession() — no active-session manager in this build",
+    "DayResolveCache.clear() — no day-resolve cache; days are derived per draw",
+    "CustomSubstanceStore.resetAfterDeletion() — the store is the table, already emptied",
+    "CustomUnitStore.configure(container:) — custom units have no table in this build",
+    "SearchHistoryStore.clear() — no search history store",
+    "QuickLogManager.suppressedRecents = [] — no suppressed-recents set",
+    "JournalDeriveCache / TimelineStripCache / BodyLevelsTrailCache — none of the three exists",
+    "LiveActivityManager.deleteJournalActivities() — Android has no Live Activities",
+    "BackupManager.disableAndRemoveBackup() — there is no automatic backup to disable",
+    "WidgetCenter.reloadAllTimelines() — this build ships no widgets",
+)
+
+// MARK: - Helpers
+
+private const val MIME_JSON = "application/json"
+private const val MIME_BINARY = "application/octet-stream"
+private const val MIME_ANY = "*/*"
+
+private fun appVersion(): String = "Piru ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
+
+/**
+ * What an import did, in one sentence, plus what it could not take.
+ *
+ * The second half is the part that matters. Four sections of a Piru file have no
+ * table in this build, and an import that reported only "your data was imported"
+ * would be telling the user their lab measurements came across when they did not.
+ * An empty count means nothing new was added, which is a normal answer for a
+ * re-import and is said as one rather than as a failure.
+ */
+private fun describe(report: DataExportImport.ImportReport): String {
+    val parts = buildList {
+        if (report.entriesAdded > 0) {
+            add("${report.entriesAdded} ${if (report.entriesAdded == 1) "entry" else "entries"}")
+        }
+        if (report.sessionsAdded > 0) add("${report.sessionsAdded} sessions")
+        if (report.medsAdded > 0) add("${report.medsAdded} medications")
+        if (report.favoritesAdded > 0) add("${report.favoritesAdded} favorites")
+    }
+    val head = if (parts.isEmpty()) {
+        "Nothing new was added — everything in the file was already here."
+    } else {
+        "Added " + parts.joinToString(", ") + "."
+    }
+    if (report.unsupported.isEmpty()) return head
+    return head + " " + report.unsupported.joinToString(" ") { section ->
+        val what = when (section.name) {
+            "labMeasurements" -> "lab measurements"
+            "customUnits" -> "custom units"
+            "drinkPresets" -> "drink presets"
+            "settings" -> "app settings"
+            else -> section.name
+        }
+        if (section.rows > 0) {
+            "The file also carries ${section.rows} $what, which this build has nowhere to keep."
+        } else {
+            "The file also carries $what, which this build has nowhere to keep."
+        }
+    }
+}
+
+/** A snapshot of the store as it stands, returning the file it landed in. */
+private suspend fun snapshotNow(app: PiruApplication, reason: String): File? {
+    val text = runCatching {
+        DataExportImport.exportJSON(ExportFormat.PIRU, app.database, appVersion())
+    }.getOrNull() ?: return null
+    return StoreRecovery.forContext(app.applicationContext).snapshotStore(reason, text)
+}
+
+/**
+ * The store's bytes on disk.
+ *
+ * Room's database plus its `-wal` and `-shm` siblings, which is the whole of what
+ * the user's data occupies. Upstream's `canonicalStoreBytes()` measures the same
+ * three files for the same reason: a size that left out the write-ahead log would
+ * under-report by however much has been written since the last checkpoint.
+ */
+private fun storeSize(context: android.content.Context): Long {
+    val base = context.getDatabasePath("piru.db")
+    return listOf("", "-wal", "-shm").sumOf { suffix ->
+        File(base.path + suffix).takeIf { it.exists() }?.length() ?: 0L
+    }
+}
+
+private fun readBytes(context: android.content.Context, uri: Uri): ByteArray? =
+    runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
+
+private fun writeText(context: android.content.Context, uri: Uri, text: String): Boolean =
+    writeBytes(context, uri, text.toByteArray(Charsets.UTF_8))
+
+private fun writeBytes(context: android.content.Context, uri: Uri, bytes: ByteArray): Boolean =
+    runCatching {
+        context.contentResolver.openOutputStream(uri, "wt")?.use { it.write(bytes) } != null
+    }.getOrDefault(false)
+
+/**
+ * A copy's subtitle: rows, size, and when.
+ *
+ * Upstream joins the three with `·` and says "unreadable" rather than `-1 records`
+ * for a copy it could not open, which is the difference between a file the user
+ * should send to the developer and one they should not bother with.
+ */
+private fun copySubtitle(copy: StoreRecovery.RecoverableCopy): String {
+    val rows = if (copy.rowCount > 0) "${copy.rowCount} records" else "unreadable"
+    val when_ = copy.timestamp?.let { whenText(it) } ?: "unknown date"
+    return listOf(rows, byteString(copy.bytes), when_).joinToString(" · ")
+}
+
+private fun whenText(at: Instant): String = DateTimeFormatter
+    .ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
+    .withLocale(Locale.getDefault())
+    .withZone(ZoneId.systemDefault())
+    .format(at)
+
+/** Upstream's `ByteCountFormatter.string(fromByteCount:countStyle:.file)`. */
+private fun byteString(bytes: Long): String {
+    if (bytes < 1_000) return "$bytes bytes"
+    val units = listOf("KB", "MB", "GB", "TB")
+    var value = bytes.toDouble() / 1_000
+    var index = 0
+    while (value >= 1_000 && index < units.lastIndex) {
+        value /= 1_000
+        index++
+    }
+    return String.format(Locale.ROOT, "%.1f %s", value, units[index])
+}

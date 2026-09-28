@@ -41,6 +41,16 @@ interface RoutineOccurrenceDao {
     suspend fun forDay(from: Date, to: Date): List<RoutineOccurrenceEntity>
 
     /**
+     * Every row, oldest day first.
+     *
+     * Added for the export: a backup carries the whole record, not the window a
+     * screen happens to draw, and past days are history the reconcile never
+     * re-derives — a Skip is a user choice and a miss is a record.
+     */
+    @Query("SELECT * FROM routine_occurrences ORDER BY due_day")
+    suspend fun all(): List<RoutineOccurrenceEntity>
+
+    /**
      * The ids of rows before [day] that are still [state].
      *
      * Only the id is returned: the one caller moves them to `missed` without

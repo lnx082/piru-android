@@ -93,6 +93,21 @@ abstract class PiruDatabase : RoomDatabase() {
     abstract fun routineOccurrenceDao(): RoutineOccurrenceDao
     abstract fun notificationPreferencesDao(): NotificationPreferencesDao
 
+    /**
+     * The user's own substances.
+     *
+     * The table has been in [entities] since v1; the DAO arrived with the export,
+     * which is the first thing that had to read and write it. Adding a DAO is not
+     * a schema change, so this ships at the same database version.
+     */
+    abstract fun customSubstanceDao(): CustomSubstanceDao
+
+    /** The user's favourites and their quick-log chips. See [FavoriteSubstanceDao]. */
+    abstract fun favoriteSubstanceDao(): FavoriteSubstanceDao
+
+    /** See [QuickLogDoseDao]. */
+    abstract fun quickLogDoseDao(): QuickLogDoseDao
+
     companion object {
         /**
          * Open the user's store, creating it on first launch.

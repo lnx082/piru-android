@@ -48,6 +48,7 @@ import glass.kagerou.piru.model.doseFormatted
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
 import glass.kagerou.piru.ui.nav.AppNavigator
+import glass.kagerou.piru.ui.nav.PushRoute
 import glass.kagerou.piru.ui.nav.SheetRoute
 import glass.kagerou.piru.ui.theme.PiruTheme
 import java.time.Instant
@@ -162,8 +163,8 @@ fun AdherenceScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                 InsightsEmptyPanel(
                     "No meds yet",
                     "Adherence tracks how consistently you take your scheduled meds. " +
-                        "Adding one makes this screen start working — the meds editor is " +
-                        "not in this build yet, so there is nowhere to add one from here.",
+                        "Add one from the journal's My Meds card and this screen starts " +
+                        "working.",
                 )
             }
         }
@@ -192,7 +193,7 @@ fun AdherenceScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
 
             item { MonthCard(monthSummary, displayedMonth) }
 
-            item { RemindersRow() }
+            item { RemindersRow(onClick = { navigator.push(PushRoute.NotificationSettings) }) }
         }
     }
 
@@ -357,19 +358,20 @@ private fun MonthCard(summary: MonthAdherence, month: YearMonth) {
 }
 
 /**
- * The reminders settings screen, which this build does not carry.
+ * A way through to the reminder switches.
  *
- * Named rather than linked: a row that looks tappable and does nothing is worse
- * than one that says what is missing.
+ * Made a link once the notification settings screen existed — it was a dead row
+ * naming what was missing before that, which is the right thing for a row with
+ * nowhere to go and the wrong thing for one that has.
  */
 @Composable
-private fun RemindersRow() {
-    PiruCard(modifier = Modifier.fillMaxWidth()) {
+private fun RemindersRow(onClick: () -> Unit) {
+    PiruCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text("Reminders", style = MaterialTheme.typography.titleSmall)
             Text(
-                "Not in this build. Reminder times live on each med and are drawn here; " +
-                    "the screen that schedules the notifications has not been ported.",
+                "Reminder times live on each med. Which notifications Piru may send, and " +
+                    "the hours it stays quiet, are set here.",
                 style = MaterialTheme.typography.bodySmall,
                 color = PiruTheme.colors.secondaryLabel,
             )

@@ -11,6 +11,16 @@ local.properties
 # the source, and `SubstanceReader.kt` appears twice in the tree.
 bin/
 
+# The release signing identity. **Never commit either of these.**
+#
+# A keystore is the app's identity: whoever holds it can publish an update to
+# your app, and losing it means you can never update it again — Play will reject
+# an upload signed with a different key. It belongs in a password manager and an
+# offline backup, not in a repository, public or private.
+keystore.properties
+*.jks
+*.keystore
+
 # Editor settings are machine-specific here: the toolchain lives off the system
 # drive on this machine (see README), and a committed `settings.json` carrying
 # those paths would be wrong for anyone else who clones this.

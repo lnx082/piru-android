@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -212,7 +211,7 @@ fun DoseSleepClause(
     if (!affectsSleep || !MedTimeConsequence.isNight(effectsEnd, zone)) return
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         MedsGlyph(kind = MedsGlyphKind.MOON, tint = PiruTheme.colors.secondaryLabel)
-        Text("Modeled effects end ~${clockText(effectsEnd, zone)}", style = captionSecondaryStyle())
+        Text("Modeled effects end ~${clockText(effectsEnd, zone)}", style = captionSecondaryStyle)
     }
 }
 
@@ -244,7 +243,7 @@ fun MedTimeConsequenceLine(
                 } else {
                     "Estimated onset ~${clockText(moments.onset, zone)}"
                 },
-                style = captionSecondaryStyle(),
+                style = captionSecondaryStyle,
             )
         }
         if (consequence.affectsSleep) {
@@ -262,7 +261,7 @@ fun MedTimeConsequenceLine(
                     } else {
                         "Modeled effects end ~$end"
                     },
-                    style = captionSecondaryStyle(),
+                    style = captionSecondaryStyle,
                 )
             }
         }

@@ -53,6 +53,9 @@ import glass.kagerou.piru.ui.insights.ReportsScreen
 import glass.kagerou.piru.ui.insights.SteadyStateProjectionScreen
 import glass.kagerou.piru.ui.insights.UsageScreen
 import glass.kagerou.piru.ui.library.LibraryScreen
+import glass.kagerou.piru.ui.meds.LogMedicationsScreen
+import glass.kagerou.piru.ui.meds.MedDetailScreen
+import glass.kagerou.piru.ui.meds.MyMedsHubScreen
 import glass.kagerou.piru.ui.library.SubstanceDetailScreen
 import glass.kagerou.piru.ui.nav.SheetRoute
 import glass.kagerou.piru.ui.onboarding.OnboardingFlow
@@ -78,6 +81,7 @@ import glass.kagerou.piru.ui.tools.ReceptorLoadScreen
 import glass.kagerou.piru.ui.tools.SteadyStateToolScreen
 import glass.kagerou.piru.ui.tools.ToleranceToolScreen
 import glass.kagerou.piru.ui.tools.ToolsScreen
+import glass.kagerou.piru.ui.settings.DataStorageScreen
 import glass.kagerou.piru.ui.settings.HealthConnectScreen
 import glass.kagerou.piru.ui.settings.NotificationSettingsScreen
 import glass.kagerou.piru.ui.settings.SettingsScreen
@@ -288,12 +292,21 @@ private fun DefaultDestination(route: PushRoute, navigator: AppNavigator) {
         PushRoute.Settings -> SettingsScreen(navigator)
         PushRoute.HealthData -> HealthConnectScreen(onChanged = { navigator.invalidate() })
         PushRoute.NotificationSettings -> NotificationSettingsScreen()
+        PushRoute.DataStorage -> DataStorageScreen(onChanged = { navigator.invalidate() })
 
         is PushRoute.InventoryItem -> InventoryItemDetailScreen(route.id, navigator)
         is PushRoute.InventoryItemForm -> InventoryItemFormScreen(route.id, route.substance, navigator)
         is PushRoute.InteractionTimeline ->
             InteractionTimelineScreen(route.substanceA, route.substanceB, navigator)
         is PushRoute.DrugClass -> DrugClassScreen(route.className, navigator)
+
+        PushRoute.MyMeds -> MyMedsHubScreen(
+            navigator = navigator,
+            onOpenMed = { navigator.push(PushRoute.MedDetail(it.rowId)) },
+        )
+        is PushRoute.MedDetail -> MedDetailScreen(route.rowId, onDismissed = { navigator.pop() })
+        is PushRoute.LogMedications ->
+            LogMedicationsScreen(route.category, onDismissed = { navigator.popToRoot() })
 
         is PushRoute.Tool -> when (route.kind) {
             PushRoute.ToolKind.TOLERANCE -> ToleranceToolScreen(navigator)

@@ -26,12 +26,12 @@ import kotlinx.coroutines.flow.Flow
  * `sort_order`, and an unstable order would mint two different identifiers for
  * the same reminder on two consecutive passes.
  *
- * ## No writer in this build
- * The meds editor that would create these rows is not ported, so a fresh install
- * has an empty table and only a restored backup can fill it. The write half is
- * nevertheless part of the DAO: the reconciler's on-device spec needs real rows
- * to derive from, and an importer writing them by hand would be spelling the
- * same twenty-two column names this DAO exists to stop spelling twice.
+ * ## The write half was here before its writer
+ * These rows are created by the My Meds editor, which landed after this DAO did.
+ * The write half came first because the reconciler's on-device spec needed real
+ * rows to derive from, and an importer writing them by hand would have been
+ * spelling the same twenty-two column names this DAO exists to stop spelling
+ * twice.
  */
 @Dao
 interface DailyDoseItemDao {

@@ -124,6 +124,23 @@ fun SettingsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         }
 
         item {
+            PiruCard(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = { navigator.push(PushRoute.DataStorage) },
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Data & Backup", style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        "What is stored here, export and import, encrypted backups, and " +
+                            "the copies kept before anything destructive.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = PiruTheme.colors.secondaryLabel,
+                    )
+                }
+            }
+        }
+
+        item {
             SectionCard("About") {
                 Text(
                     "Not medical advice.",

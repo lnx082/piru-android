@@ -90,6 +90,15 @@ sealed interface PushRoute {
     @Serializable
     data object NotificationSettings : PushRoute
 
+    /**
+     * What is stored, what can be taken out of it, and what can be thrown away.
+     *
+     * The screen this app cannot do without: it is the only way a journal leaves
+     * the device, and the only way it comes back after a phone is lost.
+     */
+    @Serializable
+    data object DataStorage : PushRoute
+
     /** A tool, pushed from the hub. */
     @Serializable
     data class Tool(val kind: ToolKind) : PushRoute
@@ -169,6 +178,26 @@ sealed interface PushRoute {
     @Serializable
     data class InteractionTimeline(val substanceA: String, val substanceB: String) : PushRoute
 
+    /** The scheduled medications, and how they are going this week. */
+    @Serializable
+    data object MyMeds : PushRoute
+
+    /**
+     * One scheduled medication, by its row id.
+     *
+     * Keyed on `row_id` rather than on the substance identity the iOS build uses.
+     * SwiftData fetches by predicate and can afford to key on anything; this
+     * build's DAO exposes `byRowId` and nothing else, so the row id is the only
+     * id that can be resolved. It is also why nothing may rewrite that key when a
+     * med is edited.
+     */
+    @Serializable
+    data class MedDetail(val rowId: Long) : PushRoute
+
+    /** Logging the meds due in one time-of-day group. */
+    @Serializable
+    data class LogMedications(val category: String) : PushRoute
+
     /** A receptor class's write-up and members, from the drug-class browser. */
     @Serializable
     data class DrugClass(val className: String) : PushRoute
@@ -221,6 +250,7 @@ fun PushRoute.key(): String = when (this) {
     PushRoute.SubstanceColors -> "substance-colors"
     PushRoute.HealthData -> "health-data"
     PushRoute.NotificationSettings -> "notification-settings"
+    PushRoute.DataStorage -> "data-storage"
     is PushRoute.Tool -> "tool:${kind.wireValue}"
     is PushRoute.Insight -> "insight:${kind.wireValue}"
     PushRoute.TabRoot -> "root"
@@ -228,6 +258,9 @@ fun PushRoute.key(): String = when (this) {
     is PushRoute.InventoryItemForm -> "inventory-form:${id ?: "new"}"
     is PushRoute.InteractionTimeline -> "interaction:$substanceA:$substanceB"
     is PushRoute.DrugClass -> "drug-class:$className"
+    PushRoute.MyMeds -> "my-meds"
+    is PushRoute.MedDetail -> "med-detail:$rowId"
+    is PushRoute.LogMedications -> "log-medications:$category"
 }
 
 /** A UUID from the string form a route carries, or null when it was not one. */

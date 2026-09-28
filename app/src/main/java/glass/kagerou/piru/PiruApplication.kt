@@ -8,6 +8,7 @@ import glass.kagerou.piru.data.SubstancePalette
 import glass.kagerou.piru.data.ToleranceRepository
 import glass.kagerou.piru.data.UserProfileStore
 import glass.kagerou.piru.data.catalog.AndroidSubstanceDb
+import glass.kagerou.piru.data.export.DataExportImport
 import glass.kagerou.piru.data.catalog.SubstanceCatalogInstaller
 import glass.kagerou.piru.notifications.MedReminderScheduler
 import glass.kagerou.piru.notifications.NotificationPreferencesStore
@@ -230,6 +231,63 @@ class PiruApplication : Application() {
     /** Record the disclosure tier. Application-scoped for the same reason as [setBodyWeight]. */
     fun setDisclosureTier(rawValue: String) {
         appScope.launch { profile().setDisclosureTier(rawValue) }
+    }
+
+    /**
+     * How many substances the bundled catalog carries.
+     *
+     * Read straight from the catalog's own table rather than through
+     * `DbSubstanceCatalog`, which answers lookups and has no count. Stubs are
+     * excluded: a stub is a name the catalog has met but has no content for, and
+     * counting them would inflate the figure the Data & Storage screen reports
+     * against the number the library actually shows.
+     */
+    suspend fun substanceCount(): Int {
+        catalog()
+        val db = catalogHandle ?: return 0
+        return db.query("SELECT count(*) AS n FROM substances WHERE is_stub = 0")
+            .firstOrNull()?.long("n")?.toInt() ?: 0
+    }
+
+    /**
+     * Re-read everything a bulk import or a wipe can leave stale in memory.
+     *
+     * The Android counterpart of `DataExportImport.refreshLiveStores`, and
+     * deliberately a *shorter* list than upstream's ten singletons rather than a
+     * longer one padded out to look equivalent. What upstream reconfigures:
+     *
+     * - the profile, the notification choices and the custom units — the first
+     *   two have stores here and are reloaded below; custom units have no table
+     *   in this build at all;
+     * - the skin, the dock, the tab layout and the search history — none of those
+     *   features exist here, so there is nothing to reload;
+     * - `DoseNotificationManager.syncMedReminders` and a substance-catalog
+     *   re-warm — both have direct counterparts and both are called below.
+     *
+     * The two repositories this class memoizes are dropped as well. They hold the
+     * tolerance replay and the session grouping, and both are keyed off the rows
+     * an import has just replaced.
+     */
+    suspend fun refreshLiveStores() {
+        invalidateRepositoryCaches()
+        DataExportImport.refreshLiveStores(database)
+        notificationPreferences().load()
+        MedReminderScheduler.enqueueReconcile(this)
+        MedReminderScheduler.scheduleRollForward(this)
+    }
+
+    /**
+     * Drop the memoized repositories so the next caller rebuilds them.
+     *
+     * Not `@Volatile` and not synchronized, matching the lazy reads in
+     * [toleranceRepository] and [sessionRepository], which have the same benign
+     * race today: a reader that wins the race gets the previous instance, and the
+     * worst outcome is one stale reading before the next call picks up the new
+     * one.
+     */
+    fun invalidateRepositoryCaches() {
+        repository = null
+        sessions = null
     }
 
     /**

@@ -75,7 +75,7 @@ fun ToolsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                 item {
                     PiruCard(
                         modifier = Modifier.fillMaxWidth(),
-                        onClick = { navigator.push(PushRoute.Tool(tool.kind)) },
+                        onClick = { navigator.push(tool.destination) },
                     ) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(tool.title, style = MaterialTheme.typography.titleSmall)
@@ -108,7 +108,20 @@ fun ToolsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     }
 }
 
-private data class ToolEntry(val kind: PushRoute.ToolKind, val title: String, val detail: String)
+/**
+ * One hub row.
+ *
+ * [kind] is null for the entries that are not tools — routes of their own that
+ * belong on this list because this is where someone looks for them.
+ */
+private data class ToolEntry(
+    val kind: PushRoute.ToolKind?,
+    val title: String,
+    val detail: String,
+    val route: PushRoute? = null,
+) {
+    val destination: PushRoute get() = route ?: PushRoute.Tool(requireNotNull(kind))
+}
 private data class ToolGroup(val title: String, val tools: List<ToolEntry>)
 
 /**
@@ -177,6 +190,21 @@ private val TOOL_GROUPS = listOf(
                 PushRoute.ToolKind.INVENTORY,
                 "Inventory",
                 "What you have on hand, replayed from your doses and your restocks.",
+            ),
+        ),
+    ),
+    ToolGroup(
+        "What I take",
+        listOf(
+            // Not a ToolKind: it is a route of its own, because the meds hub is a
+            // destination rather than an instrument over the log. It is listed
+            // here anyway — this is where someone looks for it, and the journal
+            // card is where it lives, which is not where you would go hunting.
+            ToolEntry(
+                kind = null,
+                title = "My Meds",
+                detail = "The medications you take on a schedule, and how they have been going.",
+                route = PushRoute.MyMeds,
             ),
         ),
     ),
