@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The launcher icon.
+
+  `anydpi-v26` alone, with no PNG fallbacks: the port's minSdk is 30, so every
+  device that can install it understands adaptive icons. Shipping density-bucket
+  rasters would be five files that no device in range ever reads.
+
+  `<monochrome>` is what lets the icon follow the system's themed-icon setting on
+  Android 13 and up — the same curve, drawn by the launcher in the wallpaper's
+  palette. It costs one element and makes an icon that would otherwise look pasted
+  on look native.
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+    <monochrome android:drawable="@drawable/ic_launcher_foreground" />
+</adaptive-icon>

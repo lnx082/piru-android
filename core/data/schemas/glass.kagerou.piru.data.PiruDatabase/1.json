@@ -1,0 +1,1281 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "f8679ef27ad79291b731c8ec54feef41",
+    "entities": [
+      {
+        "tableName": "dose_entries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`row_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `substance` TEXT NOT NULL, `amount` REAL NOT NULL, `unit` TEXT NOT NULL DEFAULT 'mg', `route` TEXT NOT NULL DEFAULT 'oral', `salt_form` TEXT, `isomer` TEXT, `release_form` TEXT, `substance_uid` TEXT, `product_name` TEXT, `display_name_snapshot` TEXT, `timestamp` INTEGER NOT NULL, `notes` TEXT, `tags_raw` TEXT, `session_id` TEXT, `is_background_med` INTEGER NOT NULL DEFAULT 0, `location_name` TEXT, `latitude` REAL, `longitude` REAL, `had_grapefruit` INTEGER, `is_approximate` INTEGER NOT NULL DEFAULT 0, `is_unknown_dose` INTEGER NOT NULL DEFAULT 0, `volume_ml` REAL, `abv` REAL, `drink_name` TEXT, FOREIGN KEY(`session_id`) REFERENCES `sessions`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
+        "fields": [
+          {
+            "fieldPath": "rowId",
+            "columnName": "row_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "substance",
+            "columnName": "substance",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amount",
+            "columnName": "amount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unit",
+            "columnName": "unit",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'mg'"
+          },
+          {
+            "fieldPath": "route",
+            "columnName": "route",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'oral'"
+          },
+          {
+            "fieldPath": "saltForm",
+            "columnName": "salt_form",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isomer",
+            "columnName": "isomer",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "releaseForm",
+            "columnName": "release_form",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "substanceUID",
+            "columnName": "substance_uid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "productName",
+            "columnName": "product_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "displayNameSnapshot",
+            "columnName": "display_name_snapshot",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tagsRaw",
+            "columnName": "tags_raw",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sessionId",
+            "columnName": "session_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isBackgroundMed",
+            "columnName": "is_background_med",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "locationName",
+            "columnName": "location_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "latitude",
+            "columnName": "latitude",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "longitude",
+            "columnName": "longitude",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "hadGrapefruit",
+            "columnName": "had_grapefruit",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "isApproximate",
+            "columnName": "is_approximate",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "isUnknownDose",
+            "columnName": "is_unknown_dose",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "volumeML",
+            "columnName": "volume_ml",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "abv",
+            "columnName": "abv",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "drinkName",
+            "columnName": "drink_name",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "row_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_dose_entries_timestamp",
+            "unique": false,
+            "columnNames": [
+              "timestamp"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_dose_entries_timestamp` ON `${TABLE_NAME}` (`timestamp`)"
+          },
+          {
+            "name": "index_dose_entries_id",
+            "unique": false,
+            "columnNames": [
+              "id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_dose_entries_id` ON `${TABLE_NAME}` (`id`)"
+          },
+          {
+            "name": "index_dose_entries_session_id",
+            "unique": false,
+            "columnNames": [
+              "session_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_dose_entries_session_id` ON `${TABLE_NAME}` (`session_id`)"
+          },
+          {
+            "name": "index_dose_entries_substance_uid",
+            "unique": false,
+            "columnNames": [
+              "substance_uid"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_dose_entries_substance_uid` ON `${TABLE_NAME}` (`substance_uid`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "sessions",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "session_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "sessions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `start_date` INTEGER NOT NULL, `last_dose_date` INTEGER, `title` TEXT, `note` TEXT, `check_in_interval_minutes` REAL, `check_in_offsets_json` TEXT NOT NULL DEFAULT '', `check_in_offered` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startDate",
+            "columnName": "start_date",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastDoseDate",
+            "columnName": "last_dose_date",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "checkInIntervalMinutes",
+            "columnName": "check_in_interval_minutes",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "checkInOffsetsJson",
+            "columnName": "check_in_offsets_json",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "checkInOffered",
+            "columnName": "check_in_offered",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_sessions_start_date",
+            "unique": false,
+            "columnNames": [
+              "start_date"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_sessions_start_date` ON `${TABLE_NAME}` (`start_date`)"
+          },
+          {
+            "name": "index_sessions_last_dose_date",
+            "unique": false,
+            "columnNames": [
+              "last_dose_date"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_sessions_last_dose_date` ON `${TABLE_NAME}` (`last_dose_date`)"
+          }
+        ]
+      },
+      {
+        "tableName": "session_notes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `timestamp` INTEGER NOT NULL, `text` TEXT NOT NULL DEFAULT '', `shulgin` INTEGER, `mood` INTEGER, `energy` INTEGER, `social` INTEGER, `worked` INTEGER, `descriptors_json` TEXT NOT NULL DEFAULT '', `heart_rate` REAL, `kind_raw` TEXT NOT NULL DEFAULT 'observation', `session_id` TEXT, PRIMARY KEY(`id`), FOREIGN KEY(`session_id`) REFERENCES `sessions`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "text",
+            "columnName": "text",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "shulgin",
+            "columnName": "shulgin",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "mood",
+            "columnName": "mood",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "energy",
+            "columnName": "energy",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "social",
+            "columnName": "social",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "worked",
+            "columnName": "worked",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "descriptorsJson",
+            "columnName": "descriptors_json",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "heartRate",
+            "columnName": "heart_rate",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "kindRaw",
+            "columnName": "kind_raw",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'observation'"
+          },
+          {
+            "fieldPath": "sessionId",
+            "columnName": "session_id",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_session_notes_timestamp",
+            "unique": false,
+            "columnNames": [
+              "timestamp"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_session_notes_timestamp` ON `${TABLE_NAME}` (`timestamp`)"
+          },
+          {
+            "name": "index_session_notes_session_id",
+            "unique": false,
+            "columnNames": [
+              "session_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_session_notes_session_id` ON `${TABLE_NAME}` (`session_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "sessions",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "session_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "substance_colors",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `substance` TEXT NOT NULL, `hex_color` TEXT NOT NULL DEFAULT '', `red` REAL NOT NULL DEFAULT 0, `green` REAL NOT NULL DEFAULT 0, `blue` REAL NOT NULL DEFAULT 0, `uses_default` INTEGER NOT NULL DEFAULT 1)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "substance",
+            "columnName": "substance",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hexColor",
+            "columnName": "hex_color",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "red",
+            "columnName": "red",
+            "affinity": "REAL",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "green",
+            "columnName": "green",
+            "affinity": "REAL",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "blue",
+            "columnName": "blue",
+            "affinity": "REAL",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "usesDefault",
+            "columnName": "uses_default",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "1"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_substance_colors_substance",
+            "unique": true,
+            "columnNames": [
+              "substance"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_substance_colors_substance` ON `${TABLE_NAME}` (`substance`)"
+          }
+        ]
+      },
+      {
+        "tableName": "tolerance_states",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`target` TEXT NOT NULL, `s_acute` REAL NOT NULL DEFAULT 0, `s_adaptive` REAL NOT NULL DEFAULT 0, `s_deep` REAL NOT NULL DEFAULT 0, `s_synthesis` REAL NOT NULL DEFAULT 0, `chronic_exposure` REAL NOT NULL DEFAULT 0, `last_updated` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`target`))",
+        "fields": [
+          {
+            "fieldPath": "target",
+            "columnName": "target",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sAcute",
+            "columnName": "s_acute",
+            "affinity": "REAL",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "sAdaptive",
+            "columnName": "s_adaptive",
+            "affinity": "REAL",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "sDeep",
+            "columnName": "s_deep",
+            "affinity": "REAL",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "sSynthesis",
+            "columnName": "s_synthesis",
+            "affinity": "REAL",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "chronicExposure",
+            "columnName": "chronic_exposure",
+            "affinity": "REAL",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "lastUpdated",
+            "columnName": "last_updated",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "target"
+          ]
+        }
+      },
+      {
+        "tableName": "user_profile",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`row_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `disclosure_tier_raw` TEXT NOT NULL DEFAULT 'harm-reduction', `body_weight_kg` REAL, `weight_source_raw` TEXT NOT NULL DEFAULT 'estimated', `grapefruit_logging_enabled` INTEGER NOT NULL DEFAULT 0, `aldh2_deficient` INTEGER NOT NULL DEFAULT 0)",
+        "fields": [
+          {
+            "fieldPath": "rowId",
+            "columnName": "row_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "disclosureTierRaw",
+            "columnName": "disclosure_tier_raw",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'harm-reduction'"
+          },
+          {
+            "fieldPath": "bodyWeightKg",
+            "columnName": "body_weight_kg",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "weightSourceRaw",
+            "columnName": "weight_source_raw",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'estimated'"
+          },
+          {
+            "fieldPath": "grapefruitLoggingEnabled",
+            "columnName": "grapefruit_logging_enabled",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "aldh2Deficient",
+            "columnName": "aldh2_deficient",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "row_id"
+          ]
+        }
+      },
+      {
+        "tableName": "favorite_substances",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`substance` TEXT NOT NULL, `created_at` INTEGER NOT NULL, `sort_order` INTEGER NOT NULL DEFAULT 0, `substance_uid` TEXT, `isomer` TEXT, `release_form` TEXT, `salt_form` TEXT, `product_name` TEXT, PRIMARY KEY(`substance`))",
+        "fields": [
+          {
+            "fieldPath": "substance",
+            "columnName": "substance",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sort_order",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "substanceUID",
+            "columnName": "substance_uid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isomer",
+            "columnName": "isomer",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "releaseForm",
+            "columnName": "release_form",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "saltForm",
+            "columnName": "salt_form",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "productName",
+            "columnName": "product_name",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "substance"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_favorite_substances_sort_order_created_at",
+            "unique": false,
+            "columnNames": [
+              "sort_order",
+              "created_at"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_favorite_substances_sort_order_created_at` ON `${TABLE_NAME}` (`sort_order`, `created_at`)"
+          }
+        ]
+      },
+      {
+        "tableName": "daily_dose_items",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`row_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `substance` TEXT NOT NULL, `amount` REAL NOT NULL, `unit` TEXT NOT NULL DEFAULT 'mg', `route` TEXT NOT NULL DEFAULT 'oral', `sort_order` INTEGER NOT NULL DEFAULT 0, `category` TEXT NOT NULL DEFAULT '', `substance_uid` TEXT, `isomer` TEXT, `release_form` TEXT, `salt_form` TEXT, `product_name` TEXT, `is_background_med` INTEGER NOT NULL DEFAULT 0, `reminder_times_json` TEXT NOT NULL DEFAULT '', `remind` INTEGER NOT NULL DEFAULT 1, `ask_again_override_json` TEXT, `is_quiet` INTEGER NOT NULL DEFAULT 0, `is_as_needed` INTEGER NOT NULL DEFAULT 0, `max_per_day` INTEGER, `frequency_raw` TEXT NOT NULL DEFAULT 'daily', `frequency_days_json` TEXT NOT NULL DEFAULT '', `start_date` INTEGER NOT NULL DEFAULT 0)",
+        "fields": [
+          {
+            "fieldPath": "rowId",
+            "columnName": "row_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "substance",
+            "columnName": "substance",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "amount",
+            "columnName": "amount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unit",
+            "columnName": "unit",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'mg'"
+          },
+          {
+            "fieldPath": "route",
+            "columnName": "route",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'oral'"
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sort_order",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "substanceUID",
+            "columnName": "substance_uid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isomer",
+            "columnName": "isomer",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "releaseForm",
+            "columnName": "release_form",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "saltForm",
+            "columnName": "salt_form",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "productName",
+            "columnName": "product_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isBackgroundMed",
+            "columnName": "is_background_med",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "reminderTimesJson",
+            "columnName": "reminder_times_json",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "remind",
+            "columnName": "remind",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "1"
+          },
+          {
+            "fieldPath": "askAgainOverrideJson",
+            "columnName": "ask_again_override_json",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isQuiet",
+            "columnName": "is_quiet",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "isAsNeeded",
+            "columnName": "is_as_needed",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "maxPerDay",
+            "columnName": "max_per_day",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "frequencyRaw",
+            "columnName": "frequency_raw",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'daily'"
+          },
+          {
+            "fieldPath": "frequencyDaysJson",
+            "columnName": "frequency_days_json",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "startDate",
+            "columnName": "start_date",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "row_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_daily_dose_items_sort_order",
+            "unique": false,
+            "columnNames": [
+              "sort_order"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_daily_dose_items_sort_order` ON `${TABLE_NAME}` (`sort_order`)"
+          }
+        ]
+      },
+      {
+        "tableName": "dose_routines",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`name` TEXT NOT NULL, `sort_order` INTEGER NOT NULL DEFAULT 0, `time_minutes` INTEGER, `remind` INTEGER NOT NULL DEFAULT 0, `follow_up_minutes_json` TEXT NOT NULL DEFAULT '', PRIMARY KEY(`name`))",
+        "fields": [
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sort_order",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "timeMinutes",
+            "columnName": "time_minutes",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "remind",
+            "columnName": "remind",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "followUpMinutesJson",
+            "columnName": "follow_up_minutes_json",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "name"
+          ]
+        }
+      },
+      {
+        "tableName": "routine_occurrences",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`row_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `routine_name` TEXT NOT NULL DEFAULT '', `substance` TEXT NOT NULL DEFAULT '', `substance_uid` TEXT, `route_raw` TEXT NOT NULL DEFAULT 'oral', `due_day` INTEGER NOT NULL DEFAULT 0, `state_raw` TEXT NOT NULL DEFAULT 'pending', `satisfying_entry_id` TEXT, `slot_minutes` INTEGER)",
+        "fields": [
+          {
+            "fieldPath": "rowId",
+            "columnName": "row_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "routineName",
+            "columnName": "routine_name",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "substance",
+            "columnName": "substance",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "substanceUID",
+            "columnName": "substance_uid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "routeRaw",
+            "columnName": "route_raw",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'oral'"
+          },
+          {
+            "fieldPath": "dueDay",
+            "columnName": "due_day",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "stateRaw",
+            "columnName": "state_raw",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'pending'"
+          },
+          {
+            "fieldPath": "satisfyingEntryID",
+            "columnName": "satisfying_entry_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "slotMinutes",
+            "columnName": "slot_minutes",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "row_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_routine_occurrences_due_day",
+            "unique": false,
+            "columnNames": [
+              "due_day"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_routine_occurrences_due_day` ON `${TABLE_NAME}` (`due_day`)"
+          }
+        ]
+      },
+      {
+        "tableName": "notification_preferences",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`row_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `master_enabled` INTEGER NOT NULL DEFAULT 1, `hydration_enabled` INTEGER NOT NULL DEFAULT 0, `sleep_enabled` INTEGER NOT NULL DEFAULT 0, `phase_enabled` INTEGER NOT NULL DEFAULT 0, `cumulative_enabled` INTEGER NOT NULL DEFAULT 0, `routine_enabled` INTEGER NOT NULL DEFAULT 1, `routine_follow_up_enabled` INTEGER NOT NULL DEFAULT 1, `inventory_enabled` INTEGER NOT NULL DEFAULT 1, `check_in_enabled` INTEGER NOT NULL DEFAULT 1, `quiet_hours_enabled` INTEGER NOT NULL DEFAULT 0, `quiet_hours_start_minutes` INTEGER NOT NULL DEFAULT 1380, `quiet_hours_end_minutes` INTEGER NOT NULL DEFAULT 420, `routine_time_sensitive` INTEGER NOT NULL DEFAULT 1, `routine_follow_up_time_sensitive` INTEGER NOT NULL DEFAULT 1, `cumulative_time_sensitive` INTEGER NOT NULL DEFAULT 1, `ask_again_default_json` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "rowId",
+            "columnName": "row_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "masterEnabled",
+            "columnName": "master_enabled",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "1"
+          },
+          {
+            "fieldPath": "hydrationEnabled",
+            "columnName": "hydration_enabled",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "sleepEnabled",
+            "columnName": "sleep_enabled",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "phaseEnabled",
+            "columnName": "phase_enabled",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "cumulativeEnabled",
+            "columnName": "cumulative_enabled",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "routineEnabled",
+            "columnName": "routine_enabled",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "1"
+          },
+          {
+            "fieldPath": "routineFollowUpEnabled",
+            "columnName": "routine_follow_up_enabled",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "1"
+          },
+          {
+            "fieldPath": "inventoryEnabled",
+            "columnName": "inventory_enabled",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "1"
+          },
+          {
+            "fieldPath": "checkInEnabled",
+            "columnName": "check_in_enabled",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "1"
+          },
+          {
+            "fieldPath": "quietHoursEnabled",
+            "columnName": "quiet_hours_enabled",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          },
+          {
+            "fieldPath": "quietHoursStartMinutes",
+            "columnName": "quiet_hours_start_minutes",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "1380"
+          },
+          {
+            "fieldPath": "quietHoursEndMinutes",
+            "columnName": "quiet_hours_end_minutes",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "420"
+          },
+          {
+            "fieldPath": "routineTimeSensitive",
+            "columnName": "routine_time_sensitive",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "1"
+          },
+          {
+            "fieldPath": "routineFollowUpTimeSensitive",
+            "columnName": "routine_follow_up_time_sensitive",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "1"
+          },
+          {
+            "fieldPath": "cumulativeTimeSensitive",
+            "columnName": "cumulative_time_sensitive",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "1"
+          },
+          {
+            "fieldPath": "askAgainDefaultJson",
+            "columnName": "ask_again_default_json",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "row_id"
+          ]
+        }
+      },
+      {
+        "tableName": "custom_substances",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`row_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `name` TEXT NOT NULL DEFAULT '', `display_name` TEXT, `category_raw` TEXT NOT NULL DEFAULT 'Other', `default_route_raw` TEXT NOT NULL DEFAULT 'oral', `unit` TEXT NOT NULL DEFAULT 'mg', `notes` TEXT NOT NULL DEFAULT '', `doses_json` TEXT, `duration_json` TEXT, `half_life_minutes` REAL, `created_at` INTEGER NOT NULL DEFAULT 0)",
+        "fields": [
+          {
+            "fieldPath": "rowId",
+            "columnName": "row_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "displayName",
+            "columnName": "display_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "categoryRaw",
+            "columnName": "category_raw",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'Other'"
+          },
+          {
+            "fieldPath": "defaultRouteRaw",
+            "columnName": "default_route_raw",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'oral'"
+          },
+          {
+            "fieldPath": "unit",
+            "columnName": "unit",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'mg'"
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "''"
+          },
+          {
+            "fieldPath": "dosesJson",
+            "columnName": "doses_json",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "durationJson",
+            "columnName": "duration_json",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "halfLifeMinutes",
+            "columnName": "half_life_minutes",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "created_at",
+            "affinity": "INTEGER",
+            "notNull": true,
+            "defaultValue": "0"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "row_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_custom_substances_name",
+            "unique": false,
+            "columnNames": [
+              "name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_custom_substances_name` ON `${TABLE_NAME}` (`name`)"
+          }
+        ]
+      },
+      {
+        "tableName": "quick_log_doses",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`row_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `substance` TEXT NOT NULL, `route` TEXT NOT NULL DEFAULT 'oral', `amount` REAL NOT NULL, `unit` TEXT NOT NULL, `sort_order` REAL NOT NULL, `last_used_at` INTEGER NOT NULL, `volume_ml` REAL, `abv` REAL, `drink_name` TEXT, `emoji` TEXT, `substance_uid` TEXT, `isomer` TEXT, `release_form` TEXT, `salt_form` TEXT, `product_name` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "rowId",
+            "columnName": "row_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "substance",
+            "columnName": "substance",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "route",
+            "columnName": "route",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'oral'"
+          },
+          {
+            "fieldPath": "amount",
+            "columnName": "amount",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unit",
+            "columnName": "unit",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sortOrder",
+            "columnName": "sort_order",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastUsedAt",
+            "columnName": "last_used_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "volumeML",
+            "columnName": "volume_ml",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "abv",
+            "columnName": "abv",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "drinkName",
+            "columnName": "drink_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "emoji",
+            "columnName": "emoji",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "substanceUID",
+            "columnName": "substance_uid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isomer",
+            "columnName": "isomer",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "releaseForm",
+            "columnName": "release_form",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "saltForm",
+            "columnName": "salt_form",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "productName",
+            "columnName": "product_name",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "row_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_quick_log_doses_substance_route",
+            "unique": false,
+            "columnNames": [
+              "substance",
+              "route"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_quick_log_doses_substance_route` ON `${TABLE_NAME}` (`substance`, `route`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f8679ef27ad79291b731c8ec54feef41')"
+    ]
+  }
+}

@@ -1,0 +1,215 @@
+package glass.kagerou.piru.ui.settings
+
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.model.OklchPickerModel
+import glass.kagerou.piru.model.P3Color
+import glass.kagerou.piru.model.SubstanceColorGenerator
+import glass.kagerou.piru.ui.components.FAB_CLEARANCE
+import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.theme.PiruTheme
+import kotlinx.coroutines.launch
+
+/**
+ * The user's substance colours.
+ *
+ * Ported from `Views/Settings/SubstanceColorsListView.swift`.
+ *
+ * ## Which substances are listed
+ * The ones **in the user's own log**. Upstream lists the substances that have a
+ * colour row and offers the library as the way to add more; here the log is the
+ * source, because a colour matters exactly for what the user actually draws — and
+ * a picker over 1,689 substances would be a second search interface to build and
+ * to keep in step with the first.
+ *
+ * ## What "reset" means
+ * Clearing a colour writes `usesDefault = true`, which is the user declining to
+ * choose rather than choosing black. The row survives, so the palette resolver
+ * falls through to the generated class colour — and if the generated palette is
+ * ever retuned, a reset substance moves with it while a customised one does not.
+ */
+@Composable
+fun SubstanceColorsScreen(
+    onChanged: () -> Unit = {},
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val app = context.applicationContext as PiruApplication
+    val scope = rememberCoroutineScope()
+
+    var rows by remember { mutableStateOf<List<ColourRow>>(emptyList()) }
+    var editing by remember { mutableStateOf<ColourRow?>(null) }
+    var reload by remember { mutableStateOf(0) }
+
+    LaunchedEffect(reload) {
+        val catalog = app.catalog()
+        val palette = app.palette()
+        // The substances in the log, each with the colour it is drawn in now.
+        val names = app.database.doseEntryDao().all().map { it.substance }.distinct()
+        val tints = palette.tintsFor(names)
+        val stored = app.database.substanceColorDao().all().associateBy { it.substance.lowercase() }
+        rows = names.sortedBy { it.lowercase() }.map { name ->
+            val entry = stored[name.lowercase()]
+            ColourRow(
+                name = name,
+                tint = tints[name.lowercase()] ?: P3Color.NEUTRAL,
+                usesDefault = entry?.usesDefault ?: true,
+                defaultTint = catalog.lookup(name)?.let { substance ->
+                    SubstanceColorGenerator.displayP3(
+                        substance.category,
+                        substance.substanceUID ?: substance.name.lowercase(),
+                    )
+                } ?: P3Color.NEUTRAL,
+            )
+        }
+    }
+
+    val editingRow = editing
+    if (editingRow != null) {
+        var model by remember(editingRow.name) {
+            mutableStateOf(
+                OklchPickerModel.from(
+                    current = editingRow.tint,
+                    usesDefault = editingRow.usesDefault,
+                    defaultTint = editingRow.defaultTint,
+                ),
+            )
+        }
+        Column(
+            modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                editingRow.name,
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(top = 16.dp),
+            )
+            SubstanceColorPicker(model = model, onChange = { model = it })
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                TextButton(onClick = { editing = null }) { Text("Cancel") }
+                TextButton(onClick = {
+                    scope.launch {
+                        // `model.tint` is right in both branches: after
+                        // `restoreDefault()` the model's colour *is* the class
+                        // colour, so a reset stores the generated value alongside
+                        // the flag rather than leaving a reader that ignores the
+                        // flag looking at the old custom one.
+                        val tint = model.tint
+                        app.database.substanceColorDao().setColor(
+                            name = editingRow.name,
+                            red = tint.red,
+                            green = tint.green,
+                            blue = tint.blue,
+                            usesDefault = model.usesDefault,
+                        )
+                        editing = null
+                        // Tell every screen that cached a palette. Without this the
+                        // journal kept drawing the old colour until it happened to be
+                        // recreated.
+                        onChanged()
+                        reload++
+                    }
+                }) { Text("Save") }
+            }
+        }
+        return
+    }
+
+    LazyColumn(
+        modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = FAB_CLEARANCE),
+    ) {
+        item {
+            Text(
+                "Substance colours",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(top = 16.dp),
+            )
+        }
+        item {
+            Text(
+                "Every substance has a colour from its class before you choose one. " +
+                    "Setting your own overrides it here and everywhere it is drawn.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = PiruTheme.colors.secondaryLabel,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+        }
+        if (rows.isEmpty()) {
+            item {
+                Text(
+                    "Nothing logged yet, so there is nothing to colour.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = PiruTheme.colors.secondaryLabel,
+                )
+            }
+        }
+        items(rows, key = { it.name }) { row ->
+            PiruCard(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = { editing = row },
+            ) {
+                Row(
+                    modifier = Modifier.padding(14.dp).fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Box(modifier = Modifier.size(28.dp)) {
+                        Canvas(Modifier.fillMaxSize()) {
+                            drawCircle(
+                                color = Color(
+                                    row.tint.red.toFloat(),
+                                    row.tint.green.toFloat(),
+                                    row.tint.blue.toFloat(),
+                                    1f,
+                                ),
+                            )
+                        }
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(row.name, style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            if (row.usesDefault) "Class colour" else "Your colour",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = PiruTheme.colors.secondaryLabel,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** One substance, the colour it is drawn in, and the class colour it would otherwise have. */
+private data class ColourRow(
+    val name: String,
+    val tint: P3Color,
+    val usesDefault: Boolean,
+    val defaultTint: P3Color,
+)

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      The launcher icon's background, which the adaptive icon needs as a colour
+      rather than a drawable.
+
+      This is `Theme.AccentLight` converted out of Display P3 into sRGB, because a
+      launcher icon is drawn by the system in sRGB and handing it the P3
+      components as though they were sRGB is the single most common way a brand
+      colour comes out wrong on Android. The dark accent does not survive the
+      conversion — it sits outside the sRGB gamut and clips — so the light one is
+      used at both appearances, which also keeps the icon recognisable in a
+      launcher that does not theme icons.
+    -->
+    <color name="ic_launcher_background">#F57896</color>
+</resources>

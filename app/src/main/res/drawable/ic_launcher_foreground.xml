@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The launcher mark: one dose curve.
+
+  It is the same shape the journal draws for a logged dose — a rise, a peak and
+  a fall — so the icon is a picture of what the app is rather than a monogram.
+  Stroked rather than filled because the curve's *outline* is what the timeline
+  renders, and at 48dp a line reads where a thin bell fills in.
+
+  Strokes are white on the accent background. The alternative — the accent on
+  white — disappears against a light wallpaper, which is the more common case.
+
+  Safe zone: the mark spans x 30..78 and y 38..74 inside the 108x108 viewport,
+  well within the 72x72 centre an adaptive icon is guaranteed to show. Nothing
+  important sits outside it.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:pathData="M30,74 C40,74 42,38 54,38 C66,38 68,74 78,74"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="9"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000" />
+
+</vector>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The notification small icon.
+
+  Android renders a small icon as a stencil: every non-transparent pixel is
+  painted in the system's accent, so it must be a solid monochrome silhouette on
+  transparent, at 24dp, and it must read at the status bar's ~14dp. This is a
+  placeholder in that shape — the app ships no launcher icon yet either — and
+  the real brand mark replaces it by changing this file alone, since the id is
+  the only thing the notification layer refers to.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,2 C12,2 5,10.5 5,15 C5,18.87 8.13,22 12,22 C15.87,22 19,18.87 19,15 C19,10.5 12,2 12,2 Z" />
+</vector>

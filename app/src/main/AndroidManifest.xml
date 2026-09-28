@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      Notifications. Required from API 33; below that the grant is implicit, and
+      the app asks anyway because the same code path runs on both.
+
+      The app schedules reminders about doses the user logged themselves, and
+      nothing else. It has no server and no account, so there is nothing to
+      notify anyone about that they did not enter.
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
+      Re-arming alarms after a reboot. A dose reminder set for tomorrow morning
+      lives in the system's alarm queue, which a restart clears; without this the
+      reminder silently stops existing and the user has no way to tell that from
+      never having set one.
+    -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!--
+      Health Connect read permissions, one per data type.
+
+      The OS grants these individually and the user can revoke any of them in
+      Health Connect's own settings at any time, so the app must treat every read
+      as something that may start returning nothing. There is deliberately **no
+      write permission here**: Piru records what the user says they took, and
+      never publishes a health record on their behalf.
+    -->
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.READ_RESTING_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.READ_BLOOD_PRESSURE" />
+    <uses-permission android:name="android.permission.health.READ_EXERCISE" />
+    <uses-permission android:name="android.permission.health.READ_WEIGHT" />
+
+    <!--
+      Health Connect shows its own permission screen. This is how the app is
+      found from it — and how the rationale the user reads there is written by
+      the app rather than by the platform.
+    -->
+    <queries>
+        <package android:name="com.google.android.apps.healthdata" />
+        <intent>
+            <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+        </intent>
+    </queries>
+
+    <application
+        android:name=".PiruApplication"
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Piru">
+
+        <!--
+          `singleTop`: a notification tapped while the app is open must reach
+          onNewIntent rather than starting a second instance over the first. See
+          MainActivity for what goes wrong without it.
+        -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+          Where Health Connect sends a user who wants to know why this app reads
+          their heart rate. It renders `ui/health/HealthPermissionRationale`, which
+          answers that in the app's own words rather than describing the API.
+
+          Separate from MainActivity on purpose: Health Connect starts this
+          directly, and routing it through the main activity would land the user
+          in the journal with a permission dialog they did not ask for.
+        -->
+        <activity
+            android:name=".health.HealthPermissionRationaleActivity"
+            android:exported="true"
+            android:label="@string/health_permissions_rationale_label">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity>
+
+        <!--
+          The low-stock and reminder alarms survive a restart through this, which
+          reschedules them from the store rather than from a saved alarm list —
+          the store is the durable record and an alarm is only a delivery
+          mechanism for it.
+        -->
+        <receiver
+            android:name=".notifications.BootCompletedReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>

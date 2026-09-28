@@ -1,0 +1,22 @@
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+.kotlin/
+
+# The plain-JVM modules (:core:model, :core:engine, :core:substance) compile to
+# `bin/`, not `build/` — IntelliJ's layout, which is what the Kotlin JVM plugin
+# uses. Without this, a compiled copy of every source file gets committed beside
+# the source, and `SubstanceReader.kt` appears twice in the tree.
+bin/
+
+# Editor settings are machine-specific here: the toolchain lives off the system
+# drive on this machine (see README), and a committed `settings.json` carrying
+# those paths would be wrong for anyone else who clones this.
+.vscode/
+
+# The substance database is fetched, never tracked — same rule as the iOS repo.
+# db/fetch-db.sh verifies it against db/manifest.json's sha256, and both of
+# those are tracked; only the 18 MB database itself is not.
+db/piru-substances.sqlite

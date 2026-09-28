@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Compose draws everything; this only has to be a sane host window before the
+         first frame. The real palette lives in glass.kagerou.piru.design.PiruTheme. -->
+    <style name="Theme.Piru" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+    </style>
+</resources>
