@@ -312,8 +312,8 @@ private fun DefaultDestination(route: PushRoute, navigator: AppNavigator) {
 
         is PushRoute.Tool -> when (route.kind) {
             PushRoute.ToolKind.TOLERANCE -> ToleranceToolScreen(navigator)
-            PushRoute.ToolKind.BODY_LOAD -> BodyLoadScreen()
-            PushRoute.ToolKind.HALF_LIFE -> HalfLifeScreen()
+            PushRoute.ToolKind.BODY_LOAD -> BodyLoadScreen(navigator)
+            PushRoute.ToolKind.HALF_LIFE -> HalfLifeScreen(navigator)
             PushRoute.ToolKind.INTERACTIONS -> InteractionsScreen(navigator)
             PushRoute.ToolKind.INJECTION_LEVELS -> InjectionLevelsScreen(navigator)
             PushRoute.ToolKind.INVENTORY -> InventoryScreen(navigator)

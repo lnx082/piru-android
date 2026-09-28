@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The draggable time cursor's own chrome, shared by every chart that carries one:
+    the journal's day graph, the body-load and receptor-load trails, and the
+    half-life decay curve. What a screen says about its *own* data — the substance
+    names, the "nothing here" sentence — stays with that screen; this file holds
+    only what the shared cursor says for itself.
+-->
+<resources>
+    <string name="scrub_reset">Back to now</string>
+</resources>

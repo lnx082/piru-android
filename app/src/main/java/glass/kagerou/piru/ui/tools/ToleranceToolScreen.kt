@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -19,11 +20,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -33,14 +34,22 @@ import glass.kagerou.piru.R
 import glass.kagerou.piru.engine.PDModel
 import glass.kagerou.piru.engine.ReceptorClasses
 import glass.kagerou.piru.engine.ToleranceReplay
-import glass.kagerou.piru.model.P3Color
-import glass.kagerou.piru.model.SubstanceCategory
-import glass.kagerou.piru.model.SubstanceColorGenerator
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.components.ScrubReadout
+import glass.kagerou.piru.ui.components.ScrubRow
+import glass.kagerou.piru.ui.components.interpolateAt
+import glass.kagerou.piru.ui.insights.InsightsFilterPill
+import glass.kagerou.piru.ui.insights.InsightsSectionCard
+import glass.kagerou.piru.ui.insights.UsageTimeRange
 import glass.kagerou.piru.ui.labels.CoreLabels
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.theme.PiruTheme
+import java.time.Instant
+import kotlin.math.abs
+import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * The tolerance tool: one card per mechanism class.
@@ -66,6 +75,16 @@ import glass.kagerou.piru.ui.theme.PiruTheme
  * Not severity alone: an opioid after a break and a sedative dependence are the two
  * the app carries an explicit warning for, and they belong at the top whether or
  * not the user's current shift happens to be the largest.
+ *
+ * ## The chart is load, and that is deliberate
+ * The over-time chart at the top plots each class's **receptor load** as a share of
+ * the user's own recent peak — the only quantity on this screen that can be
+ * resolved at an arbitrary past or future instant. The cards' shift factor `S` is
+ * solved for now alone; asking it for another instant means re-running the whole
+ * replay per sample, which is too slow for a rule the user is dragging. The load
+ * trail samples the same contributors over time, it is what upstream's "Receptor
+ * load over time" draws, and it answers the question the cursor is asking: how hard
+ * has this been driven, and when does that let go.
  */
 @Composable
 fun ToleranceToolScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
@@ -75,6 +94,10 @@ fun ToleranceToolScreen(navigator: AppNavigator, modifier: Modifier = Modifier) 
     var incomplete by remember { mutableStateOf<Set<String>>(emptySet()) }
     var running by remember { mutableStateOf(true) }
     var failure by remember { mutableStateOf<String?>(null) }
+
+    var range by rememberSaveable { mutableStateOf(UsageTimeRange.NINETY_DAYS) }
+    var loadSeries by remember { mutableStateOf<List<ReceptorLoadSeries>>(emptyList()) }
+    var selected by remember { mutableStateOf<Instant?>(null) }
 
     LaunchedEffect(navigator.dataVersion) {
         running = true
@@ -97,6 +120,23 @@ fun ToleranceToolScreen(navigator: AppNavigator, modifier: Modifier = Modifier) 
             throwable::class.simpleName + ": " + throwable.message
         }
         running = false
+    }
+
+    // The load trail is a second, wider reading of the same log: the cards below
+    // answer "where am I now", and this answers "where has this been, and where is
+    // it heading". It is a full replay per class plus a year of integration, so it
+    // runs on the default dispatcher — `LaunchedEffect` continues on the
+    // composition's dispatcher, which is the main one.
+    LaunchedEffect(navigator.dataVersion, range) {
+        selected = null
+        loadSeries = withContext(Dispatchers.Default) {
+            buildReceptorLoadSeries(
+                app = app,
+                entries = app.database.doseEntryDao().all(),
+                range = range,
+                futureHorizonMinutes = TOLERANCE_FUTURE_HORIZON_MINUTES,
+            )
+        }
     }
 
     // Safety-critical first, then by how much of a usual dose is gone. The
@@ -122,6 +162,53 @@ fun ToleranceToolScreen(navigator: AppNavigator, modifier: Modifier = Modifier) 
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
+            }
+        }
+
+        item {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                items(UsageTimeRange.entries.size) { index ->
+                    val option = UsageTimeRange.entries[index]
+                    InsightsFilterPill(
+                        label = stringResource(option.displayNameRes),
+                        color = PiruTheme.colors.accent,
+                        isSelected = option == range,
+                        showDot = false,
+                        onClick = { range = option },
+                    )
+                }
+            }
+        }
+
+        if (loadSeries.isNotEmpty()) {
+            item {
+                InsightsSectionCard(
+                    title = stringResource(R.string.toolsb_tolerance_load_title),
+                    subtitle = stringResource(R.string.toolsb_tolerance_load_subtitle),
+                ) {
+                    TrailChart(
+                        series = loadSeries.map { item ->
+                            TrailChartSeries(
+                                id = item.id,
+                                tint = item.color,
+                                points = item.points.map { TrailChartPoint(it.date, it.load) },
+                            )
+                        },
+                        selected = selected,
+                        onSelect = { selected = it },
+                        windowFrom = loadSeries.first().points.first().date,
+                        windowTo = loadSeries.first().points.last().date,
+                        axisCaption = stringResource(R.string.toolsb_receptor_axis_caption),
+                    )
+                    selected?.let { at ->
+                        ScrubReadout(
+                            title = trailReadoutTitle(at),
+                            rows = receptorLoadRows(loadSeries, at),
+                            emptyText = stringResource(R.string.toolsb_receptor_readout_empty),
+                            onReset = { selected = null },
+                        )
+                    }
+                }
             }
         }
 
@@ -219,7 +306,7 @@ fun ToleranceToolScreen(navigator: AppNavigator, modifier: Modifier = Modifier) 
 
 @Composable
 private fun ToleranceClassCard(card: ToleranceReplay.ClassTolerance) {
-    val tint = familyColour(card.receptorClass)
+    val tint = receptorClassColor(card.receptorClass)
     val params = ReceptorClasses.parametersFor(card.receptorClass)
 
     PiruCard(modifier = Modifier.fillMaxWidth()) {
@@ -327,17 +414,39 @@ private fun layerShare(value: Double, total: Double): String = "${((value / tota
 private const val RECOVERED_SHIFT = 1.05
 
 /**
- * A base colour per mechanism class.
+ * How far past now the receptor-load window reaches: three weeks.
  *
- * Drawn through the same generator the substances use but seeded on the class, so
- * the two palettes are built the same way. The `OTHER` category is the seed
- * because a class is not a substance category — it takes the achromatic branch,
- * which spreads hues evenly around the wheel at low chroma, which is exactly what
- * a set of thirteen labels wants.
+ * The engine's own reference window — `ToleranceSimulation.RECENT_PEAK_WINDOW_MINUTES`,
+ * the span over which "how much has this person been taking" is the question being
+ * asked — and the horizon the tolerance store defaults to. So the future half of
+ * this chart shows exactly the recovery the model already forecasts, and nothing
+ * here invents a second timescale.
  */
-private fun familyColour(receptorClass: ReceptorClasses.ReceptorClass): Color {
-    val p3: P3Color = SubstanceColorGenerator.displayP3(SubstanceCategory.OTHER, "class:${receptorClass.wireValue}")
-    return Color(p3.red.toFloat(), p3.green.toFloat(), p3.blue.toFloat(), 1f)
+private const val TOLERANCE_FUTURE_HORIZON_MINUTES: Double = 21 * 24 * 60.0
+
+/**
+ * The readout lines for the load chart: every class still being driven at [at],
+ * biggest first.
+ *
+ * Interpolated along each series' own drawn segment rather than snapped to the
+ * nearest sample, so the number under the cursor is the value the line passes
+ * through at that x — the title names the exact dragged instant, and answering a
+ * different moment than the one named is worse than answering coarsely. Half a
+ * percent is the floor: below it there is nothing being driven worth a row.
+ */
+@Composable
+private fun receptorLoadRows(series: List<ReceptorLoadSeries>, at: Instant): List<ScrubRow> {
+    val rows = mutableListOf<Pair<Double, ScrubRow>>()
+    for (item in series) {
+        val load = item.points.interpolateAt(at, { it.date }, { it.load }) ?: continue
+        if (load <= 0.005) continue
+        rows += load to ScrubRow(
+            label = CoreLabels.receptorCasualName(item.receptorClass),
+            value = "${(load * 100).roundToInt()}%",
+            tint = item.color,
+        )
+    }
+    return rows.sortedByDescending { it.first }.map { it.second }
 }
 
 @Composable

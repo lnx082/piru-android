@@ -240,8 +240,15 @@ object ActiveSubstanceCalculator {
      * substance in µg/mg/g are one group (converted into whichever unit arrived
      * first); a dose in mL or IU is a *different* quantity and gets its own group
      * rather than being summed into a mass total.
+     *
+     * Visible to the module rather than private because a caller that samples this
+     * function across time needs the same identity this function groups by. An
+     * [ActiveSubstance.id] carries the *displayed* unit, which is whichever dose
+     * compute() met first — a fact that can differ between two calls on the same
+     * log, so it is not a key anything outside one call may group on. See
+     * [BodyLoadTrail].
      */
-    private fun unitFamily(unit: String): String =
+    internal fun unitFamily(unit: String): String =
         if (DoseUnit.convert(1.0, from = unit, to = "mg") == null) unit else "mass"
 
     // MARK: - Dose tiers

@@ -2,7 +2,7 @@ package glass.kagerou.piru.ui.tools
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -29,7 +29,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
@@ -43,17 +42,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import glass.kagerou.piru.PiruApplication
 import glass.kagerou.piru.R
-import glass.kagerou.piru.data.entity.DoseEntryEntity
-import glass.kagerou.piru.engine.LoadTrail
-import glass.kagerou.piru.engine.PKModel
-import glass.kagerou.piru.engine.ReceptorClasses
-import glass.kagerou.piru.engine.ToleranceReplay
-import glass.kagerou.piru.model.DoseUnit
-import glass.kagerou.piru.model.P3Color
-import glass.kagerou.piru.model.SubstanceCategory
-import glass.kagerou.piru.model.SubstanceColorGenerator
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.components.drawScrubRule
 import glass.kagerou.piru.ui.insights.InsightsEmptyPanel
 import glass.kagerou.piru.ui.insights.InsightsFilterPill
 import glass.kagerou.piru.ui.insights.InsightsLegendDot
@@ -66,10 +57,9 @@ import glass.kagerou.piru.ui.labels.appLocale
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.theme.PiruTheme
 import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 import kotlin.math.abs
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Receptor load over time — the historic counterpart to the Tolerance tool.
@@ -117,10 +107,15 @@ fun ReceptorLoadScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     LaunchedEffect(navigator.dataVersion, range) {
         loaded = false
         failure = null
+        // Off the main thread: the trail is a whole-log replay plus up to six
+        // integrations over a year of history each, and `LaunchedEffect` continues on
+        // the composition's dispatcher — which is the main one. The suspension is
+        // also what lets the frame that says "replaying" actually reach the screen
+        // before the work blocks whatever thread it is on.
         runCatching {
-            val entries = app.database.doseEntryDao().all()
+            val entries = withContext(Dispatchers.Default) { app.database.doseEntryDao().all() }
             entryCount = entries.size
-            series = buildSeries(app, entries, range)
+            series = withContext(Dispatchers.Default) { buildReceptorLoadSeries(app, entries, range) }
         }.onFailure { failure = it::class.simpleName + ": " + it.message }
         loaded = true
     }
@@ -265,140 +260,6 @@ private enum class ZoomLevel(val labelRes: Int, val windowSeconds: Double) {
     CLOSE(R.string.toolsb_receptor_zoom_close, 30 * 86_400.0),
 }
 
-// MARK: - Loading
-
-/**
- * A class's trail, ready to draw.
- *
- * Carries the class rather than its label: [buildSeries] runs outside
- * composition, and the label is a resource read, so it is resolved where the row
- * is drawn. [id] stays the wire value — that is what the hidden-series set and
- * the draw loop key on, and it must not move when the device language does.
- */
-private data class ReceptorLoadSeries(
-    val id: String,
-    val receptorClass: ReceptorClasses.ReceptorClass,
-    val color: Color,
-    val peak: Double,
-    val points: List<LoadPoint>,
-)
-
-private data class LoadPoint(val date: Instant, val load: Double)
-
-private const val MINIMUM_PEAK = 0.02
-private const val MAXIMUM_SERIES = 6
-
-/**
- * Builds the trails.
- *
- * The classes come from a full replay (the same one the Tolerance tool runs), so
- * the ordering is by what is actually toleranced rather than by what happens to
- * be in the log, and a class the user has never heard of can still be the one
- * carrying the shift.
- */
-private suspend fun buildSeries(
-    app: PiruApplication,
-    entries: List<DoseEntryEntity>,
-    range: UsageTimeRange,
-): List<ReceptorLoadSeries> {
-    val log = entries.mapNotNull { it.toSimDose() }
-    if (log.isEmpty()) return emptyList()
-
-    val pharmacology = app.catalog()
-    val now = Instant.now()
-    val nowMinutes = now.toEpochMilli() / 60_000.0
-    val weight = app.profile().weightKgOrDefault()
-
-    // The representatives are resolved alongside the logged names, never instead
-    // of them: a PK-less substance is modelled as its class representative, and
-    // that representative is usually not in the log at all.
-    val params = pharmacology.pharmacologyForLog(log.map { it.substance }.toSet() + pharmacology.classRepresentativeNames())
-
-    val cards = ToleranceReplay.simulate(log, params, nowMinutes, weight)
-    val classes = cards.values
-        .sortedByDescending { it.severity }
-        .map { it.receptorClass }
-        .take(MAXIMUM_SERIES)
-
-    val pastHorizonSeconds = range.days?.let { it * 86_400.0 }
-        ?: (now.toEpochMilli() - (entries.minOf { it.timestamp.time })).toDouble().div(1000.0)
-    val stepSeconds = step(forWindowSeconds = pastHorizonSeconds)
-
-    // The engine's lookback defaults to a year. A range longer than that would
-    // sample past the replay window and draw as flat zero, which reads as "no
-    // use" rather than "not computed" — so the lookback is widened to cover the
-    // requested window.
-    val lookbackDays = maxOf(365.0, pastHorizonSeconds / 86_400.0 + 1.0)
-
-    val out = ArrayList<ReceptorLoadSeries>()
-    for (receptorClass in classes) {
-        val trail = LoadTrail.loadTrail(
-            doses = log,
-            params = params,
-            now = now,
-            weightKg = weight,
-            receptorClass = receptorClass,
-            horizonMinutes = 0.0,
-            stepMinutes = stepSeconds / 60.0,
-            pastHorizonMinutes = pastHorizonSeconds / 60.0,
-            lookbackDays = lookbackDays,
-        )
-        val peak = trail.maxOfOrNull { it.load } ?: continue
-        if (peak <= MINIMUM_PEAK) continue
-        out += ReceptorLoadSeries(
-            id = receptorClass.wireValue,
-            receptorClass = receptorClass,
-            color = classColor(receptorClass),
-            peak = peak,
-            points = trail.map { LoadPoint(it.date, it.load) },
-        )
-    }
-    return out.sortedByDescending { it.peak }
-}
-
-/**
- * Sample spacing for the trail: coarser as the window widens, so a year's trace
- * is not an unreadable comb. Three hours is `loadTrail`'s own default and the
- * spacing a month of data wants.
- */
-private fun step(forWindowSeconds: Double): Double = when {
-    forWindowSeconds < 31 * 86_400.0 -> 3 * 3_600.0
-    forWindowSeconds < 91 * 86_400.0 -> 6 * 3_600.0
-    forWindowSeconds < 366 * 86_400.0 -> 12 * 3_600.0
-    else -> maxOf(12 * 3_600.0, forWindowSeconds / 1_000.0)
-}
-
-/**
- * A base colour per mechanism class, drawn through the same generator the
- * substances use but seeded on the class.
- *
- * `OTHER` is the seed because a class is not a substance category: it takes the
- * achromatic branch, which spreads hues evenly around the wheel at low chroma —
- * exactly what a set of a dozen class labels wants. The same construction the
- * Tolerance tool uses, so a class keeps one colour across the two screens.
- */
-private fun classColor(receptorClass: ReceptorClasses.ReceptorClass): Color {
-    val p3: P3Color = SubstanceColorGenerator.displayP3(SubstanceCategory.OTHER, "class:${receptorClass.wireValue}")
-    return Color(p3.red.toFloat(), p3.green.toFloat(), p3.blue.toFloat(), 1f)
-}
-
-/**
- * A logged dose as the replay sees it.
- *
- * Two ordinary reasons to drop one, both of which are answers rather than
- * errors: a dose of unknown amount has no concentration to compute, and a dose
- * in a unit that is not a mass — millilitres, IU — has no milligram equivalent.
- */
-private fun DoseEntryEntity.toSimDose(): ToleranceReplay.SimDose? {
-    if (isUnknownDose) return null
-    val mg = DoseUnit.convert(amount, from = unit, to = "mg") ?: return null
-    return ToleranceReplay.SimDose(
-        substance = substance,
-        amountMg = mg,
-        timestampMinutes = timestamp.toInstant().toEpochMilli() / 60_000.0,
-    )
-}
-
 // MARK: - Chart
 
 @Composable
@@ -409,8 +270,10 @@ private fun ReceptorLoadChart(
     onSelect: (Instant?) -> Unit,
 ) {
     val gridInk = PiruTheme.colors.secondaryLabel.copy(alpha = 0.25f)
-    val ruleInk = PiruTheme.colors.secondaryLabel.copy(alpha = 0.45f)
     val labelInk = PiruTheme.colors.secondaryLabel
+    // The cursor is the theme accent — the same rule the Tolerance tool's own load
+    // chart draws and the journal's time cursor uses. One chart, one cursor.
+    val accent = PiruTheme.colors.accent
     val measurer = rememberTextMeasurer()
     val axisDayPattern = stringResource(R.string.datefmt_day_month)
     val dateLocale = appLocale()
@@ -432,9 +295,17 @@ private fun ReceptorLoadChart(
                 modifier = Modifier
                     .fillMaxSize()
                     .pointerInput(viewport.scrollable(), series.size) {
-                        detectDragGestures { change, dragAmount ->
+                        // Horizontal-only, which is what this gesture has always meant:
+                        // it pans by `dragAmount.x` and nothing else. The all-direction
+                        // detector claimed vertical drags too and then panned by their
+                        // (near-zero) x — so a swipe that began on the plot scrolled
+                        // neither the page nor the window, which is a dead zone on a
+                        // band this wide. See `TimeScrub.kt` for what this detector
+                        // does and does not claim.
+                        detectHorizontalDragGestures { change, dragAmount ->
                             change.consume()
-                            viewport.pan(dragAmount.x, widthPx)
+                            // `dragAmount` is the horizontal delta itself, not an Offset.
+                            viewport.pan(dragAmount, widthPx)
                         }
                     }
                     .pointerInput(visibleFrom, visibleTo, series.size) {
@@ -482,18 +353,13 @@ private fun ReceptorLoadChart(
                 }
 
                 if (selectedDate != null && selectedDate >= from && selectedDate <= to) {
-                    val x = xFor(selectedDate)
-                    var y = 0f
-                    while (y < size.height) {
-                        drawLine(ruleInk, Offset(x, y), Offset(x, minOf(y + 6f, size.height)), strokeWidth = 1.5f)
-                        y += 12f
-                    }
+                    drawScrubRule(x = xFor(selectedDate), color = accent)
                 }
             }
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(
-                visibleFrom?.let { shortDate(it, axisDayPattern, dateLocale) } ?: "",
+                visibleFrom?.let { shortTrailDate(it, axisDayPattern, dateLocale) } ?: "",
                 style = MaterialTheme.typography.labelSmall,
                 color = PiruTheme.colors.secondaryLabel,
             )
@@ -503,7 +369,7 @@ private fun ReceptorLoadChart(
                 color = PiruTheme.colors.secondaryLabel,
             )
             Text(
-                visibleTo?.let { shortDate(it, axisDayPattern, dateLocale) } ?: "",
+                visibleTo?.let { shortTrailDate(it, axisDayPattern, dateLocale) } ?: "",
                 style = MaterialTheme.typography.labelSmall,
                 color = PiruTheme.colors.secondaryLabel,
             )
@@ -536,7 +402,7 @@ private fun ReceptorLoadReadout(series: List<ReceptorLoadSeries>, date: Instant)
     PiruCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
-                shortDate(date, stringResource(R.string.datefmt_day_month), appLocale()),
+                shortTrailDate(date, stringResource(R.string.datefmt_day_month), appLocale()),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -609,11 +475,3 @@ private fun ReceptorLoadLegend(
     }
 }
 
-/**
- * The chart's day label. `Locale.ROOT` was wrong here — it pins the month *name*
- * to English, so a Chinese device read "28 Sep". The app's own resolved locale
- * supplies the names, which the caller passes in; the pattern supplies the field
- * order and comes from the resources, because Chinese reads M月d日.
- */
-private fun shortDate(instant: Instant, pattern: String, locale: Locale): String =
-    DateTimeFormatter.ofPattern(pattern, locale).format(instant.atZone(ZoneId.systemDefault()))

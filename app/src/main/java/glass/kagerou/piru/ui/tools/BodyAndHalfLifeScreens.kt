@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -19,6 +20,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -29,18 +31,34 @@ import glass.kagerou.piru.PiruApplication
 import glass.kagerou.piru.R
 import glass.kagerou.piru.engine.ActiveSubstance
 import glass.kagerou.piru.engine.ActiveSubstanceCalculator
+import glass.kagerou.piru.engine.BodyLoadTrail
 import glass.kagerou.piru.engine.PKModel
 import glass.kagerou.piru.engine.PKResolver
+import glass.kagerou.piru.model.P3Color
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.components.ScrubReadout
+import glass.kagerou.piru.ui.components.ScrubRow
+import glass.kagerou.piru.ui.components.drawScrubRule
+import glass.kagerou.piru.ui.components.interpolateAt
+import glass.kagerou.piru.ui.components.timeScrub
+import glass.kagerou.piru.ui.insights.InsightsFilterPill
+import glass.kagerou.piru.ui.insights.InsightsSectionCard
+import glass.kagerou.piru.ui.insights.UsageTimeRange
+import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.theme.PiruTheme
+import glass.kagerou.piru.ui.theme.toComposeColor
 import java.time.Instant
 import java.util.Locale
+import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
- * What is still in the body.
+ * What is still in the body, and how that moves — backwards and forwards.
  *
- * Ported from `Views/Insights/InYourBodyView.swift` and `BodyLoadChart.swift`.
+ * Ported from `Views/Insights/InYourBodyView.swift`, `BodyLoadChart.swift` and
+ * `BodyLevelsPlan.swift`.
  *
  * The readout answers "how much is left", which is a different question from the
  * one the timeline answers ("what does the effect curve look like") and the two
@@ -49,31 +67,65 @@ import java.util.Locale
  * sixteen-day one outlasts any graph. That is why this screen can show a substance
  * the timeline draws no curve for at all.
  *
+ * ## Two readings of one model, hence one screen
+ * The trail at the top is this same readout swept across time, sampled by
+ * [BodyLoadTrail] from [ActiveSubstanceCalculator.compute] — the very function the
+ * cards below call — so a point on a curve and the number under it cannot disagree.
+ * Dragging the rule reads any instant in the window, and the window reaches *ahead*
+ * of now, which is where the question "when is this out of me" is actually answered.
+ *
  * Supplements are absent by the engine's own decision, not by an oversight here:
  * they clear over days to weeks, so "0 % eliminated, clears in five months" is
  * noise rather than a session insight.
  */
 @Composable
-fun BodyLoadScreen(modifier: Modifier = Modifier) {
+fun BodyLoadScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val app = context.applicationContext as PiruApplication
+    var range by rememberSaveable { mutableStateOf(UsageTimeRange.THIRTY_DAYS) }
     var active by remember { mutableStateOf<List<ActiveSubstance>>(emptyList()) }
+    var trail by remember { mutableStateOf<List<BodyLoadTrail.Series>>(emptyList()) }
+    var selected by remember { mutableStateOf<Instant?>(null) }
     var loaded by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        val catalog = app.catalog()
-        val entries = app.database.doseEntryDao().all().mapNotNull { it.toDoseRecordIfReplayable() }
-        val tints = app.palette().tintsFor(entries.map { it.substance }.toSet())
-        active = ActiveSubstanceCalculator.compute(
-            entries = entries,
-            colorMap = tints,
-            catalog = catalog,
-            // A substance with no colour of its own and none stored: the neutral
-            // stand-in rather than the accent, so an uncoloured row does not read as
-            // deliberately branded.
-            fallbackTint = glass.kagerou.piru.model.P3Color.NEUTRAL,
-            now = Instant.now(),
-        )
+    // Re-read on a range change rather than caching the log: the read is a few
+    // hundred rows, and the alternative is a second piece of state that has to be
+    // kept in step with the first. `ReceptorLoadScreen` does the same.
+    //
+    // Off the main thread, because the trail samples the whole log up to two
+    // thousand times over. `LaunchedEffect` continues on the composition's
+    // dispatcher, which is the main one, so the default dispatcher is named
+    // explicitly rather than assumed.
+    LaunchedEffect(navigator.dataVersion, range) {
+        selected = null
+        val (computed, built) = withContext(Dispatchers.Default) {
+            val catalog = app.catalog()
+            val entries = app.database.doseEntryDao().all().mapNotNull { it.toDoseRecordIfReplayable() }
+            val tints = app.palette().tintsFor(entries.map { it.substance }.toSet())
+            val now = Instant.now()
+            val active = ActiveSubstanceCalculator.compute(
+                entries = entries,
+                colorMap = tints,
+                catalog = catalog,
+                // A substance with no colour of its own and none stored: the neutral
+                // stand-in rather than the accent, so an uncoloured row does not read
+                // as deliberately branded.
+                fallbackTint = P3Color.NEUTRAL,
+                now = now,
+            )
+            val trail = BodyLoadTrail.build(
+                entries = entries,
+                colorMap = tints,
+                catalog = catalog,
+                fallbackTint = P3Color.NEUTRAL,
+                now = now,
+                pastMinutes = pastMinutesFor(range, entries, now),
+                futureMinutes = FUTURE_HORIZON_MINUTES,
+            )
+            active to trail
+        }
+        active = computed
+        trail = built
         loaded = true
     }
 
@@ -93,6 +145,59 @@ fun BodyLoadScreen(modifier: Modifier = Modifier) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
+            }
+        }
+
+        item {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                items(UsageTimeRange.entries.size) { index ->
+                    val option = UsageTimeRange.entries[index]
+                    InsightsFilterPill(
+                        label = stringResource(option.displayNameRes),
+                        color = PiruTheme.colors.accent,
+                        isSelected = option == range,
+                        showDot = false,
+                        onClick = { range = option },
+                    )
+                }
+            }
+        }
+
+        if (trail.isNotEmpty()) {
+            // The window is the trail's own grid rather than a re-derived `now ±
+            // range`: the samples already carry it, and a second derivation is a
+            // second chance for the axis and the data to disagree.
+            val windowFrom = trail.first().points.first().date
+            val windowTo = trail.first().points.last().date
+            item {
+                InsightsSectionCard(
+                    title = stringResource(R.string.toolsb_bodyload_chart_title),
+                    subtitle = stringResource(R.string.toolsb_bodyload_chart_subtitle),
+                ) {
+                    TrailChart(
+                        series = trail.map { series ->
+                            TrailChartSeries(
+                                id = series.id,
+                                tint = series.tint.toComposeColor(),
+                                points = series.points.map { TrailChartPoint(it.date, it.fraction) },
+                            )
+                        },
+                        selected = selected,
+                        onSelect = { selected = it },
+                        windowFrom = windowFrom,
+                        windowTo = windowTo,
+                        axisCaption = stringResource(R.string.toolsb_bodyload_axis_caption),
+                    )
+
+                    selected?.let { at ->
+                        ScrubReadout(
+                            title = trailReadoutTitle(at),
+                            rows = rowsAt(trail, at),
+                            emptyText = stringResource(R.string.toolsb_bodyload_readout_empty),
+                            onReset = { selected = null },
+                        )
+                    }
+                }
             }
         }
 
@@ -177,6 +282,63 @@ fun BodyLoadScreen(modifier: Modifier = Modifier) {
     }
 }
 
+private const val MINUTES_PER_DAY: Double = 1_440.0
+
+/**
+ * How far back the trail reaches for a chosen range.
+ *
+ * The `All` pill carries no day count, so it reaches to the oldest thing logged —
+ * the same rule `buildReceptorLoadSeries` uses for the receptor chart, and the only
+ * reading of "All" that is not a quiet substitution of some other window.
+ */
+private fun pastMinutesFor(
+    range: UsageTimeRange,
+    entries: List<glass.kagerou.piru.engine.DoseRecord>,
+    now: Instant,
+): Double = range.days?.let { it * MINUTES_PER_DAY }
+    ?: (now.toEpochMilli() - (entries.minOfOrNull { it.timestamp.toEpochMilli() } ?: now.toEpochMilli())) / 60_000.0
+
+/**
+ * How far past now the body-load window reaches: a week.
+ *
+ * The future half is the point of the trail — "when is this out of me" is a
+ * forward question — and a week covers the clearance of everything with an
+ * elimination half-life short enough for the answer to be interesting. A
+ * longer-acting compound simply leaves the window still falling, which is honest:
+ * the curve says "still here", which is the answer.
+ */
+private const val FUTURE_HORIZON_MINUTES: Double = 7 * MINUTES_PER_DAY
+
+/**
+ * The readout lines: every substance with something in the body at [at], biggest
+ * first.
+ *
+ * Interpolated along each series' own drawn segment rather than snapped to the
+ * nearest sample, so the number under the cursor is the value the line passes
+ * through at that x. The title names the exact dragged instant; a readout that
+ * answers a different moment than the one it names is worse than a coarse one, and
+ * on a long window (twelve hours a sample) "nearest" can be half a day out.
+ */
+@Composable
+private fun rowsAt(trail: List<BodyLoadTrail.Series>, at: Instant): List<ScrubRow> {
+    val context = LocalContext.current
+    return trail
+        .mapNotNull { series ->
+            val amount = series.points.interpolateAt(at, { it.date }, { it.amount })
+                ?: return@mapNotNull null
+            // Nothing in the body is not a row with a zero in it; it is the absence
+            // of a row, which the readout's own empty state then speaks to.
+            if (amount <= 0.0) return@mapNotNull null
+            amount to ScrubRow(
+                label = series.displayName,
+                value = context.getString(R.string.toolsb_bodyload_left, trim(amount), series.unit),
+                tint = series.tint.toComposeColor(),
+            )
+        }
+        .sortedByDescending { it.first }
+        .map { it.second }
+}
+
 /**
  * How one dose decays.
  *
@@ -193,14 +355,14 @@ fun BodyLoadScreen(modifier: Modifier = Modifier) {
  * information rather than a dead end.
  */
 @Composable
-fun HalfLifeScreen(modifier: Modifier = Modifier) {
+fun HalfLifeScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val app = context.applicationContext as PiruApplication
     var choices by remember { mutableStateOf<List<Pair<String, PKResolver.Params>>>(emptyList()) }
     var selected by remember { mutableStateOf<String?>(null) }
     var loaded by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(navigator.dataVersion) {
         val catalog = app.catalog()
         val names = app.database.doseEntryDao().all().map { it.substance }.distinct()
         // Only the substances a half-life can be resolved for. A row that resolves
@@ -307,38 +469,73 @@ fun HalfLifeScreen(modifier: Modifier = Modifier) {
     }
 }
 
-/** The elimination curve over seven half-lives, drawn from the same function the body-load readout uses. */
+/**
+ * The elimination curve over seven half-lives, drawn from the same function the
+ * body-load readout uses, with a time cursor over it.
+ *
+ * The cursor differs from the other screens' in two ways, both because this curve
+ * is a *single dose's own arc* rather than a window over the log: it starts absent
+ * (there is no "now" on this axis to rest at), and it has no "back to now" — a
+ * reset would name a moment that does not exist. Drag it, or tap where you want it,
+ * and the readout says how much of the dose is left at that elapsed time.
+ */
 @Composable
 private fun DecayCurve(params: PKResolver.Params) {
     val accent = PiruTheme.colors.accent
     val mark = PiruTheme.colors.secondaryLabel.copy(alpha = 0.3f)
-    Box(modifier = Modifier.fillMaxWidth().height(120.dp)) {
-        Canvas(Modifier.fillMaxSize()) {
-            val spanMinutes = params.halfLifeMinutes * 7
-            val steps = 120
-            var previous = Offset.Zero
-            for (index in 0..steps) {
-                val minutes = spanMinutes * index / steps
-                val fraction = PKModel.fractionRemainingInBody(minutes, params.ke, params.ka)
-                val point = Offset(size.width * index / steps, size.height * (1 - fraction.toFloat()))
-                if (index > 0) {
-                    drawLine(color = accent, start = previous, end = point, strokeWidth = 2.5f)
+    val spanMinutes = params.halfLifeMinutes * 7
+    var scrubMinutes by remember(params) { mutableStateOf<Double?>(null) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Box(modifier = Modifier.fillMaxWidth().height(120.dp)) {
+            Canvas(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .timeScrub { fraction -> scrubMinutes = fraction * spanMinutes },
+            ) {
+                val steps = 120
+                var previous = Offset.Zero
+                for (index in 0..steps) {
+                    val minutes = spanMinutes * index / steps
+                    val fraction = PKModel.fractionRemainingInBody(minutes, params.ke, params.ka)
+                    val point = Offset(size.width * index / steps, size.height * (1 - fraction.toFloat()))
+                    if (index > 0) {
+                        drawLine(color = accent, start = previous, end = point, strokeWidth = 2.5f)
+                    }
+                    previous = point
                 }
-                previous = point
+                // The half-life marks, so the shape is readable without a scale.
+                var half = 0
+                while (half < 3) {
+                    val minutes = params.halfLifeMinutes * (half + 1)
+                    val x = size.width * (minutes / spanMinutes).toFloat()
+                    drawLine(
+                        color = mark,
+                        start = Offset(x, 0f),
+                        end = Offset(x, size.height),
+                        strokeWidth = 1f,
+                    )
+                    half++
+                }
+
+                scrubMinutes?.let { minutes ->
+                    drawScrubRule(x = size.width * (minutes / spanMinutes).toFloat(), color = accent)
+                }
             }
-            // The half-life marks, so the shape is readable without a scale.
-            var half = 0
-            while (half < 3) {
-                val minutes = params.halfLifeMinutes * (half + 1)
-                val x = size.width * (minutes / spanMinutes).toFloat()
-                drawLine(
-                    color = mark,
-                    start = Offset(x, 0f),
-                    end = Offset(x, size.height),
-                    strokeWidth = 1f,
-                )
-                half++
-            }
+        }
+
+        scrubMinutes?.let { minutes ->
+            val fraction = PKModel.fractionRemainingInBody(minutes, params.ke, params.ka)
+            ScrubReadout(
+                title = stringResource(R.string.toolsb_halflife_scrub_after, hours(minutes)),
+                rows = listOf(
+                    ScrubRow(
+                        label = stringResource(R.string.toolsb_halflife_scrub_remaining),
+                        value = percent(fraction),
+                        tint = accent,
+                    ),
+                ),
+            )
         }
     }
 }
@@ -356,6 +553,10 @@ private fun hours(minutes: Double): String = when {
     minutes < 60 * 48 -> "%.1f h".format(Locale.ROOT, minutes / 60)
     else -> "%.1f d".format(Locale.ROOT, minutes / 1_440)
 }
+
+/** A 0…1 fraction as whole-percent copy, without the `%` — that belongs to the sentence around it. */
+private fun percent(fraction: Double): String =
+    "${(fraction.coerceIn(0.0, 1.0) * 100).roundToInt()}%"
 
 private fun trim(value: Double): String =
     if (value >= 100) value.toInt().toString()

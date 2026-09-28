@@ -238,4 +238,5 @@
     <string name="meds_place_label">Place</string>
     <string name="meds_use_this_name">Use This Name</string>
     <string name="meds_recents">Recents</string>
+    <string name="journal_scrub_readout_empty">Nothing at this time</string>
 </resources>
