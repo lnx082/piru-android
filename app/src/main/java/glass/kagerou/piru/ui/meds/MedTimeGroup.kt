@@ -1,5 +1,7 @@
 package glass.kagerou.piru.ui.meds
 
+import androidx.annotation.StringRes
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.DailyDoseItemEntity
 
 /**
@@ -22,21 +24,27 @@ import glass.kagerou.piru.data.entity.DailyDoseItemEntity
  * [slug] is the stable string that rides in notification anchors and deep links
  * (`piru://quicklog?routine=morning`), which is why it is spelled out rather
  * than derived from the enum's name.
+ *
+ * ## The labels are resource ids, not text
+ * An enum constant is initialised once per process, so a `label` holding text
+ * would freeze whichever language the process started in — a language change
+ * would leave the hub in the old one until the app was killed. The id is
+ * resolved where the heading is drawn. Same shape as `AppTab.labelRes`.
  */
 enum class MedTimeGroup(
     /** The group's heading. */
-    val label: String,
+    @StringRes val labelRes: Int,
     /** The heading's quiet companion — the clock bounds the group means. */
-    val rangeLabel: String,
+    @StringRes val rangeLabelRes: Int,
     /** The stable identifier carried outside the app. */
     val slug: String,
 ) {
-    MORNING("Morning", "before 12:00", "morning"),
-    AFTERNOON("Afternoon", "12:00 – 17:00", "afternoon"),
-    EVENING("Evening", "17:00 – 21:00", "evening"),
-    NIGHT("Night", "after 21:00", "night"),
-    ANYTIME("Anytime", "no set time", "anytime"),
-    AS_NEEDED("As needed", "no schedule", "as-needed"),
+    MORNING(R.string.meds_time_group_morning, R.string.meds_time_range_morning, "morning"),
+    AFTERNOON(R.string.meds_time_group_afternoon, R.string.meds_time_range_afternoon, "afternoon"),
+    EVENING(R.string.meds_time_group_evening, R.string.meds_time_range_evening, "evening"),
+    NIGHT(R.string.meds_time_group_night, R.string.meds_time_range_night, "night"),
+    ANYTIME(R.string.meds_time_group_anytime, R.string.meds_time_range_anytime, "anytime"),
+    AS_NEEDED(R.string.meds_time_group_as_needed, R.string.meds_time_range_as_needed, "as-needed"),
     ;
 
     companion object {

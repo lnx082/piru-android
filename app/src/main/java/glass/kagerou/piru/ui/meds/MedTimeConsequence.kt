@@ -8,7 +8,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import glass.kagerou.piru.R
 import glass.kagerou.piru.model.RouteOfAdministration
 import glass.kagerou.piru.model.Substance
 import glass.kagerou.piru.model.SubstanceCategory
@@ -211,7 +213,10 @@ fun DoseSleepClause(
     if (!affectsSleep || !MedTimeConsequence.isNight(effectsEnd, zone)) return
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         MedsGlyph(kind = MedsGlyphKind.MOON, tint = PiruTheme.colors.secondaryLabel)
-        Text("Modeled effects end ~${clockText(effectsEnd, zone)}", style = captionSecondaryStyle)
+        Text(
+            stringResource(R.string.meds_consequence_effects_end, clockText(effectsEnd, zone)),
+            style = captionSecondaryStyle,
+        )
     }
 }
 
@@ -238,10 +243,13 @@ fun MedTimeConsequenceLine(
             MedsGlyph(kind = MedsGlyphKind.CLOCK, tint = PiruTheme.colors.secondaryLabel)
             Text(
                 if (consequence.statesWearOff) {
-                    "Estimated onset ~${clockText(moments.onset, zone)} · " +
-                        "easing off ~${clockText(moments.wearOff, zone)}"
+                    stringResource(
+                        R.string.meds_consequence_onset_and_wear_off,
+                        clockText(moments.onset, zone),
+                        clockText(moments.wearOff, zone),
+                    )
                 } else {
-                    "Estimated onset ~${clockText(moments.onset, zone)}"
+                    stringResource(R.string.meds_consequence_onset, clockText(moments.onset, zone))
                 },
                 style = captionSecondaryStyle,
             )
@@ -257,9 +265,9 @@ fun MedTimeConsequenceLine(
                 )
                 Text(
                     if (landsInNight) {
-                        "Modeled effects end ~$end — after most bedtimes."
+                        stringResource(R.string.meds_consequence_after_bedtime, end)
                     } else {
-                        "Modeled effects end ~$end"
+                        stringResource(R.string.meds_consequence_effects_end, end)
                     },
                     style = captionSecondaryStyle,
                 )

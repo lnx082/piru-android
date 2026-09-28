@@ -33,9 +33,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.theme.PiruTheme
@@ -110,10 +112,9 @@ fun PatternsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     ) {
         item {
             Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Patterns", style = MaterialTheme.typography.headlineSmall)
+                Text(stringResource(R.string.toolsb_patterns_title), style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    "What the log adds up to over a window: days used, cumulative " +
-                        "exposure, whether a dose has moved, and what was active together.",
+                    stringResource(R.string.toolsb_patterns_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -125,7 +126,7 @@ fun PatternsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                 items(UsageTimeRange.entries.size) { index ->
                     val option = UsageTimeRange.entries[index]
                     InsightsFilterPill(
-                        label = option.displayName,
+                        label = stringResource(option.displayNameRes),
                         color = accent,
                         isSelected = option == range,
                         showDot = false,
@@ -137,23 +138,27 @@ fun PatternsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
 
         failure?.let { message ->
             item {
-                InsightsEmptyPanel("The log could not be read", message)
+                InsightsEmptyPanel(stringResource(R.string.toolsb_patterns_error_log_unreadable), message)
             }
         }
 
         if (failure == null && loaded && entryCount == 0) {
             item {
                 InsightsEmptyPanel(
-                    "No logged entries",
-                    "Add entries to see your patterns. Every card here is a reading of " +
-                        "what you have already written down.",
+                    stringResource(R.string.toolsb_no_logged_entries),
+                    stringResource(R.string.toolsb_patterns_empty_detail),
                 )
             }
         }
 
         val shown = report
         if (failure == null && loaded && entryCount > 0 && (shown == null || shown.isEmpty)) {
-            item { InsightsEmptyPanel("Nothing to summarize", "Nothing logged in this range.") }
+            item {
+                InsightsEmptyPanel(
+                    stringResource(R.string.toolsb_patterns_empty_range_title),
+                    stringResource(R.string.toolsb_patterns_empty_range_detail),
+                )
+            }
         }
 
         if (shown != null && !shown.isEmpty) {
@@ -163,8 +168,7 @@ fun PatternsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
             if (shown.overlaps.isNotEmpty()) item { OverlapCard(shown) }
             item {
                 Text(
-                    "A record and a model, not medical advice. Exposure uses published " +
-                        "equivalents where they exist, and the substance's typical dose otherwise.",
+                    stringResource(R.string.toolsb_patterns_disclaimer),
                     style = MaterialTheme.typography.labelSmall,
                     color = PiruTheme.colors.secondaryLabel,
                     modifier = Modifier.padding(bottom = 8.dp),
@@ -185,17 +189,29 @@ fun PatternsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
  */
 @Composable
 private fun HolidayCard(holidays: HolidayStats) {
-    InsightsSectionCard(title = "Days used") {
+    InsightsSectionCard(title = stringResource(R.string.toolsb_patterns_days_used)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            StatTile(holidays.daysUsed.toString(), "of ${holidays.totalDays} days", Modifier.weight(1f))
             StatTile(
-                InsightsFormat.percent(holidays.fractionUsed),
-                "of days",
+                holidays.daysUsed.toString(),
+                stringResource(R.string.toolsb_patterns_of_total_days, holidays.totalDays),
                 Modifier.weight(1f),
             )
-            StatTile("${holidays.longestBreakDays}d", "longest break", Modifier.weight(1f))
+            StatTile(
+                InsightsFormat.percent(holidays.fractionUsed),
+                stringResource(R.string.toolsb_patterns_of_days),
+                Modifier.weight(1f),
+            )
+            StatTile(
+                "${holidays.longestBreakDays}d",
+                stringResource(R.string.toolsb_patterns_longest_break),
+                Modifier.weight(1f),
+            )
             if (holidays.currentBreakDays > 0) {
-                StatTile("${holidays.currentBreakDays}d", "since last", Modifier.weight(1f))
+                StatTile(
+                    "${holidays.currentBreakDays}d",
+                    stringResource(R.string.toolsb_patterns_since_last),
+                    Modifier.weight(1f),
+                )
             }
         }
     }
@@ -214,8 +230,8 @@ private fun StatTile(value: String, label: String, modifier: Modifier = Modifier
 @Composable
 private fun ExposureCard(report: JournalSummary) {
     InsightsSectionCard(
-        title = "Cumulative exposure",
-        subtitle = "Total taken this range, in each substance's common-dose unit",
+        title = stringResource(R.string.toolsb_patterns_cumulative_exposure),
+        subtitle = stringResource(R.string.toolsb_patterns_exposure_subtitle),
     ) {
         if (report.opioidPeakDayMme != null || report.benzoDiazepamPerDay != null) {
             SummaryCallout(report)
@@ -244,7 +260,10 @@ private fun SummaryCallout(report: JournalSummary) {
                     .padding(12.dp),
             ) {
                 Text(
-                    "Benzodiazepines ≈ ${InsightsFormat.oneDecimal(equivalent)} mg diazepam-eq/day",
+                    stringResource(
+                        R.string.toolsb_patterns_benzo_equivalent_per_day,
+                        InsightsFormat.oneDecimal(equivalent),
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
@@ -262,11 +281,11 @@ private fun SummaryCallout(report: JournalSummary) {
 private fun MmeBand(peakDayMme: Double, dailyMean: Double) {
     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
-            "Opioids: peak day ≈ ${InsightsFormat.whole(peakDayMme)} MME",
+            stringResource(R.string.toolsb_patterns_opioid_peak_day, InsightsFormat.whole(peakDayMme)),
             style = MaterialTheme.typography.labelMedium,
         )
         Text(
-            "Average ${InsightsFormat.oneDecimal(dailyMean)} MME/day over the range",
+            stringResource(R.string.toolsb_patterns_opioid_average, InsightsFormat.oneDecimal(dailyMean)),
             style = MaterialTheme.typography.labelSmall,
             color = PiruTheme.colors.secondaryLabel,
         )
@@ -285,7 +304,7 @@ private fun ExposureRow(stat: ExposureStat, substance: SummarySubstance) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
             Text(substance.displayName, style = MaterialTheme.typography.bodyMedium)
             Text(
-                "${InsightsFormat.exposure(stat.total)} ${substance.unit}",
+                "${InsightsFormat.exposure(stat.total)} ${stringResource(substance.unitRes)}",
                 style = MaterialTheme.typography.labelSmall,
                 color = PiruTheme.colors.secondaryLabel,
             )
@@ -337,7 +356,7 @@ private fun CumulativeSparkline(points: List<ExposureStat.CumulativePoint>, tint
  */
 @Composable
 private fun EscalationCard(report: JournalSummary) {
-    InsightsSectionCard(title = "Dose trend") {
+    InsightsSectionCard(title = stringResource(R.string.toolsb_patterns_dose_trend)) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             for (stat in report.escalation) {
                 EscalationRow(stat, report.substances[stat.substanceIndex])
@@ -371,7 +390,11 @@ private fun EscalationRow(stat: EscalationStat, substance: SummarySubstance) {
             color = PiruTheme.colors.secondaryLabel,
         )
         Text(
-            if (stat.direction == EscalationDirection.STEADY) "steady" else InsightsFormat.signedPercent(stat.change),
+            if (stat.direction == EscalationDirection.STEADY) {
+                stringResource(R.string.toolsb_patterns_direction_steady)
+            } else {
+                InsightsFormat.signedPercent(stat.change)
+            },
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
             color = colour,
@@ -390,7 +413,7 @@ private fun EscalationRow(stat: EscalationStat, substance: SummarySubstance) {
  */
 @Composable
 private fun OverlapCard(report: JournalSummary) {
-    InsightsSectionCard(title = "Active together") {
+    InsightsSectionCard(title = stringResource(R.string.toolsb_patterns_active_together)) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             // Upstream caps this at six rows: past that a list stops being a
             // reading and starts being a dump.
@@ -415,8 +438,19 @@ private fun OverlapCard(report: JournalSummary) {
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.weight(1f),
                     )
+                    // Whole days past 24 hours, whole hours below it — "2.1 days"
+                    // reads better than "50 h". The format lives in the resources
+                    // because the two halves are two different sentences.
+                    val span = if (overlap.hours >= 24) {
+                        stringResource(
+                            R.string.toolsb_patterns_overlap_days,
+                            InsightsFormat.oneDecimal(overlap.hours / 24),
+                        )
+                    } else {
+                        stringResource(R.string.toolsb_patterns_overlap_hours, Math.round(overlap.hours))
+                    }
                     Text(
-                        hoursText(overlap.hours),
+                        span,
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = PiruTheme.colors.secondaryLabel,
@@ -426,7 +460,3 @@ private fun OverlapCard(report: JournalSummary) {
         }
     }
 }
-
-/** Whole days past 24 hours, whole hours below it — "2.1 days" reads better than "50 h". */
-private fun hoursText(hours: Double): String =
-    if (hours >= 24) "${InsightsFormat.oneDecimal(hours / 24)} days" else "${Math.round(hours)} h"

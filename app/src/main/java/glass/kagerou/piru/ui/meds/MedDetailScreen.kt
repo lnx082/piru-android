@@ -25,9 +25,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.JsonLists
 import glass.kagerou.piru.data.entity.DailyDoseItemEntity
 import glass.kagerou.piru.model.DoseFrequency
@@ -36,6 +38,7 @@ import glass.kagerou.piru.model.doseFormatted
 import glass.kagerou.piru.substance.DbSubstanceCatalog
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.labels.CoreLabels
 import glass.kagerou.piru.ui.theme.PiruTheme
 import java.time.Instant
 import java.time.ZoneId
@@ -178,7 +181,7 @@ fun MedDetailScreen(
                 }
             }
 
-            FormSection("Dosage") {
+            FormSection(stringResource(R.string.meds_section_dosage)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -194,7 +197,7 @@ fun MedDetailScreen(
                                 mutate { it.copy(amount = parsed) }
                             }
                         },
-                        label = { Text("Amount") },
+                        label = { Text(stringResource(R.string.common_amount)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         modifier = Modifier.weight(1f),
@@ -213,10 +216,10 @@ fun MedDetailScreen(
                         mutate { it.copy(route = route, unit = sub?.unit(route) ?: it.unit) }
                     },
                 )
-                FormFooter("Checked off by an entry for the same substance and route.")
+                FormFooter(stringResource(R.string.meds_footer_checked_off))
             }
 
-            FormSection("Schedule") {
+            FormSection(stringResource(R.string.meds_section_schedule)) {
                 SchedulePicker(
                     schedule = if (current.isAsNeeded) {
                         FormSchedule.AsNeeded
@@ -251,8 +254,9 @@ fun MedDetailScreen(
                     current.isAsNeeded -> IntegerStepper(
                         value = current.maxPerDay ?: 0,
                         range = 0..12,
-                        label = current.maxPerDay?.let { "Up to ${it}× daily" }
-                            ?: "No daily limit entered",
+                        label = current.maxPerDay?.let {
+                            stringResource(R.string.meds_up_to_daily_limit, it)
+                        } ?: stringResource(R.string.meds_no_daily_limit),
                         onChange = { limit -> mutate { it.copy(maxPerDay = if (limit == 0) null else limit) } },
                     )
 
@@ -283,14 +287,14 @@ fun MedDetailScreen(
                 }
 
                 if (current.isAsNeeded) {
-                    FormFooter("Never marked missed. A daily limit feeds the cumulative dose warnings.")
+                    FormFooter(stringResource(R.string.meds_footer_never_missed))
                 } else if (current.frequency == DoseFrequency.SPECIFIC_DAYS && current.frequencyDays.isEmpty()) {
-                    FormFooter("Select at least one day.")
+                    FormFooter(stringResource(R.string.meds_footer_select_a_day))
                 }
             }
 
             if (!current.isAsNeeded) {
-                FormSection("Times") {
+                FormSection(stringResource(R.string.meds_section_times)) {
                     val times = current.reminderTimesMinutes
                     for (minutes in times) {
                         ReminderTimeRow(
@@ -339,11 +343,11 @@ fun MedDetailScreen(
                         }
                     }
                     if (times.isEmpty()) {
-                        FormFooter("No set time — this med still counts toward adherence once per due day.")
+                        FormFooter(stringResource(R.string.meds_footer_no_set_time))
                     }
                 }
 
-                FormSection("Reminders") {
+                FormSection(stringResource(R.string.meds_section_reminders)) {
                     RemindMeToggle(remind = current.remind) { on ->
                         mutate { it.copy(remind = on) }
                     }
@@ -357,10 +361,7 @@ fun MedDetailScreen(
                             },
                         )
                     }
-                    FormFooter(
-                        "Ask Again sends another reminder if a dose isn't logged — " +
-                            "\"Default\" uses the intervals in Notification Settings.",
-                    )
+                    FormFooter(stringResource(R.string.meds_ask_again_footer))
                 }
             }
 
@@ -380,7 +381,7 @@ fun MedDetailScreen(
                     horizontalArrangement = Arrangement.Center,
                 ) {
                     Text(
-                        "Delete Med",
+                        stringResource(R.string.meds_delete_med),
                         style = MaterialTheme.typography.titleSmall,
                         color = PiruTheme.colors.danger,
                     )
@@ -392,8 +393,8 @@ fun MedDetailScreen(
     if (confirmingDelete) {
         AlertDialog(
             onDismissRequest = { confirmingDelete = false },
-            title = { Text("Delete this med?") },
-            text = { Text("Reminders and adherence tracking stop. Existing entries stay in your journal.") },
+            title = { Text(stringResource(R.string.meds_delete_med_question)) },
+            text = { Text(stringResource(R.string.meds_delete_med_consequence)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -404,11 +405,13 @@ fun MedDetailScreen(
                         }
                     },
                 ) {
-                    Text("Delete Med", color = PiruTheme.colors.danger)
+                    Text(stringResource(R.string.meds_delete_med), color = PiruTheme.colors.danger)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { confirmingDelete = false }) { Text("Cancel") }
+                TextButton(onClick = { confirmingDelete = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
             },
         )
     }
@@ -427,11 +430,11 @@ private fun timesOf(item: DailyDoseItemEntity): List<Int> = item.reminderTimesMi
  * upstream's `CaseIterable` order and cannot be reordered — Kotlin enums take
  * their `compareTo` from it.
  */
-private enum class AskAgainChoice(val label: String) {
-    GLOBAL_DEFAULT("Default"),
-    OFF("Off"),
-    TEN("10 min later"),
-    TEN_THIRTY("10 and 30 min later"),
+private enum class AskAgainChoice(@androidx.annotation.StringRes val labelRes: Int) {
+    GLOBAL_DEFAULT(R.string.meds_ask_again_default),
+    OFF(R.string.meds_ask_again_off),
+    TEN(R.string.meds_ask_again_ten),
+    TEN_THIRTY(R.string.meds_ask_again_ten_thirty),
     ;
 
     /** The stored override, or the [serialized] form of it. */
@@ -470,15 +473,19 @@ private enum class AskAgainChoice(val label: String) {
 private fun AskAgainPicker(selected: AskAgainChoice, onSelect: (AskAgainChoice) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("Ask Again", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-        TextButton(onClick = { expanded = true }) { Text(selected.label) }
+        Text(
+            stringResource(R.string.meds_ask_again_label),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(onClick = { expanded = true }) { Text(stringResource(selected.labelRes)) }
         androidx.compose.material3.DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
         ) {
             for (choice in AskAgainChoice.entries) {
                 androidx.compose.material3.DropdownMenuItem(
-                    text = { Text(choice.label) },
+                    text = { Text(stringResource(choice.labelRes)) },
                     onClick = {
                         onSelect(choice)
                         expanded = false
@@ -514,13 +521,22 @@ private fun unitOptions(item: DailyDoseItemEntity, catalog: DbSubstanceCatalog?)
  * A multi-time med reads as "2× daily" rather than listing its times: the times
  * are the section below it, and the header's job is the cadence.
  */
+@Composable
 private fun scheduleSummary(item: DailyDoseItemEntity): String {
-    val dose = "${doseFormatted(item.amount)} ${item.unit} · ${item.route.displayName}"
+    val dose = stringResource(
+        R.string.meds_schedule_summary_dose_route,
+        "${doseFormatted(item.amount)} ${item.unit}",
+        CoreLabels.route(item.route),
+    )
     if (item.isAsNeeded) {
         val limit = item.maxPerDay
-        return if (limit != null) "$dose · up to ${limit}× daily" else "$dose · as needed"
+        return if (limit != null) {
+            stringResource(R.string.meds_row_subtitle_up_to_daily, dose, limit)
+        } else {
+            stringResource(R.string.meds_row_subtitle_as_needed, dose)
+        }
     }
     val count = item.reminderTimesMinutes.size
-    if (count > 1) return "$dose · ${count}× daily"
-    return "$dose · ${frequencyShortLabel(item.frequency)}"
+    if (count > 1) return stringResource(R.string.meds_row_subtitle_daily_count, dose, count)
+    return stringResource(R.string.meds_row_subtitle_times, dose, frequencyShortLabel(item.frequency))
 }

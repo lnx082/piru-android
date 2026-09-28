@@ -36,8 +36,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.DailyDoseItemEntity
 import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.engine.InteractionChecker
@@ -50,6 +53,7 @@ import glass.kagerou.piru.model.doseFormatted
 import glass.kagerou.piru.notifications.toDoseRecord
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.labels.CoreLabels
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.nav.PushRoute
 import glass.kagerou.piru.ui.theme.PiruTheme
@@ -157,7 +161,11 @@ fun LogMedicationsScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                if (category.isEmpty()) "Log Meds" else "Log $category",
+                if (category.isEmpty()) {
+                    stringResource(R.string.meds_log_meds)
+                } else {
+                    stringResource(R.string.meds_log_category, category)
+                },
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.weight(1f),
             )
@@ -178,7 +186,7 @@ fun LogMedicationsScreen(
                 PiruCard(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            "Toggle off any you don't want to log today",
+                            stringResource(R.string.meds_log_toggle_off_hint),
                             style = captionSecondaryStyle,
                             modifier = Modifier.padding(bottom = 8.dp),
                         )
@@ -191,8 +199,11 @@ fun LogMedicationsScreen(
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(displayName(item), style = MaterialTheme.typography.bodyMedium)
                                     Text(
-                                        "${doseFormatted(item.amount)} ${item.unit} — " +
-                                            item.route.displayName,
+                                        stringResource(
+                                            R.string.meds_dose_route_dash,
+                                            "${doseFormatted(item.amount)} ${item.unit}",
+                                            CoreLabels.route(item.route),
+                                        ),
                                         style = captionSecondaryStyle,
                                     )
                                 }
@@ -219,10 +230,14 @@ fun LogMedicationsScreen(
                         horizontalArrangement = Arrangement.Center,
                     ) {
                         Text(
-                            when {
-                                saving -> "Saving…"
-                                selected.size == 1 -> "Log 1 Item"
-                                else -> "Log ${selected.size} Items"
+                            if (saving) {
+                                stringResource(R.string.meds_saving)
+                            } else {
+                                pluralStringResource(
+                                    R.plurals.meds_log_items,
+                                    selected.size,
+                                    selected.size,
+                                )
                             },
                             style = MaterialTheme.typography.titleSmall,
                             color = if (selected.isEmpty()) {
@@ -283,9 +298,16 @@ fun InteractionWarningSheet(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("Interaction Warning", style = MaterialTheme.typography.titleMedium)
             Text(
-                if (warnings.size == 1) "1 interaction detected" else "${warnings.size} interactions detected",
+                stringResource(R.string.meds_interaction_warning),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Text(
+                pluralStringResource(
+                    R.plurals.meds_interactions_detected,
+                    warnings.size,
+                    warnings.size,
+                ),
                 style = captionSecondaryStyle,
             )
 
@@ -310,7 +332,7 @@ fun InteractionWarningSheet(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "Log Anyway",
+                        stringResource(R.string.meds_log_anyway),
                         style = MaterialTheme.typography.titleSmall,
                         color = PiruTheme.colors.danger,
                     )
@@ -356,7 +378,11 @@ private fun MedsWarningRow(
                         .background(tint.copy(alpha = 0.14f))
                         .padding(horizontal = 8.dp, vertical = 2.dp),
                 ) {
-                    Text(warning.severity.label, style = MaterialTheme.typography.labelSmall, color = tint)
+                    Text(
+                        CoreLabels.severity(warning.severity),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = tint,
+                    )
                 }
                 Text(
                     "${warning.substanceA} + ${warning.substanceB}",

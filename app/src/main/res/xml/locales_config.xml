@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The languages this app declares, which is what puts Piru in Android 13's
+  per-app language picker (Settings → Apps → Piru → Language).
+
+  Worth having rather than relying on the system language alone: someone reading
+  a dose journal in Chinese should not have to switch their whole phone to
+  Chinese to do it, and someone whose phone is in Chinese may still want the
+  English names in the substance library.
+
+  `zh-Hans` only, not `zh-Hant`. Upstream carries Traditional too, but this build
+  ships Simplified — declaring a locale with no `values-zh-rTW` behind it would
+  put an option in that picker which changes nothing, which is worse than not
+  offering it.
+-->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en" />
+    <locale android:name="zh-Hans" />
+</locale-config>

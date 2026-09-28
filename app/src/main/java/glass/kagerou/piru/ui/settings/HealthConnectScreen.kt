@@ -23,8 +23,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.UserProfileStore
 import glass.kagerou.piru.health.HealthConnectVitals
 import kotlin.math.abs
@@ -100,11 +102,9 @@ fun HealthConnectScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {
     ) {
         item {
             Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Health data", style = MaterialTheme.typography.headlineSmall)
+                Text(stringResource(R.string.shell_settings_health_data), style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    "Piru can show your heart rate, blood pressure and weight next to " +
-                        "the doses you logged. It only reads — it never writes a health " +
-                        "record, and nothing here leaves the phone.",
+                    stringResource(R.string.shell_health_intro),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -114,18 +114,15 @@ fun HealthConnectScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {
         when (availability) {
             HealthConnectVitals.Availability.NOT_INSTALLED -> item {
                 Notice(
-                    title = "Health Connect is not on this device",
-                    body = "On this version of Android it is a separate app. Installing it " +
-                        "from the Play Store turns this on; until then the rest of Piru works " +
-                        "exactly as it does now.",
+                    title = stringResource(R.string.shell_health_not_installed_title),
+                    body = stringResource(R.string.shell_health_not_installed_body),
                 )
             }
 
             HealthConnectVitals.Availability.PROVIDER_UPDATE_REQUIRED -> item {
                 Notice(
-                    title = "Health Connect needs an update",
-                    body = "The version installed here is older than the one Piru talks to. " +
-                        "Updating it from the Play Store turns this on.",
+                    title = stringResource(R.string.shell_health_update_title),
+                    body = stringResource(R.string.shell_health_update_body),
                 )
             }
 
@@ -137,31 +134,41 @@ fun HealthConnectScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {
                             verticalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
                             Text(
-                                if (loaded && granted.size == health.requiredPermissions.size) {
-                                    "Connected"
-                                } else if (loaded && granted.isNotEmpty()) {
-                                    "Partly connected"
-                                } else {
-                                    "Not connected"
+                                when {
+                                    loaded && granted.size == health.requiredPermissions.size ->
+                                        stringResource(R.string.shell_health_connected)
+                                    loaded && granted.isNotEmpty() ->
+                                        stringResource(R.string.shell_health_partly_connected)
+                                    else ->
+                                        stringResource(R.string.shell_health_not_connected)
                                 },
                                 style = MaterialTheme.typography.titleSmall,
                             )
                             Text(
                                 if (loaded && granted.isNotEmpty()) {
-                                    "${granted.size} of ${health.requiredPermissions.size} data " +
-                                        "types allowed. You can change any of them in Health Connect."
+                                    stringResource(
+                                        R.string.shell_health_allowed_count,
+                                        granted.size,
+                                        health.requiredPermissions.size,
+                                    )
                                 } else {
-                                    "Piru reads nothing from your health data until you allow it."
+                                    stringResource(R.string.shell_health_nothing_read)
                                 },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = PiruTheme.colors.secondaryLabel,
                             )
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Button(onClick = { launcher.launch(health.requiredPermissions) }) {
-                                    Text(if (granted.isEmpty()) "Allow access" else "Change access")
+                                    Text(
+                                        if (granted.isEmpty()) {
+                                            stringResource(R.string.shell_health_allow)
+                                        } else {
+                                            stringResource(R.string.shell_health_change_access)
+                                        },
+                                    )
                                 }
                                 TextButton(onClick = { openHealthConnectSettings(context) }) {
-                                    Text("Open Health Connect")
+                                    Text(stringResource(R.string.shell_health_open_settings))
                                 }
                             }
                         }
@@ -174,12 +181,12 @@ fun HealthConnectScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {
                             modifier = Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            Text("What is read", style = MaterialTheme.typography.titleSmall)
+                            Text(stringResource(R.string.shell_health_what_is_read), style = MaterialTheme.typography.titleSmall)
                             for ((label, detail) in READ_TYPES) {
                                 Column {
-                                    Text(label, style = MaterialTheme.typography.bodyMedium)
+                                    Text(stringResource(label), style = MaterialTheme.typography.bodyMedium)
                                     Text(
-                                        detail,
+                                        stringResource(detail),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = PiruTheme.colors.secondaryLabel,
                                     )
@@ -195,11 +202,9 @@ fun HealthConnectScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {
                             modifier = Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
-                            Text("Body weight", style = MaterialTheme.typography.titleSmall)
+                            Text(stringResource(R.string.shell_health_body_weight), style = MaterialTheme.typography.titleSmall)
                             Text(
-                                "Piru scales every dose model by this — how fast a dose is " +
-                                    "cleared, and how concentrated it is while it is there. " +
-                                    "A closer number is a closer curve, not a different one.",
+                                stringResource(R.string.shell_health_body_weight_detail),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = PiruTheme.colors.secondaryLabel,
                             )
@@ -223,11 +228,11 @@ fun HealthConnectScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {
                             Text(
                                 when (profileSource) {
                                     UserProfileStore.WeightSource.MANUAL ->
-                                        "You entered this. A reading from Health Connect will not replace it."
+                                        stringResource(R.string.shell_health_weight_source_manual)
                                     UserProfileStore.WeightSource.HEALTH_CONNECT ->
-                                        "Read from Health Connect. A number you type replaces it."
+                                        stringResource(R.string.shell_health_weight_source_synced)
                                     UserProfileStore.WeightSource.ESTIMATED ->
-                                        "Not set. The model uses a 60 kg reference until you give it one."
+                                        stringResource(R.string.shell_health_weight_source_estimated)
                                 },
                                 style = MaterialTheme.typography.bodySmall,
                                 color = PiruTheme.colors.secondaryLabel,
@@ -246,13 +251,7 @@ fun HealthConnectScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {
                                         onChanged()
                                     },
                                 ) {
-                                    Text(
-                                        java.lang.String.format(
-                                            java.util.Locale.ROOT,
-                                            "Use the reading from Health Connect (%.1f kg)",
-                                            reading,
-                                        ),
-                                    )
+                                    Text(stringResource(R.string.shell_health_use_reading, reading))
                                 }
                             }
                         }
@@ -261,10 +260,8 @@ fun HealthConnectScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {
 
                 item {
                     Notice(
-                        title = "If a reading never appears",
-                        body = "Piru sees only what other apps have written into Health " +
-                            "Connect. If your watch syncs to an app that does not write " +
-                            "there, nothing Piru does will make those numbers show up.",
+                        title = stringResource(R.string.shell_health_no_reading_title),
+                        body = stringResource(R.string.shell_health_no_reading_body),
                     )
                 }
             }
@@ -272,8 +269,7 @@ fun HealthConnectScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {
 
         item {
             Text(
-                "Readings are shown as the other app recorded them. Piru does not verify " +
-                    "them. Not medical advice.",
+                stringResource(R.string.shell_health_disclaimer),
                 style = MaterialTheme.typography.bodySmall,
                 color = PiruTheme.colors.secondaryLabel,
                 modifier = Modifier.padding(bottom = 8.dp),
@@ -290,12 +286,12 @@ fun HealthConnectScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {
  * why a dose journal wants it, and the answer — that a workout is a competing
  * explanation for a heart rate change — is worth the line.
  */
-private val READ_TYPES: List<Pair<String, String>> = listOf(
-    "Heart rate" to "Plotted against your doses, so the curve shows what your body did around each one.",
-    "Resting heart rate" to "The slow baseline, for comparison against a session.",
-    "Blood pressure" to "Shown on the session timeline where a reading exists.",
-    "Workouts" to "Marks the heart rate during exercise, so a rise from a run is not read as a rise from a dose.",
-    "Weight" to "Scales the dose models. The newest reading is used.",
+private val READ_TYPES: List<Pair<Int, Int>> = listOf(
+    R.string.shell_health_type_heart_rate to R.string.shell_health_type_heart_rate_detail,
+    R.string.shell_health_type_resting_heart_rate to R.string.shell_health_type_resting_heart_rate_detail,
+    R.string.shell_health_type_blood_pressure to R.string.shell_health_type_blood_pressure_detail,
+    R.string.shell_health_type_workouts to R.string.shell_health_type_workouts_detail,
+    R.string.shell_health_type_weight to R.string.shell_health_type_weight_detail,
 )
 
 /**
@@ -322,7 +318,7 @@ private fun BodyWeightStepper(value: Double, onChange: (Double) -> Unit) {
         ) { Text("−") }
 
         Text(
-            java.lang.String.format(java.util.Locale.ROOT, "%.1f kg", value),
+            stringResource(R.string.shell_health_weight_value, value),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.weight(1f),
         )

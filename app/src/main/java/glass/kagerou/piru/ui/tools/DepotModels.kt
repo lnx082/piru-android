@@ -1,11 +1,13 @@
 package glass.kagerou.piru.ui.tools
 
 import android.content.Context
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.engine.PKModelDepot
 import glass.kagerou.piru.engine.SubstanceCatalog
@@ -210,47 +212,44 @@ internal class LabMeasurementStore(context: Context) {
  */
 internal enum class CompanionMeasurement(
     val key: String,
-    val title: String,
+    @StringRes val titleRes: Int,
     val unit: String,
-    val framing: String,
+    @StringRes val framingRes: Int,
     val tint: Color,
 ) {
     /** Testosterone suppression on the estradiol (transfem) side. */
     TESTOSTERONE(
         key = "testosterone",
-        title = "Testosterone (suppression)",
+        titleRes = R.string.toolsb_depot_companion_testosterone_title,
         unit = "ng/dL",
-        framing = "Your measured testosterone. On estradiol, T usually falls; Piru plots your points " +
-            "rather than modeling suppression.",
+        framingRes = R.string.toolsb_depot_companion_testosterone_framing,
         tint = Color(0xFF3F51B5),
     ),
 
     /** Aromatised estradiol on the testosterone (transmasc) side. */
     ESTRADIOL(
         key = "estradiol",
-        title = "Aromatized estradiol",
+        titleRes = R.string.toolsb_depot_companion_estradiol_title,
         unit = "pg/mL",
-        framing = "Testosterone aromatizes to estradiol, so E2 often rises on T. Piru plots your " +
-            "measured points — the conversion is person-specific, not modeled.",
+        framingRes = R.string.toolsb_depot_companion_estradiol_framing,
         tint = Color(0xFFE91E63),
     ),
 
     /** Haematocrit — the T-specific monitoring axis estradiol has no analogue for. */
     HEMATOCRIT(
         key = "hematocrit",
-        title = "Hematocrit",
+        titleRes = R.string.toolsb_depot_companion_hematocrit_title,
         unit = "%",
-        framing = "Testosterone raises red-cell production, so hematocrit is monitored on T (largest " +
-            "rise in the first year). These are your measured points, plotted, not a prediction.",
+        framingRes = R.string.toolsb_depot_companion_hematocrit_framing,
         tint = Color(0xFFD32F2F),
     ),
 
     /** Haemoglobin — the other red-cell readout, monitored on the same panel. */
     HEMOGLOBIN(
         key = "hemoglobin",
-        title = "Hemoglobin",
+        titleRes = R.string.toolsb_depot_companion_hemoglobin_title,
         unit = "g/dL",
-        framing = "Monitored alongside hematocrit on T. Your measured points, plotted.",
+        framingRes = R.string.toolsb_depot_companion_hemoglobin_framing,
         tint = Color(0xFFF57C00),
     ),
     ;
@@ -278,11 +277,11 @@ internal enum class CompanionMeasurement(
  * Ported from `InjectionLevelsModel.ChartRange`. Depot cycles run days-to-weeks
  * over months of history, so a fixed all-time span buries the recent detail.
  */
-internal enum class ChartRange(val days: Double?, val label: String) {
-    MONTH(30.0, "1M"),
-    QUARTER(91.0, "3M"),
-    HALF_YEAR(182.0, "6M"),
-    ALL(null, "All"),
+internal enum class ChartRange(val days: Double?, @StringRes val labelRes: Int) {
+    MONTH(30.0, R.string.toolsb_depot_chart_range_1m),
+    QUARTER(91.0, R.string.toolsb_depot_chart_range_3m),
+    HALF_YEAR(182.0, R.string.toolsb_depot_chart_range_6m),
+    ALL(null, R.string.toolsb_depot_chart_range_all),
 }
 
 // MARK: - The prediction tool's state

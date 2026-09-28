@@ -29,12 +29,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.PathEffect
+import androidx.annotation.StringRes
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.engine.PKModel
 import glass.kagerou.piru.model.ByVolumeDosing
 import glass.kagerou.piru.model.DrinkPreset
@@ -107,11 +110,9 @@ fun AlcoholScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     ) {
         item {
             Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Alcohol", style = MaterialTheme.typography.headlineSmall)
+                Text(stringResource(R.string.alcohol_title), style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    "Build a drink from a volume and a strength, and see how long the " +
-                        "body takes to clear it. Ethanol is cleared at a fixed rate, so " +
-                        "twice the drink takes about twice as long.",
+                    stringResource(R.string.alcohol_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -121,8 +122,7 @@ fun AlcoholScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         if (loaded && capability == null) {
             item {
                 Text(
-                    "The catalog carries no by-volume capability for alcohol in this " +
-                        "build, so there is nothing to convert with.",
+                    stringResource(R.string.alcohol_unavailable),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -154,7 +154,7 @@ fun AlcoholScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                 PiruCard(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         NumberRow(
-                            label = "Volume",
+                            label = stringResource(R.string.alcohol_volume),
                             value = volumeText,
                             onValueChange = { volumeText = it },
                         ) {
@@ -162,12 +162,12 @@ fun AlcoholScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                                 FilterChip(
                                     selected = !useFluidOunces,
                                     onClick = { useFluidOunces = false },
-                                    label = { Text("mL") },
+                                    label = { Text(stringResource(R.string.alcohol_unit_ml)) },
                                 )
                                 FilterChip(
                                     selected = useFluidOunces,
                                     onClick = { useFluidOunces = true },
-                                    label = { Text("fl oz") },
+                                    label = { Text(stringResource(R.string.alcohol_unit_fl_oz)) },
                                 )
                             }
                         }
@@ -176,7 +176,7 @@ fun AlcoholScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
-                                "Strength",
+                                stringResource(R.string.alcohol_strength),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = PiruTheme.colors.secondaryLabel,
                             )
@@ -188,8 +188,10 @@ fun AlcoholScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                 modifier = Modifier.width(110.dp),
                             )
+                            // The two spaces are the gap to the field, kept out of
+                            // the resource because aapt2 trims leading whitespace.
                             Text(
-                                "  % ABV",
+                                "  " + stringResource(R.string.alcohol_abv_suffix),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = PiruTheme.colors.secondaryLabel,
                             )
@@ -199,7 +201,7 @@ fun AlcoholScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
-                                "Name",
+                                stringResource(R.string.alcohol_name),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = PiruTheme.colors.secondaryLabel,
                             )
@@ -208,7 +210,7 @@ fun AlcoholScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                                 value = nameText,
                                 onValueChange = { nameText = it },
                                 singleLine = true,
-                                placeholder = { Text("Optional") },
+                                placeholder = { Text(stringResource(R.string.alcohol_optional)) },
                                 modifier = Modifier.width(170.dp),
                             )
                         }
@@ -218,12 +220,15 @@ fun AlcoholScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                         if (drink != null) {
                             Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
                                 Text(
-                                    "${drink.grams.roundToInt()} g",
+                                    stringResource(R.string.alcohol_grams, drink.grams.roundToInt()),
                                     style = MaterialTheme.typography.headlineSmall,
                                     fontWeight = FontWeight.SemiBold,
                                 )
                                 Text(
-                                    "ethanol · ≈ ${oneDecimal(drink.standardDrinks)} standard drinks",
+                                    stringResource(
+                                        R.string.alcohol_standard_drinks,
+                                        oneDecimal(drink.standardDrinks),
+                                    ),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = PiruTheme.colors.secondaryLabel,
                                 )
@@ -243,28 +248,23 @@ fun AlcoholScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
             item {
                 PiruCard(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("How this is modelled", style = MaterialTheme.typography.titleSmall)
                         Text(
-                            "Ethanol is cleared by an enzyme that is already saturated at " +
-                                "ordinary drinking levels, so the body removes a roughly " +
-                                "constant mass per minute instead of a constant fraction. " +
-                                "The curve is F·D·(1 − e^−ka·t) − Vmax·t, with the " +
-                                "catalog's own Vmax and absorption rate.",
+                            stringResource(R.string.alcohol_modelled_title),
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        Text(
+                            stringResource(R.string.alcohol_modelled_body),
                             style = MaterialTheme.typography.bodySmall,
                             color = PiruTheme.colors.secondaryLabel,
                         )
                         Text(
-                            "The clearance rate is scaled to a 60 kg reference body, " +
-                                "because this build has no body-weight setting. Vmax is " +
-                                "linear in weight, so a different weight stretches or " +
-                                "compresses the whole curve rather than changing its shape.",
+                            stringResource(R.string.alcohol_modelled_weight),
                             style = MaterialTheme.typography.bodySmall,
                             color = PiruTheme.colors.secondaryLabel,
                         )
+                        // The disclaimer stays English — see the note in IdentifyScreen.
                         Text(
-                            "Predicted from a model, not measured. A standard drink is " +
-                                "14 g of ethanol by US convention — a gloss for reading a " +
-                                "figure, not a target. Not medical advice.",
+                            stringResource(R.string.alcohol_modelled_drink) + " Not medical advice.",
                             style = MaterialTheme.typography.bodySmall,
                             color = PiruTheme.colors.secondaryLabel,
                         )
@@ -281,16 +281,17 @@ private fun PresetChip(preset: DrinkPreset, onClick: () -> Unit) {
     FilterChip(
         selected = false,
         onClick = onClick,
-        label = { Text("${preset.kind.emoji}  ${presetName(preset.kind)}") },
+        label = { Text("${preset.kind.emoji}  ${stringResource(presetName(preset.kind))}") },
     )
 }
 
 /** The label for a preset kind — app copy keyed by the case, as upstream keys it. */
-private fun presetName(kind: DrinkPreset.Kind): String = when (kind) {
-    DrinkPreset.Kind.BEER -> "Beer"
-    DrinkPreset.Kind.WINE -> "Wine"
-    DrinkPreset.Kind.SHOT -> "Shot"
-    DrinkPreset.Kind.PINT -> "Pint"
+@StringRes
+private fun presetName(kind: DrinkPreset.Kind): Int = when (kind) {
+    DrinkPreset.Kind.BEER -> R.string.alcohol_preset_beer
+    DrinkPreset.Kind.WINE -> R.string.alcohol_preset_wine
+    DrinkPreset.Kind.SHOT -> R.string.alcohol_preset_shot
+    DrinkPreset.Kind.PINT -> R.string.alcohol_preset_pint
 }
 
 /** A label, a right-aligned numeric field, and whatever trailing control the row carries. */
@@ -371,15 +372,14 @@ private fun EliminationCard(doseMg: Double, kinetics: PKModel.ZeroOrderKinetics)
 
     PiruCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Elimination", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.alcohol_elimination), style = MaterialTheme.typography.titleSmall)
 
             if (peakMinutes <= 0 || clearMinutes <= 0) {
                 // F·D·ka ≤ Vmax: absorption never out-runs elimination, so body
                 // content stays near zero and there is no peak to draw. Saying so
                 // is the answer; a flat line at zero would look like a bug.
                 Text(
-                    "At this amount the model produces no peak — absorption does not " +
-                        "out-run the clearance rate, so body content never builds up.",
+                    stringResource(R.string.alcohol_no_peak),
                     style = MaterialTheme.typography.bodySmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -445,13 +445,13 @@ private fun EliminationCard(doseMg: Double, kinetics: PKModel.ZeroOrderKinetics)
 
             Row(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    "peak at ${duration(peakMinutes)}",
+                    stringResource(R.string.alcohol_chart_peak_at, duration(peakMinutes)),
                     style = MaterialTheme.typography.bodySmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
                 Box(modifier = Modifier.weight(1f))
                 Text(
-                    "back to zero by ${duration(clearMinutes)}",
+                    stringResource(R.string.alcohol_chart_back_to_zero, duration(clearMinutes)),
                     style = MaterialTheme.typography.bodySmall,
                     color = PiruTheme.colors.secondaryLabel,
                     textAlign = TextAlign.End,
@@ -459,12 +459,15 @@ private fun EliminationCard(doseMg: Double, kinetics: PKModel.ZeroOrderKinetics)
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                MetricRow("Peak at", duration(peakMinutes))
-                MetricRow("Cleared by", duration(clearMinutes))
+                MetricRow(stringResource(R.string.alcohol_metric_peak_at), duration(peakMinutes))
+                MetricRow(stringResource(R.string.alcohol_metric_cleared_by), duration(clearMinutes))
                 MetricRow(
-                    "Clearance",
-                    "${String.format(Locale.ROOT, "%.1f", kinetics.vmaxMgPerMin)} mg/min " +
-                        "at ${PKModel.REFERENCE_BODY_WEIGHT_KG.roundToInt()} kg",
+                    stringResource(R.string.alcohol_metric_clearance),
+                    stringResource(
+                        R.string.alcohol_clearance_value,
+                        String.format(Locale.ROOT, "%.1f", kinetics.vmaxMgPerMin),
+                        PKModel.REFERENCE_BODY_WEIGHT_KG.roundToInt(),
+                    ),
                 )
             }
         }
@@ -490,15 +493,26 @@ private fun MetricRow(label: String, value: String) {
  * numbers: under 90 minutes the figure is still "a few minutes" and an hour
  * reading would be wrong by a visible margin, and past two days the hours run
  * into three digits for no gain.
+ *
+ * `@Composable` only because each arm is a resource read; the arithmetic is
+ * still plain.
  */
+@Composable
 private fun duration(minutes: Double): String {
     if (minutes <= 0) return "—"
-    if (minutes < 90) return "${minutes.roundToInt()} min"
+    if (minutes < 90) return stringResource(R.string.alcohol_duration_minutes, minutes.roundToInt())
     if (abs(minutes - minutes.roundToInt()) < 0.05 && minutes < 600) {
         val whole = minutes.roundToInt()
         val hours = whole / 60
         val rest = whole % 60
-        return if (rest == 0) "$hours h" else "$hours h $rest min"
+        return if (rest == 0) {
+            stringResource(R.string.alcohol_duration_hours, hours)
+        } else {
+            stringResource(R.string.alcohol_duration_hours_minutes, hours, rest)
+        }
     }
-    return "${String.format(Locale.ROOT, "%.1f", minutes / 60)} h"
+    return stringResource(
+        R.string.alcohol_duration_decimal_hours,
+        String.format(Locale.ROOT, "%.1f", minutes / 60),
+    )
 }

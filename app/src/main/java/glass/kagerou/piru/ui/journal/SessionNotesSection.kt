@@ -18,10 +18,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.annotation.StringRes
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.SessionNoteEntity
 import glass.kagerou.piru.ui.components.PiruCard
 import glass.kagerou.piru.ui.theme.PiruTheme
@@ -105,22 +108,30 @@ fun SessionNotesSection(
     if (notes.isEmpty() && !composing && checkInOffsetMinutes.isEmpty()) return
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("Notes & check-ins", style = MaterialTheme.typography.titleSmall)
+        Text(stringResource(R.string.journal_session_notes_heading), style = MaterialTheme.typography.titleSmall)
 
         if (checkInOffsetMinutes.isNotEmpty()) {
             PiruCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Scheduled check-ins", style = MaterialTheme.typography.labelLarge)
                     Text(
-                        checkInOffsetMinutes.joinToString(" · ") { offset ->
-                            val h = offset / 60
-                            val m = offset % 60
-                            when {
-                                m == 0 -> "+${h}h"
-                                h == 0 -> "+${m}m"
-                                else -> "+${h}h${m}m"
+                        stringResource(R.string.journal_session_scheduled_check_ins),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    Text(
+                        // `map` is inline and can hold a composable read; a
+                        // `stringResource` inside `joinToString`'s transform
+                        // does not compile, so the labels are resolved first.
+                        checkInOffsetMinutes
+                            .map { offset ->
+                                val h = offset / 60
+                                val m = offset % 60
+                                when {
+                                    m == 0 -> stringResource(R.string.journal_offset_hours, h)
+                                    h == 0 -> stringResource(R.string.journal_offset_minutes, m)
+                                    else -> stringResource(R.string.journal_offset_hours_minutes, h, m)
+                                }
                             }
-                        },
+                            .joinToString(" · "),
                         style = MaterialTheme.typography.bodyMedium,
                         color = PiruTheme.colors.secondaryLabel,
                     )
@@ -142,8 +153,9 @@ fun SessionNotesSection(
                         )
                         Text(
                             when (SessionNoteEntity.Kind.fromWire(note.kindRaw)) {
-                                SessionNoteEntity.Kind.CHECK_IN -> "Check-in"
-                                SessionNoteEntity.Kind.SUMMARY -> "Summary"
+                                SessionNoteEntity.Kind.CHECK_IN -> stringResource(R.string.common_check_in)
+                                SessionNoteEntity.Kind.SUMMARY -> stringResource(R.string.common_summary)
+                                // An observation is the default kind and wears no label.
                                 SessionNoteEntity.Kind.OBSERVATION -> ""
                             },
                             style = MaterialTheme.typography.labelSmall,
@@ -153,12 +165,19 @@ fun SessionNotesSection(
                     if (note.text.isNotBlank()) {
                         Text(note.text, style = MaterialTheme.typography.bodyMedium)
                     }
-                    val readings = buildList {
-                        note.shulgin?.let { add(shulginLabel(it)) }
-                        note.mood?.let { add("mood ${signed(it)}") }
-                        note.energy?.let { add("energy ${signed(it)}") }
-                        note.social?.let { add("social ${signed(it)}") }
-                        note.worked?.let { add(if (it > 0) "worked" else "didn't work") }
+                    val readings = ArrayList<String>(5)
+                    // The Shulgin rating is the published vocabulary (±, +, ++…) and is
+                    // not translated; the three scales around it are.
+                    note.shulgin?.let { readings.add(shulginLabel(it)) }
+                    note.mood?.let { readings.add(stringResource(R.string.journal_note_mood, signed(it))) }
+                    note.energy?.let { readings.add(stringResource(R.string.journal_note_energy, signed(it))) }
+                    note.social?.let { readings.add(stringResource(R.string.journal_note_social, signed(it))) }
+                    note.worked?.let {
+                        readings.add(
+                            stringResource(
+                                if (it > 0) R.string.journal_note_worked else R.string.journal_note_didnt_work,
+                            ),
+                        )
                     }
                     if (readings.isNotEmpty()) {
                         Text(
@@ -177,11 +196,11 @@ fun SessionNotesSection(
                     OutlinedTextField(
                         value = text,
                         onValueChange = { text = it },
-                        label = { Text("What's happening") },
+                        label = { Text(stringResource(R.string.journal_note_prompt)) },
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Text(
-                        "Shulgin",
+                        stringResource(R.string.common_shulgin_scale),
                         style = MaterialTheme.typography.labelSmall,
                         color = PiruTheme.colors.secondaryLabel,
                     )
@@ -194,42 +213,59 @@ fun SessionNotesSection(
                             )
                         }
                     }
-                    Scale("Mood", mood, -3..3) { mood = it }
-                    Scale("Energy", energy, -3..3) { energy = it }
-                    Scale("Social", social, -3..3) { social = it }
+                    Scale(R.string.journal_scale_mood, mood, -3..3) { mood = it }
+                    Scale(R.string.journal_scale_energy, energy, -3..3) { energy = it }
+                    Scale(R.string.journal_scale_social, social, -3..3) { social = it }
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         FilterChip(
                             selected = worked == 1,
                             onClick = { worked = if (worked == 1) null else 1 },
-                            label = { Text("Did its job") },
+                            label = { Text(stringResource(R.string.journal_note_did_its_job)) },
                         )
                         FilterChip(
                             selected = worked == -1,
                             onClick = { worked = if (worked == -1) null else -1 },
-                            label = { Text("Didn't") },
+                            label = { Text(stringResource(R.string.journal_note_didnt)) },
                         )
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        TextButton(onClick = { composing = false }) { Text("Cancel") }
-                        Button(onClick = { write(SessionNoteEntity.Kind.OBSERVATION) }) { Text("Save note") }
+                        TextButton(onClick = { composing = false }) {
+                            Text(stringResource(R.string.common_cancel))
+                        }
+                        Button(onClick = { write(SessionNoteEntity.Kind.OBSERVATION) }) {
+                            Text(stringResource(R.string.journal_note_save))
+                        }
                         // A check-in is the same record with a different kind: it
                         // says *why* it exists — a scheduled prompt, not a thought
                         // the user had — and the difference is what the timeline
                         // colours and what an export states.
-                        TextButton(onClick = { write(SessionNoteEntity.Kind.CHECK_IN) }) { Text("Check in") }
+                        TextButton(onClick = { write(SessionNoteEntity.Kind.CHECK_IN) }) {
+                            Text(stringResource(R.string.journal_note_check_in))
+                        }
                     }
                 }
             }
         } else {
-            TextButton(onClick = { composing = true }) { Text("Add a note") }
+            TextButton(onClick = { composing = true }) {
+                Text(stringResource(R.string.journal_note_add))
+            }
         }
     }
 }
 
-/** A `-n…+n` scale as chips, with the neutral middle label spelled out. */
+/**
+ * A `-n…+n` scale as chips, with the neutral middle label spelled out.
+ *
+ * The heading is a resource id rather than text because the caller's label is
+ * the only translated part — the chip values are signed numbers.
+ */
 @Composable
-private fun Scale(label: String, value: Int?, range: IntRange, onChange: (Int?) -> Unit) {
-    Text(label, style = MaterialTheme.typography.labelSmall, color = PiruTheme.colors.secondaryLabel)
+private fun Scale(@StringRes labelRes: Int, value: Int?, range: IntRange, onChange: (Int?) -> Unit) {
+    Text(
+        stringResource(labelRes),
+        style = MaterialTheme.typography.labelSmall,
+        color = PiruTheme.colors.secondaryLabel,
+    )
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         for (option in range) {
             FilterChip(

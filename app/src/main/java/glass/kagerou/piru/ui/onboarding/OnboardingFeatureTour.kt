@@ -1,5 +1,6 @@
 package glass.kagerou.piru.ui.onboarding
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -48,10 +49,12 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import glass.kagerou.piru.R
 import glass.kagerou.piru.ui.components.PiruCard
 import glass.kagerou.piru.ui.theme.PiruTheme
 
@@ -101,14 +104,17 @@ fun OnboardingFeatureTour(nav: OnboardingNav) {
             ) {
                 PhoneMock { TourMock(pages[index]) }
                 Spacer(Modifier.height(16.dp))
-                TourCaption(title = pages[index].title, caption = pages[index].caption)
+                TourCaption(
+                    title = stringResource(pages[index].title),
+                    caption = stringResource(pages[index].caption),
+                )
             }
         }
 
         PageDots(count = pages.size, current = pagerState.currentPage)
 
         OnboardingPillButton(
-            title = "Continue",
+            title = stringResource(R.string.shell_continue),
             onClick = nav.advance,
             modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 12.dp),
         )
@@ -173,33 +179,30 @@ private fun PageDots(count: Int, current: Int) {
  */
 private data class FeatureTourPage(
     val id: String,
-    val title: String,
-    val caption: String,
+    @StringRes val title: Int,
+    @StringRes val caption: Int,
 ) {
     companion object {
         val ALL: List<FeatureTourPage> = listOf(
             FeatureTourPage(
                 id = "journal",
-                title = "Log it in seconds",
-                caption = "Each entry appears on the timeline, showing overlaps and when the " +
-                    "model estimates the effects will fade.",
+                title = R.string.shell_tour_journal_title,
+                caption = R.string.shell_tour_journal_caption,
             ),
             FeatureTourPage(
                 id = "library",
-                title = "1,500+ substances",
-                caption = "Browse by family — dosing, duration, effects, and interactions, " +
-                    "sourced and cited.",
+                title = R.string.shell_tour_library_title,
+                caption = R.string.shell_tour_library_caption,
             ),
             FeatureTourPage(
                 id = "tools",
-                title = "Tools for the details",
-                caption = "Look up interactions, explore a tolerance model, track your stock, " +
-                    "and work out a solution's concentration.",
+                title = R.string.shell_tour_tools_title,
+                caption = R.string.shell_tour_tools_caption,
             ),
             FeatureTourPage(
                 id = "insights",
-                title = "See your patterns",
-                caption = "Your recorded amounts, timing, and self-reported effects — at a glance.",
+                title = R.string.shell_tour_insights_title,
+                caption = R.string.shell_tour_insights_caption,
             ),
         )
     }
@@ -408,7 +411,7 @@ private fun JournalMock() {
     val cardBackground = colors.cardBackground
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        MockTitle("Journal")
+        MockTitle(stringResource(R.string.shell_mock_journal))
 
         Column(
             modifier = Modifier
@@ -418,7 +421,7 @@ private fun JournalMock() {
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text("Today", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.shell_mock_today), fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 LegendDot(MockPalette.pink)
                 LegendDot(MockPalette.orange)
@@ -523,7 +526,7 @@ private fun LegendDot(color: Color) {
 private data class MockFamily(
     val color: Color,
     val icon: ImageVector,
-    val title: String,
+    @StringRes val title: Int,
     val samples: String,
     val count: String,
 )
@@ -532,7 +535,7 @@ private val mockFamilies = listOf(
     MockFamily(
         color = Color(red = 0.28f, green = 0.46f, blue = 0.74f),
         icon = Icons.Filled.Star,
-        title = "Common",
+        title = R.string.shell_family_common,
         samples = "Caffeine · Alcohol · Nicotine",
         count = "20",
     ),
@@ -541,21 +544,21 @@ private val mockFamilies = listOf(
         // `bolt.fill` has no core counterpart; a plain up-arrow marks the family
         // without the app appearing to flag it.
         icon = Icons.Filled.KeyboardArrowUp,
-        title = "Stimulants",
+        title = R.string.shell_family_stimulants,
         samples = "Amphetamine · Methylphenidate · Modafinil",
         count = "237",
     ),
     MockFamily(
         color = MockPalette.pink,
         icon = Icons.Filled.Favorite,
-        title = "Empathogens",
+        title = R.string.shell_family_empathogens,
         samples = "MDMA · Mephedrone · 3-MMC",
         count = "68",
     ),
     MockFamily(
         color = MockPalette.green,
         icon = Icons.AutoMirrored.Filled.List,
-        title = "Cannabinoids",
+        title = R.string.shell_family_cannabinoids,
         samples = "Cannabis · HHC · Delta-8",
         count = "34",
     ),
@@ -571,7 +574,7 @@ private val mockFamilies = listOf(
 @Composable
 private fun LibraryMock() {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        MockTitle("Library")
+        MockTitle(stringResource(R.string.shell_mock_library))
         for (family in mockFamilies) {
             val shape = RoundedCornerShape(18.dp)
             Box(
@@ -612,7 +615,12 @@ private fun LibraryMock() {
                         Text(family.count, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                     }
                     Spacer(Modifier.weight(1f))
-                    Text(family.title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text(
+                        stringResource(family.title),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                    )
                     Text(
                         family.samples,
                         fontSize = 10.sp,
@@ -627,15 +635,15 @@ private fun LibraryMock() {
 
 // MARK: - Tools mock
 
-private data class MockTool(val icon: ImageVector, val label: String, val color: Color)
+private data class MockTool(val icon: ImageVector, @StringRes val label: Int, val color: Color)
 
 private val mockTools = listOf(
-    MockTool(Icons.Filled.Warning, "Interactions", MockPalette.pink),
-    MockTool(Icons.Filled.Refresh, "Tolerance", MockPalette.blue),
-    MockTool(Icons.AutoMirrored.Filled.List, "Inventory", MockPalette.purple),
-    MockTool(Icons.Filled.DateRange, "Half-Life", MockPalette.green),
-    MockTool(Icons.Filled.Create, "Solutions", MockPalette.orange),
-    MockTool(Icons.Filled.Add, "Recovery", MockPalette.teal),
+    MockTool(Icons.Filled.Warning, R.string.shell_tool_interactions, MockPalette.pink),
+    MockTool(Icons.Filled.Refresh, R.string.shell_tool_tolerance, MockPalette.blue),
+    MockTool(Icons.AutoMirrored.Filled.List, R.string.shell_tool_inventory, MockPalette.purple),
+    MockTool(Icons.Filled.DateRange, R.string.shell_tool_half_life, MockPalette.green),
+    MockTool(Icons.Filled.Create, R.string.shell_tool_solutions, MockPalette.orange),
+    MockTool(Icons.Filled.Add, R.string.shell_tool_recovery, MockPalette.teal),
 )
 
 /** The tools page: six tiles in a two-column grid. */
@@ -643,7 +651,7 @@ private val mockTools = listOf(
 private fun ToolsMock() {
     val colors = PiruTheme.colors
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        MockTitle("Tools")
+        MockTitle(stringResource(R.string.shell_mock_tools))
         for (row in mockTools.chunked(2)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -665,7 +673,7 @@ private fun ToolsMock() {
                             tint = tool.color,
                             modifier = Modifier.size(20.dp),
                         )
-                        Text(tool.label, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(tool.label), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
                 // A lone tile keeps its half-width rather than stretching.
@@ -677,13 +685,13 @@ private fun ToolsMock() {
 
 // MARK: - Insights mock
 
-private data class MockBar(val label: String, val count: Int, val color: Color)
+private data class MockBar(@StringRes val label: Int, val count: Int, val color: Color)
 
 private val mockBars = listOf(
-    MockBar("Morning", 66, MockPalette.orange),
-    MockBar("Afternoon", 27, MockPalette.yellow),
-    MockBar("Evening", 69, MockPalette.purple),
-    MockBar("Night", 6, MockPalette.blue),
+    MockBar(R.string.shell_mock_morning, 66, MockPalette.orange),
+    MockBar(R.string.shell_mock_afternoon, 27, MockPalette.yellow),
+    MockBar(R.string.shell_mock_evening, 69, MockPalette.purple),
+    MockBar(R.string.shell_mock_night, 6, MockPalette.blue),
 )
 
 /** The insights page: the time-of-day bars and the entries-per-day card. */
@@ -694,7 +702,7 @@ private fun InsightsMock() {
     val maxCount = mockBars.maxOf { it.count }
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        MockTitle("Insights")
+        MockTitle(stringResource(R.string.shell_mock_insights))
 
         Column(
             modifier = Modifier
@@ -704,7 +712,12 @@ private fun InsightsMock() {
                 .padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("Time of Day", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = secondary)
+            Text(
+                stringResource(R.string.shell_mock_time_of_day),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = secondary,
+            )
             Row(
                 modifier = Modifier.fillMaxWidth().height(184.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -725,7 +738,7 @@ private fun InsightsMock() {
                                 .background(bar.color),
                         )
                         Text(
-                            bar.label,
+                            stringResource(bar.label),
                             fontSize = 8.5.sp,
                             color = secondary,
                             maxLines = 1,
@@ -743,7 +756,11 @@ private fun InsightsMock() {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(Icons.Filled.Star, contentDescription = null, tint = colors.accent, modifier = Modifier.size(12.dp))
-                Text("440 entries · 4.9/day", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                Text(
+                    stringResource(R.string.shell_mock_insights_summary),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                )
             }
         }
     }

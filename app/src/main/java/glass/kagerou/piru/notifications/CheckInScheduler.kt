@@ -2,6 +2,7 @@ package glass.kagerou.piru.notifications
 
 import android.content.Context
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.SessionEntity
 import glass.kagerou.piru.engine.CheckInOffsets
 import glass.kagerou.piru.model.SubstanceCategory
@@ -241,11 +242,15 @@ object CheckInScheduler {
         // A session that only carries medication is asked the medication question,
         // in the words its own control uses.
         val medication = asksWorkedOnly(context, session)
-        val title = if (medication) "Is it working?" else "How is it going?"
-        val body = if (medication) {
-            "One tap records how this dose is going — less than usual, about right, or more."
+        val title = if (medication) {
+            context.getString(R.string.notif_check_in_title_medication)
         } else {
-            "Add a note to your session — what you notice, at this moment."
+            context.getString(R.string.notif_check_in_title_session)
+        }
+        val body = if (medication) {
+            context.getString(R.string.notif_check_in_body_medication)
+        } else {
+            context.getString(R.string.notif_check_in_body_session)
         }
 
         for ((index, date) in dates.withIndex()) {

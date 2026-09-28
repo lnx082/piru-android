@@ -1,5 +1,7 @@
 package glass.kagerou.piru.ui.insights
 
+import androidx.annotation.StringRes
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.engine.SessionDay
 import glass.kagerou.piru.engine.SubstanceCatalog
@@ -148,6 +150,12 @@ internal enum class UsageTimeRange(
     /** Length of the window in days, or null for "All". */
     val days: Int?,
     val displayName: String,
+    /**
+     * The picker's label as a resource. [displayName] carries the same label in
+     * its English spelling and stays because the Usage screen reads it; the
+     * Patterns screen resolves this one. The two spell the same labels.
+     */
+    @StringRes val displayNameRes: Int,
     /** Whether the trend and dose-level buckets are a week wide (else a day). */
     val usesWeeklyBuckets: Boolean,
     /** Rolling window behind each trend point, in days. */
@@ -155,11 +163,11 @@ internal enum class UsageTimeRange(
     /** Whether a trend point reads as a per-week rate (7D reads as raw per-day buckets). */
     val trendPerWeek: Boolean,
 ) {
-    SEVEN_DAYS(7, "7D", usesWeeklyBuckets = false, rollingWindowDays = 1, trendPerWeek = false),
-    THIRTY_DAYS(30, "30D", usesWeeklyBuckets = false, rollingWindowDays = 7, trendPerWeek = true),
-    NINETY_DAYS(90, "90D", usesWeeklyBuckets = true, rollingWindowDays = 28, trendPerWeek = true),
-    ONE_YEAR(365, "1Y", usesWeeklyBuckets = true, rollingWindowDays = 28, trendPerWeek = true),
-    ALL(null, "All", usesWeeklyBuckets = true, rollingWindowDays = 28, trendPerWeek = true),
+    SEVEN_DAYS(7, "7D", R.string.toolsb_analytics_range_7d, usesWeeklyBuckets = false, rollingWindowDays = 1, trendPerWeek = false),
+    THIRTY_DAYS(30, "30D", R.string.toolsb_analytics_range_30d, usesWeeklyBuckets = false, rollingWindowDays = 7, trendPerWeek = true),
+    NINETY_DAYS(90, "90D", R.string.toolsb_analytics_range_90d, usesWeeklyBuckets = true, rollingWindowDays = 28, trendPerWeek = true),
+    ONE_YEAR(365, "1Y", R.string.toolsb_analytics_range_1y, usesWeeklyBuckets = true, rollingWindowDays = 28, trendPerWeek = true),
+    ALL(null, "All", R.string.toolsb_analytics_range_all, usesWeeklyBuckets = true, rollingWindowDays = 28, trendPerWeek = true),
 }
 
 /** The two lenses the ranking and the trend chart can be read through. */
@@ -329,11 +337,15 @@ internal data class UsageRegularity(
     val tier: UsageRegularityTier get() = UsageRegularityTier.of(coefficientOfVariation)
 }
 
-internal enum class UsageRegularityTier(val displayName: String) {
-    VERY_REGULAR("Very regular"),
-    SOMEWHAT_REGULAR("Somewhat regular"),
-    IRREGULAR("Irregular"),
-    SPORADIC("Sporadic"),
+internal enum class UsageRegularityTier(
+    val displayName: String,
+    /** The tier's label as a resource; see [UsageTimeRange.displayNameRes] for why both exist. */
+    @StringRes val displayNameRes: Int,
+) {
+    VERY_REGULAR("Very regular", R.string.toolsb_analytics_regularity_very_regular),
+    SOMEWHAT_REGULAR("Somewhat regular", R.string.toolsb_analytics_regularity_somewhat_regular),
+    IRREGULAR("Irregular", R.string.toolsb_analytics_regularity_irregular),
+    SPORADIC("Sporadic", R.string.toolsb_analytics_regularity_sporadic),
     ;
 
     companion object {

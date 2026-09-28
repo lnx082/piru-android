@@ -32,11 +32,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import glass.kagerou.piru.R
 import glass.kagerou.piru.model.doseFormatted
 import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.labels.appLocale
 import glass.kagerou.piru.ui.theme.PiruTheme
 import java.time.Instant
 import java.time.ZoneId
@@ -203,9 +206,9 @@ private fun formatEditable(value: Double?): String = when {
 internal fun CalibrationChip(includedCount: Int) {
     val colors = PiruTheme.colors
     val label = when (includedCount) {
-        0 -> "Uncalibrated"
-        1 -> "1 result"
-        else -> "Calibrated · $includedCount results"
+        0 -> stringResource(R.string.toolsb_depot_calibration_chip_uncalibrated)
+        1 -> stringResource(R.string.toolsb_depot_calibration_chip_one_result)
+        else -> stringResource(R.string.toolsb_depot_calibration_chip_calibrated, includedCount)
     }
     val tint = if (includedCount == 0) colors.secondaryLabel else colors.accent
     Text(
@@ -221,9 +224,17 @@ internal fun CalibrationChip(includedCount: Int) {
 
 // MARK: - The lab rows
 
-/** The draw-date format, `.dateTime.year().month(.abbreviated).day()` upstream. */
-private fun labDateFormat(): DateTimeFormatter =
-    DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.getDefault())
+/**
+ * The draw-date format, `.dateTime.year().month(.abbreviated).day()` upstream.
+ *
+ * The pattern is passed in rather than written here: the field order is
+ * locale-specific (Chinese reads yyyy年M月d日), so it comes from the resources
+ * and the composable callers resolve it. The locale travels with it, because the
+ * month *name* is a word and has to be the app's language, not the device's.
+ * See docs/localization.md, "Dates need two things".
+ */
+private fun labDateFormat(pattern: String, locale: Locale): DateTimeFormatter =
+    DateTimeFormatter.ofPattern(pattern, locale)
 
 /**
  * One lab result: its date, its value in the unit the user typed it in, a tick
@@ -242,13 +253,15 @@ internal fun LabRow(
 ) {
     val colors = PiruTheme.colors
     val zone = remember { ZoneId.systemDefault() }
+    val labDatePattern = stringResource(R.string.datefmt_month_day_year)
+    val dateLocale = appLocale()
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
-                labDateFormat().withZone(zone).format(lab.date),
+                labDateFormat(labDatePattern, dateLocale).withZone(zone).format(lab.date),
                 style = MaterialTheme.typography.bodyMedium,
             )
             Text(
@@ -263,12 +276,22 @@ internal fun LabRow(
         FilterChip(
             selected = !lab.excludedFromCalibration,
             onClick = onToggleExcluded,
-            label = { Text(if (lab.excludedFromCalibration) "Excluded" else "Included") },
+            label = {
+                Text(
+                    stringResource(
+                        if (lab.excludedFromCalibration) {
+                            R.string.toolsb_depot_lab_row_excluded
+                        } else {
+                            R.string.toolsb_depot_lab_row_included
+                        },
+                    ),
+                )
+            },
         )
         IconButton(onClick = onDelete) {
             Icon(
                 Icons.Filled.Delete,
-                contentDescription = "Delete this lab result",
+                contentDescription = stringResource(R.string.toolsb_depot_lab_row_delete),
                 tint = colors.secondaryLabel,
             )
         }
@@ -307,7 +330,7 @@ internal fun CalibrationControl(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                "Personal calibration",
+                stringResource(R.string.toolsb_depot_calibration_title),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = colors.secondaryLabel,
@@ -322,7 +345,7 @@ internal fun CalibrationControl(
 
         if (hasLabs) {
             ToggleRow(
-                label = "Use my lab results",
+                label = stringResource(R.string.toolsb_depot_calibration_use_labs),
                 checked = autoCalibrateFromLabs,
                 onCheckedChange = onAutoCalibrateChange,
             )
@@ -330,16 +353,14 @@ internal fun CalibrationControl(
 
         if (isLabDriven) {
             if (calibration?.didFitRate == true) {
-                Caption(
-                    "Height and shape fit to your results. Terminal release " +
-                        ratePhrase(calibration.k1Scale) + ".",
-                )
+                val rate = ratePhrase(calibration.k1Scale)
+                Caption(stringResource(R.string.toolsb_depot_calibration_fit_shape_note, rate))
             } else {
-                Caption("Height fit to your result. A second test on another day fits the shape too.")
+                Caption(stringResource(R.string.toolsb_depot_calibration_fit_height_note))
             }
             if (calibrationMeasurementCount >= 2) {
                 ToggleRow(
-                    label = "Fit shape as well as height",
+                    label = stringResource(R.string.toolsb_depot_calibration_fit_shape_toggle),
                     checked = fitRates,
                     onCheckedChange = onFitRatesChange,
                 )
@@ -351,7 +372,7 @@ internal fun CalibrationControl(
                 valueRange = 0.3f..3.0f,
                 steps = 53,
             )
-            Caption("Adjust if you run higher or lower than average. A blood test replaces this with a fit.")
+            Caption(stringResource(R.string.toolsb_depot_calibration_adjust_note))
         }
     }
 }
@@ -361,10 +382,18 @@ internal fun CalibrationControl(
  *
  * A larger `k1` is a faster terminal release, so the direction reads off the
  * scale directly rather than off a reciprocal nobody can check by eye.
+ *
+ * A `@Composable` read of two resources, so the phrase is translated as a whole
+ * rather than assembled from a translated half and an English one.
  */
+@Composable
 private fun ratePhrase(k1Scale: Double): String {
     val factor = "%.2f".format(Locale.ROOT, if (k1Scale >= 1) k1Scale else 1 / k1Scale)
-    return if (k1Scale >= 1) "$factor× faster than average" else "$factor× slower than average"
+    return if (k1Scale >= 1) {
+        stringResource(R.string.toolsb_depot_calibration_rate_faster, factor)
+    } else {
+        stringResource(R.string.toolsb_depot_calibration_rate_slower, factor)
+    }
 }
 
 /** A labelled switch, upstream's `Toggle` with a subheadline label. */
@@ -397,24 +426,24 @@ internal fun ReferenceLinesEditor(
     onHighChange: (Double?) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        FieldLabel("Reference lines")
+        FieldLabel(stringResource(R.string.toolsb_depot_reference_lines_title))
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             NumberField(
-                label = "Low line",
+                label = stringResource(R.string.toolsb_depot_reference_lines_low),
                 value = referenceLow,
                 unit = unit,
                 onValueChange = onLowChange,
                 modifier = Modifier.weight(1f),
             )
             NumberField(
-                label = "High line",
+                label = stringResource(R.string.toolsb_depot_reference_lines_high),
                 value = referenceHigh,
                 unit = unit,
                 onValueChange = onHighChange,
                 modifier = Modifier.weight(1f),
             )
         }
-        Caption("Your own lines. Piru sets no target.")
+        Caption(stringResource(R.string.toolsb_depot_reference_lines_note))
     }
 }
 
@@ -440,18 +469,18 @@ internal fun AddLabResultDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add lab result") },
+        title = { Text(stringResource(R.string.toolsb_depot_add_lab_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 DateField(date = date, onDateChange = { date = it })
                 NumberField(
-                    label = "Serum level",
+                    label = stringResource(R.string.toolsb_depot_add_lab_serum_level),
                     value = value,
                     unit = unit,
                     onValueChange = { value = it },
                 )
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    FieldLabel("Unit")
+                    FieldLabel(stringResource(R.string.toolsb_depot_add_lab_unit))
                     SegmentedRow(
                         options = analyte.acceptedUnits,
                         selected = unit,
@@ -459,7 +488,7 @@ internal fun AddLabResultDialog(
                         onSelect = { unit = it },
                     )
                 }
-                Caption("Enter it in your lab's unit. Stored in ${analyte.canonicalUnit}.")
+                Caption(stringResource(R.string.toolsb_depot_add_lab_unit_note, analyte.canonicalUnit))
             }
         },
         confirmButton = {
@@ -478,9 +507,9 @@ internal fun AddLabResultDialog(
                         ),
                     )
                 },
-            ) { Text("Save") }
+            ) { Text(stringResource(R.string.common_save)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
     )
 }
 
@@ -494,19 +523,25 @@ internal fun AddLabResultDialog(
 @Composable
 private fun DateField(date: Instant, onDateChange: (Instant) -> Unit) {
     val zone = remember { ZoneId.systemDefault() }
+    val labDatePattern = stringResource(R.string.datefmt_month_day_year)
+    val dateLocale = appLocale()
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        FieldLabel("Draw date")
+        FieldLabel(stringResource(R.string.toolsb_depot_add_lab_draw_date))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextButton(onClick = { onDateChange(date.minusSeconds(86_400)) }) { Text("−1 day") }
+            TextButton(onClick = { onDateChange(date.minusSeconds(86_400)) }) {
+                Text(stringResource(R.string.toolsb_depot_add_lab_day_minus))
+            }
             Text(
-                labDateFormat().withZone(zone).format(date),
+                labDateFormat(labDatePattern, dateLocale).withZone(zone).format(date),
                 style = MaterialTheme.typography.bodyMedium,
             )
-            TextButton(onClick = { onDateChange(date.plusSeconds(86_400)) }) { Text("+1 day") }
+            TextButton(onClick = { onDateChange(date.plusSeconds(86_400)) }) {
+                Text(stringResource(R.string.toolsb_depot_add_lab_day_plus))
+            }
         }
     }
 }
@@ -523,16 +558,16 @@ private fun DateField(date: Instant, onDateChange: (Instant) -> Unit) {
  */
 @Composable
 internal fun DepotMetricsCard(result: DepotCurveResult, analyte: Analyte, modifier: Modifier = Modifier) {
-    DepotSectionCard(title = "Estimated levels", modifier = modifier) {
+    DepotSectionCard(title = stringResource(R.string.toolsb_depot_metrics_title), modifier = modifier) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             MetricTile(
-                key = "Estimated trough",
+                key = stringResource(R.string.toolsb_depot_metrics_trough),
                 value = metricFormat(result.trough),
                 sub = "${metricFormat(result.troughLow)}–${metricFormat(result.troughHigh)} ${analyte.canonicalUnit}",
                 modifier = Modifier.weight(1f),
             )
             MetricTile(
-                key = "Estimated peak",
+                key = stringResource(R.string.toolsb_depot_metrics_peak),
                 value = metricFormat(result.peak),
                 sub = "${metricFormat(result.peakLow)}–${metricFormat(result.peakHigh)} ${analyte.canonicalUnit}",
                 modifier = Modifier.weight(1f),
@@ -541,9 +576,9 @@ internal fun DepotMetricsCard(result: DepotCurveResult, analyte: Analyte, modifi
         val tir = result.timeInRange
         if (tir != null) {
             MetricTile(
-                key = "Time in range",
+                key = stringResource(R.string.toolsb_depot_metrics_time_in_range),
                 value = "${(tir * 100).toInt()}%",
-                sub = "of the cycle, between your lines",
+                sub = stringResource(R.string.toolsb_depot_metrics_time_in_range_sub),
                 modifier = Modifier.fillMaxWidth(),
             )
         }

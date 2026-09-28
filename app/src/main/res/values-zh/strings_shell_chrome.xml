@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="tab_journal">日记</string>
+    <string name="tab_library">物质库</string>
+    <string name="tab_tools">工具</string>
+    <string name="tab_insights">洞察</string>
+    <string name="tab_search">搜索</string>
+</resources>

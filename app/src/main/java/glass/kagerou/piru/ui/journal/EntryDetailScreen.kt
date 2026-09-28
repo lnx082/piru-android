@@ -26,14 +26,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.model.RouteOfAdministration
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.labels.CoreLabels
+import glass.kagerou.piru.ui.labels.appLocale
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.nav.PushRoute
 import glass.kagerou.piru.ui.theme.PiruTheme
@@ -70,6 +74,9 @@ fun EntryDetailScreen(
     val app = context.applicationContext as PiruApplication
     val scope = rememberCoroutineScope()
     val zone = remember { ZoneId.systemDefault() }
+    // The language this screen's own strings resolved to — not the device's, so
+    // a German phone's English screens do not get a German month name.
+    val dateLocale = appLocale()
 
     var entry by remember { mutableStateOf<DoseEntryEntity?>(null) }
     var loaded by remember { mutableStateOf(false) }
@@ -112,26 +119,31 @@ fun EntryDetailScreen(
 
     val current = entry
     when {
-        !loaded -> Centered("Loading…")
-        current == null -> Centered("That dose is gone.")
+        !loaded -> Centered(stringResource(R.string.journal_loading))
+        current == null -> Centered(stringResource(R.string.journal_entry_gone))
         else -> Column(
             modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    if (editing) "Edit dose" else current.substance,
+                    if (editing) stringResource(R.string.journal_entry_edit) else current.substance,
                     style = MaterialTheme.typography.headlineSmall,
                 )
                 Text(
                     current.timestamp.toInstant().atZone(zone)
-                        .format(DateTimeFormatter.ofPattern("EEEE d MMMM, HH:mm")),
+                        .format(
+                            DateTimeFormatter.ofPattern(
+                                context.getString(R.string.datefmt_full_weekday_day_month_time),
+                                dateLocale,
+                            )
+                        ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
                 current.sessionId?.let { sessionId ->
                     TextButton(onClick = { navigator.push(PushRoute.Session(sessionId.toString())) }) {
-                        Text("Part of a session")
+                        Text(stringResource(R.string.journal_entry_part_of_session))
                     }
                 }
             }
@@ -142,7 +154,7 @@ fun EntryDetailScreen(
                         OutlinedTextField(
                             value = substanceText,
                             onValueChange = { substanceText = it },
-                            label = { Text("Substance") },
+                            label = { Text(stringResource(R.string.common_substance)) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
                         )
@@ -156,7 +168,7 @@ fun EntryDetailScreen(
                                     // rather than the two being able to disagree.
                                     if (it.isNotBlank()) isUnknownAmount = false
                                 },
-                                label = { Text("Amount") },
+                                label = { Text(stringResource(R.string.common_amount)) },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                 modifier = Modifier.weight(1f),
@@ -164,7 +176,7 @@ fun EntryDetailScreen(
                             OutlinedTextField(
                                 value = unitText,
                                 onValueChange = { unitText = it },
-                                label = { Text("Unit") },
+                                label = { Text(stringResource(R.string.common_unit)) },
                                 singleLine = true,
                                 modifier = Modifier.weight(1f),
                             )
@@ -176,27 +188,29 @@ fun EntryDetailScreen(
                                     isUnknownAmount = !isUnknownAmount
                                     if (isUnknownAmount) amountText = ""
                                 },
-                                label = { Text("Amount unknown") },
+                                label = { Text(stringResource(R.string.journal_entry_amount_unknown)) },
                             )
                         }
                         for (candidate in routeChoices) {
                             FilterChip(
                                 selected = route == candidate,
                                 onClick = { route = candidate },
-                                label = { Text(candidate.displayName) },
+                                label = { Text(CoreLabels.route(candidate)) },
                             )
                         }
                         OutlinedTextField(
                             value = noteText,
                             onValueChange = { noteText = it },
-                            label = { Text("Note") },
+                            label = { Text(stringResource(R.string.common_note)) },
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    TextButton(onClick = { seed(current); editing = false }) { Text("Cancel") }
+                    TextButton(onClick = { seed(current); editing = false }) {
+                        Text(stringResource(R.string.common_cancel))
+                    }
                     Button(
                         onClick = {
                             val parsed = amountText.trim().toDoubleOrNull()
@@ -230,24 +244,33 @@ fun EntryDetailScreen(
                             }
                         },
                         modifier = Modifier.weight(1f),
-                    ) { Text("Save") }
+                    ) { Text(stringResource(R.string.common_save)) }
                 }
             } else {
                 PiruCard(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ReadRow("Amount", if (current.isUnknownDose) "Unknown" else "${trimNumber(current.amount)} ${current.unit}")
-                        ReadRow("Route", current.route.displayName)
-                        current.saltForm?.let { ReadRow("Salt", it) }
-                        current.isomer?.let { ReadRow("Isomer", it) }
-                        current.releaseForm?.takeIf { it.isNotBlank() }?.let { ReadRow("Release", it) }
-                        current.productName?.let { ReadRow("Product", it) }
+                        ReadRow(
+                            stringResource(R.string.common_amount),
+                            if (current.isUnknownDose) {
+                                stringResource(R.string.common_unknown)
+                            } else {
+                                "${trimNumber(current.amount)} ${current.unit}"
+                            },
+                        )
+                        ReadRow(stringResource(R.string.common_route), CoreLabels.route(current.route))
+                        current.saltForm?.let { ReadRow(stringResource(R.string.journal_label_salt), it) }
+                        current.isomer?.let { ReadRow(stringResource(R.string.journal_label_isomer), it) }
+                        current.releaseForm?.takeIf { it.isNotBlank() }?.let {
+                            ReadRow(stringResource(R.string.journal_label_release), it)
+                        }
+                        current.productName?.let { ReadRow(stringResource(R.string.journal_label_product), it) }
                     }
                 }
 
                 if (!current.notes.isNullOrBlank()) {
                     PiruCard(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text("Note", style = MaterialTheme.typography.titleSmall)
+                            Text(stringResource(R.string.common_note), style = MaterialTheme.typography.titleSmall)
                             Text(current.notes!!, style = MaterialTheme.typography.bodyMedium)
                         }
                     }
@@ -256,9 +279,7 @@ fun EntryDetailScreen(
                 if (current.isUnknownDose) {
                     PiruCard(modifier = Modifier.fillMaxWidth()) {
                         Text(
-                            "This dose was logged without a number. That is a real answer rather " +
-                                "than a gap — it is left out of the curves and the body-load " +
-                                "estimate, and kept in the record.",
+                            stringResource(R.string.journal_entry_unquantified_note),
                             style = MaterialTheme.typography.bodyMedium,
                             color = PiruTheme.colors.secondaryLabel,
                             modifier = Modifier.padding(16.dp),
@@ -277,7 +298,7 @@ fun EntryDetailScreen(
                             editing = true
                         },
                         modifier = Modifier.weight(1f),
-                    ) { Text("Edit") }
+                    ) { Text(stringResource(R.string.common_edit)) }
                     TextButton(onClick = {
                         scope.launch {
                             app.database.doseEntryDao().deleteByRowId(current.rowId)
@@ -291,13 +312,13 @@ fun EntryDetailScreen(
                             navigator.invalidate()
                             navigator.pop()
                         }
-                    }) { Text("Delete") }
+                    }) { Text(stringResource(R.string.common_delete)) }
                 }
             }
 
             if (saved) {
                 Text(
-                    "Saved.",
+                    stringResource(R.string.journal_entry_saved),
                     style = MaterialTheme.typography.bodySmall,
                     color = PiruTheme.colors.successText,
                 )

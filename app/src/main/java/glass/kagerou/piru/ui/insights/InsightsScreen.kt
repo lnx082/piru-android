@@ -1,5 +1,6 @@
 package glass.kagerou.piru.ui.insights
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,7 +11,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import glass.kagerou.piru.R
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
 import glass.kagerou.piru.ui.nav.AppNavigator
@@ -49,9 +52,9 @@ fun InsightsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     ) {
         item {
             Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Insights", style = MaterialTheme.typography.headlineSmall)
+                Text(stringResource(R.string.toolsb_insights_hub_title), style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    "Readings of your own log. Nothing here compares you to anyone else.",
+                    stringResource(R.string.toolsb_insights_hub_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -61,7 +64,7 @@ fun InsightsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         for (group in INSIGHT_GROUPS) {
             item {
                 Text(
-                    group.title,
+                    stringResource(group.title),
                     style = MaterialTheme.typography.labelLarge,
                     color = PiruTheme.colors.secondaryLabel,
                     modifier = Modifier.padding(top = 12.dp),
@@ -74,9 +77,9 @@ fun InsightsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                         onClick = { navigator.push(entry.destination()) },
                     ) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(entry.title, style = MaterialTheme.typography.titleSmall)
+                            Text(stringResource(entry.title), style = MaterialTheme.typography.titleSmall)
                             Text(
-                                entry.detail,
+                                stringResource(entry.detail),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = PiruTheme.colors.secondaryLabel,
                             )
@@ -96,19 +99,23 @@ fun InsightsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
  * the log *and* instruments you point at it, and building a second copy of either
  * so the types matched would be the worst of both. The lambda is what keeps that
  * from leaking into the data.
+ *
+ * The title and the detail are resource ids rather than resolved text: this table
+ * is a top-level `val`, which is not a composable scope, so `stringResource`
+ * cannot be read here. The call site resolves them.
  */
 private class InsightEntry(
-    val title: String,
-    val detail: String,
+    @StringRes val title: Int,
+    @StringRes val detail: Int,
     val destination: () -> PushRoute,
 )
 
-private class InsightGroup(val title: String, val entries: List<InsightEntry>)
+private class InsightGroup(@StringRes val title: Int, val entries: List<InsightEntry>)
 
-private fun insight(kind: PushRoute.InsightKind, title: String, detail: String) =
+private fun insight(kind: PushRoute.InsightKind, @StringRes title: Int, @StringRes detail: Int) =
     InsightEntry(title, detail) { PushRoute.Insight(kind) }
 
-private fun tool(kind: PushRoute.ToolKind, title: String, detail: String) =
+private fun tool(kind: PushRoute.ToolKind, @StringRes title: Int, @StringRes detail: Int) =
     InsightEntry(title, detail) { PushRoute.Tool(kind) }
 
 /**
@@ -121,72 +128,72 @@ private fun tool(kind: PushRoute.ToolKind, title: String, detail: String) =
  */
 private val INSIGHT_GROUPS = listOf(
     InsightGroup(
-        "Right now",
+        R.string.toolsb_insights_hub_group_right_now,
         listOf(
             tool(
                 PushRoute.ToolKind.BODY_LOAD,
-                "In your body",
-                "What is still on board, per substance, and how much of each dose has cleared.",
+                R.string.toolsb_insights_hub_body_load_title,
+                R.string.toolsb_insights_hub_body_load_detail,
             ),
             insight(
                 PushRoute.InsightKind.STEADY_STATE_PROJECTION,
-                "Steady state",
-                "Where a substance you take on a regular cadence settles between doses.",
+                R.string.toolsb_insights_hub_steady_state_title,
+                R.string.toolsb_insights_hub_steady_state_detail,
             ),
             insight(
                 PushRoute.InsightKind.HORMONE_LEVELS,
-                "Hormone levels",
-                "Estimated serum estradiol or testosterone from the esters you logged.",
+                R.string.toolsb_insights_hub_hormone_levels_title,
+                R.string.toolsb_insights_hub_hormone_levels_detail,
             ),
         ),
     ),
     InsightGroup(
-        "Tolerance and receptors",
+        R.string.toolsb_insights_hub_group_tolerance,
         listOf(
             tool(
                 PushRoute.ToolKind.TOLERANCE,
-                "Modeled tolerance",
-                "How far each mechanism has shifted, replayed from your whole log.",
+                R.string.toolsb_insights_hub_tolerance_title,
+                R.string.toolsb_insights_hub_tolerance_detail,
             ),
             insight(
                 PushRoute.InsightKind.RECEPTOR_LOAD,
-                "Receptor load over time",
-                "How hard each mechanism has been driven, relative to your own recent baseline.",
+                R.string.toolsb_insights_hub_receptor_load_title,
+                R.string.toolsb_insights_hub_receptor_load_detail,
             ),
         ),
     ),
     InsightGroup(
-        "Your patterns",
+        R.string.toolsb_insights_hub_group_patterns,
         listOf(
             insight(
                 PushRoute.InsightKind.USAGE,
-                "Usage",
-                "When you log, how much, and how regularly — by day, hour and weekday.",
+                R.string.toolsb_insights_hub_usage_title,
+                R.string.toolsb_insights_hub_usage_detail,
             ),
             insight(
                 PushRoute.InsightKind.ADHERENCE,
-                "Adherence",
-                "Which scheduled doses you took, and which days they were due at all.",
+                R.string.toolsb_insights_hub_adherence_title,
+                R.string.toolsb_insights_hub_adherence_detail,
             ),
             insight(
                 PushRoute.InsightKind.PATTERNS,
-                "Patterns",
-                "Days used, exposure, how your doses have trended, and what you take together.",
+                R.string.toolsb_insights_hub_patterns_title,
+                R.string.toolsb_insights_hub_patterns_detail,
             ),
             insight(
                 PushRoute.InsightKind.FELT_PATTERNS,
-                "Did it work?",
-                "What your own answers to \"did it work?\" look like across doses.",
+                R.string.toolsb_insights_hub_felt_title,
+                R.string.toolsb_insights_hub_felt_detail,
             ),
         ),
     ),
     InsightGroup(
-        "Take it with you",
+        R.string.toolsb_insights_hub_group_reports,
         listOf(
             insight(
                 PushRoute.InsightKind.REPORTS,
-                "Reports",
-                "Summaries you can hand to a clinician, built from the log.",
+                R.string.toolsb_insights_hub_reports_title,
+                R.string.toolsb_insights_hub_reports_detail,
             ),
         ),
     ),

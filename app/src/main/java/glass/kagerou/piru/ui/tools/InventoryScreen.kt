@@ -2,6 +2,7 @@ package glass.kagerou.piru.ui.tools
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -52,10 +53,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.InventoryMath
 import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.data.entity.InventoryItemEntity
@@ -63,11 +66,14 @@ import glass.kagerou.piru.engine.SubstanceCatalog
 import glass.kagerou.piru.model.P3Color
 import glass.kagerou.piru.model.SubstanceCategory
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
+import glass.kagerou.piru.ui.labels.CoreLabels
+import glass.kagerou.piru.ui.labels.appLocale
 import glass.kagerou.piru.ui.components.PiruCard
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.theme.PiruTheme
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import kotlinx.coroutines.launch
 import glass.kagerou.piru.ui.theme.toComposeColor
 
@@ -113,21 +119,21 @@ import glass.kagerou.piru.ui.theme.toComposeColor
  * `String` raw value the persisted preference carries — never derive either from
  * the Kotlin constant's name.
  */
-enum class InventorySort(val wireValue: String, val displayName: String) {
+enum class InventorySort(val wireValue: String, @StringRes val labelRes: Int) {
     /** Needs-attention first: out, then low, then healthy, then most recent activity. */
-    STATUS("status", "Status"),
+    STATUS("status", R.string.toolsb_inventory_status),
 
     /** Alphabetical by display title. */
-    NAME("name", "Name"),
+    NAME("name", R.string.toolsb_inventory_sort_name),
 
     /** Emptiest first, as a fraction of baseline. Items without a baseline sort last. */
-    SUPPLY("supply", "Supply Level"),
+    SUPPLY("supply", R.string.toolsb_inventory_sort_supply),
 
     /** Most recently restocked or corrected first. */
-    RECENT("recent", "Recently Updated"),
+    RECENT("recent", R.string.toolsb_inventory_sort_recent),
 
     /** The user's own arrangement — the only mode where rows can be moved. */
-    MANUAL("manual", "Manual"),
+    MANUAL("manual", R.string.toolsb_inventory_sort_manual),
     ;
 
     companion object {
@@ -152,13 +158,17 @@ data class InventorySectionGroup(
 )
 
 /**
- * The class label as the app writes it.
+ * The class as a *collation* key, not a label.
+ *
+ * Grouping, ordering and the search index all need a key that does not move when
+ * the device language does, so this stays English and stays the catalog's own
+ * spelling. Anything a reader sees goes through [CoreLabels.category] instead.
  *
  * Almost every class spells its [SubstanceCategory.wireValue] as its display name;
  * the orexin antagonists are the one that does not ("OrexinAntagonist" against
  * "Orexin Antagonist"), so that one is named here rather than derived.
  */
-internal fun SubstanceCategory.label(): String =
+internal fun SubstanceCategory.sortKey(): String =
     if (this == SubstanceCategory.OREXIN_ANTAGONIST) "Orexin Antagonist" else wireValue
 
 // MARK: - Model
@@ -324,7 +334,7 @@ class InventoryListModel private constructor(private val prefs: SharedPreference
      * offers only classes the user actually stocks.
      */
     fun availableCategories(items: List<InventoryItemEntity>, catalog: SubstanceCatalog?): List<SubstanceCategory> =
-        items.map { categoryFor(it, catalog) }.distinct().sortedBy { it.label() }
+        items.map { categoryFor(it, catalog) }.distinct().sortedBy { it.sortKey() }
 
     // MARK: Sectioning
 
@@ -378,7 +388,7 @@ class InventoryListModel private constructor(private val prefs: SharedPreference
                 item.displayTitle(catalog),
                 item.substance,
                 item.saltForm ?: "",
-                categoryFor(item, catalog).label(),
+                categoryFor(item, catalog).sortKey(),
             )
             haystack.any { it.lowercase().contains(query) }
         }
@@ -433,7 +443,7 @@ class InventoryListModel private constructor(private val prefs: SharedPreference
         }
         val order = buckets.keys.toMutableList()
         if (sort == InventorySort.NAME) {
-            order.sortBy { it.label() }
+            order.sortBy { it.sortKey() }
         }
         if (hasCustomCategoryOrder) {
             val derived = order.withIndex().associate { (index, category) -> category to index }
@@ -598,12 +608,15 @@ fun InventoryScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
             OutlinedTextField(
                 value = model.searchText,
                 onValueChange = { model.searchText = it },
-                placeholder = { Text("Search inventory") },
+                placeholder = { Text(stringResource(R.string.toolsb_inventory_search_placeholder)) },
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                 trailingIcon = if (model.searchText.isNotEmpty()) {
                     {
                         IconButton(onClick = { model.searchText = "" }) {
-                            Icon(Icons.Filled.Clear, contentDescription = "Clear search")
+                            Icon(
+                                Icons.Filled.Clear,
+                                contentDescription = stringResource(R.string.toolsb_inventory_clear_search),
+                            )
                         }
                     }
                 } else {
@@ -700,7 +713,7 @@ private fun ManagerHeader(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            "Inventory",
+            stringResource(R.string.toolsb_inventory_title),
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.headlineSmall,
         )
@@ -708,7 +721,7 @@ private fun ManagerHeader(
             InventoryOptionsMenu(model = model, categories = categories, onArrangeClasses = onArrangeClasses)
         }
         IconButton(onClick = onAdd) {
-            Icon(Icons.Filled.Add, contentDescription = "Add inventory item")
+            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.toolsb_inventory_add_item))
         }
     }
 }
@@ -719,13 +732,13 @@ private fun ManagerHeader(
 private fun NoInventoryYet(onTrack: () -> Unit) {
     PiruCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("No inventory yet", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.toolsb_inventory_empty_title), style = MaterialTheme.typography.titleSmall)
             Text(
-                "Track a substance to see how much you have left as you log doses.",
+                stringResource(R.string.toolsb_inventory_empty_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = PiruTheme.colors.secondaryLabel,
             )
-            Button(onClick = onTrack) { Text("Track a substance") }
+            Button(onClick = onTrack) { Text(stringResource(R.string.toolsb_inventory_empty_action)) }
         }
     }
 }
@@ -739,14 +752,14 @@ private fun NoInventoryYet(onTrack: () -> Unit) {
 private fun NoMatchingItems(model: InventoryListModel) {
     PiruCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("No matching items", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.toolsb_inventory_no_match_title), style = MaterialTheme.typography.titleSmall)
             Text(
-                "No tracked substance matches the current search and filters.",
+                stringResource(R.string.toolsb_inventory_no_match_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = PiruTheme.colors.secondaryLabel,
             )
             if (model.hasActiveFilters) {
-                Button(onClick = { model.clearFilters() }) { Text("Clear filters") }
+                Button(onClick = { model.clearFilters() }) { Text(stringResource(R.string.toolsb_inventory_clear_filters)) }
             }
         }
     }
@@ -764,12 +777,17 @@ private fun CategoryHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClickLabel = if (expanded) "Collapse" else "Expand", onClick = onToggle)
+            .clickable(
+                onClickLabel = stringResource(
+                    if (expanded) R.string.toolsb_inventory_collapse else R.string.toolsb_inventory_expand,
+                ),
+                onClick = onToggle,
+            )
             .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            category.label().uppercase(),
+            CoreLabels.category(category).uppercase(),
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
@@ -805,10 +823,16 @@ private fun InventoryRow(
     onOpen: () -> Unit,
     onMove: ((Int) -> Unit)?,
 ) {
+    val context = LocalContext.current
+    // The language this row's strings resolved to — the app's, not the phone's.
+    val dateLocale = appLocale()
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClickLabel = "Open ${item.displayTitle(catalog)}", onClick = onOpen)
+            .clickable(
+                onClickLabel = stringResource(R.string.toolsb_inventory_open_item, item.displayTitle(catalog)),
+                onClick = onOpen,
+            )
             .padding(vertical = 6.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
@@ -827,16 +851,22 @@ private fun InventoryRow(
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                 )
-                rowSubtitle(item, catalog, dosesByMatchKey)?.let {
+                rowSubtitle(context, item, catalog, dosesByMatchKey, dateLocale)?.let {
                     Text(it, style = MaterialTheme.typography.bodyMedium, color = PiruTheme.colors.secondaryLabel)
                 }
             }
             if (onMove != null) {
                 IconButton(onClick = { onMove(-1) }) {
-                    Icon(Icons.Filled.KeyboardArrowUp, contentDescription = "Move up")
+                    Icon(
+                        Icons.Filled.KeyboardArrowUp,
+                        contentDescription = stringResource(R.string.toolsb_inventory_move_up),
+                    )
                 }
                 IconButton(onClick = { onMove(1) }) {
-                    Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Move down")
+                    Icon(
+                        Icons.Filled.KeyboardArrowDown,
+                        contentDescription = stringResource(R.string.toolsb_inventory_move_down),
+                    )
                 }
             }
             Spacer(Modifier.width(8.dp))
@@ -858,21 +888,36 @@ private fun InventoryRow(
  * instead, so the row does not simply repeat "Out"; otherwise nothing.
  */
 private fun rowSubtitle(
+    context: Context,
     item: InventoryItemEntity,
     catalog: SubstanceCatalog?,
     dosesByMatchKey: Map<String, List<DoseEntryEntity>>,
+    locale: Locale,
 ): String? {
     if (item.stockStatus == StockStatus.OUT) {
         val last = catalog
             ?.let { InventoryMath.dosesFor(item, dosesByMatchKey, it) }
             ?.maxOfOrNull { it.timestamp.toInstant() }
             ?: return null
-        return "last dose ${shortDayFormatter.format(last.atZone(ZoneId.systemDefault()))}"
+        return context.getString(
+            R.string.toolsb_inventory_last_dose,
+            shortDayFormatter(context.getString(R.string.datefmt_day_month), locale)
+                .format(last.atZone(ZoneId.systemDefault())),
+        )
     }
-    return catalog?.let { InventoryMath.dosesLeft(item, it) }?.let { "~$it doses left" }
+    return catalog?.let { InventoryMath.dosesLeft(item, it) }
+        ?.let { context.getString(R.string.toolsb_inventory_doses_left, it) }
 }
 
-private val shortDayFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM")
+/**
+ * The "last dose" date on an Out row. The pattern comes from the resources
+ * because its field order is locale-specific — Chinese reads M月d日 — and the
+ * caller already holds the `Context` it needs to resolve it. The locale comes
+ * from the caller too: the month *name* is a word, so it is the app's own
+ * language rather than the device's.
+ */
+private fun shortDayFormatter(pattern: String, locale: Locale): DateTimeFormatter =
+    DateTimeFormatter.ofPattern(pattern, locale)
 
 // MARK: - Filter bar
 
@@ -891,12 +936,12 @@ private fun InventoryFilterBar(model: InventoryListModel, modifier: Modifier = M
         verticalAlignment = Alignment.CenterVertically,
     ) {
         for (status in model.filterStatuses.sortedBy { it.sortIndex }) {
-            RemovableChip(status.displayName) { model.toggleStatus(status) }
+            RemovableChip(stringResource(status.labelRes)) { model.toggleStatus(status) }
         }
-        for (category in model.filterCategories.sortedBy { it.label() }) {
-            RemovableChip(category.label()) { model.toggleCategory(category) }
+        for (category in model.filterCategories.sortedBy { it.sortKey() }) {
+            RemovableChip(CoreLabels.category(category)) { model.toggleCategory(category) }
         }
-        TextButton(onClick = { model.clearFilters() }) { Text("Clear") }
+        TextButton(onClick = { model.clearFilters() }) { Text(stringResource(R.string.toolsb_inventory_clear)) }
     }
 }
 
@@ -906,7 +951,11 @@ private fun RemovableChip(title: String, onRemove: () -> Unit) {
         onClick = onRemove,
         label = { Text(title, style = MaterialTheme.typography.bodySmall) },
         trailingIcon = {
-            Icon(Icons.Filled.Clear, contentDescription = "Remove filter", modifier = Modifier.size(14.dp))
+            Icon(
+                Icons.Filled.Clear,
+                contentDescription = stringResource(R.string.toolsb_inventory_remove_filter),
+                modifier = Modifier.size(14.dp),
+            )
         },
     )
 }
@@ -939,11 +988,11 @@ private fun InventoryOptionsMenu(
 
     Box {
         IconButton(onClick = { open = true }) {
-            Icon(Icons.Filled.MoreVert, contentDescription = "More")
+            Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.toolsb_inventory_more))
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             DropdownMenuItem(
-                text = { Text("Group by Class") },
+                text = { Text(stringResource(R.string.toolsb_inventory_group_by_class)) },
                 onClick = { model.isGrouped = !model.isGrouped },
                 leadingIcon = if (model.isGrouped) {
                     { Icon(Icons.Filled.Check, contentDescription = null) }
@@ -954,11 +1003,17 @@ private fun InventoryOptionsMenu(
             // Only meaningful once there are sections to fold or arrange.
             if (model.isGrouped && categories.size > 1) {
                 DropdownMenuItem(
-                    text = { Text(if (allCollapsed) "Expand all" else "Collapse all") },
+                    text = {
+                        Text(
+                            stringResource(
+                                if (allCollapsed) R.string.toolsb_inventory_expand_all else R.string.toolsb_inventory_collapse_all,
+                            ),
+                        )
+                    },
                     onClick = { model.setAllCollapsed(!allCollapsed, categories) },
                 )
                 DropdownMenuItem(
-                    text = { Text("Arrange classes…") },
+                    text = { Text(stringResource(R.string.toolsb_inventory_arrange_classes_menu)) },
                     onClick = {
                         open = false
                         onArrangeClasses()
@@ -968,10 +1023,10 @@ private fun InventoryOptionsMenu(
 
             HorizontalDivider()
 
-            MenuLabel("Sort by")
+            MenuLabel(stringResource(R.string.toolsb_inventory_sort_by))
             for (option in InventorySort.entries) {
                 DropdownMenuItem(
-                    text = { Text(option.displayName) },
+                    text = { Text(stringResource(option.labelRes)) },
                     onClick = { model.sort = option },
                     leadingIcon = if (model.sort == option) {
                         { Icon(Icons.Filled.Check, contentDescription = null) }
@@ -984,7 +1039,15 @@ private fun InventoryOptionsMenu(
             HorizontalDivider()
 
             DropdownMenuItem(
-                text = { Text(if (filterCount > 0) "Filter ($filterCount)" else "Filter") },
+                text = {
+                    Text(
+                        if (filterCount > 0) {
+                            stringResource(R.string.toolsb_inventory_filter_with_count, filterCount)
+                        } else {
+                            stringResource(R.string.toolsb_inventory_filter)
+                        },
+                    )
+                },
                 onClick = {
                     open = false
                     filterOpen = true
@@ -993,10 +1056,10 @@ private fun InventoryOptionsMenu(
         }
 
         DropdownMenu(expanded = filterOpen, onDismissRequest = { filterOpen = false }) {
-            MenuLabel("Status")
+            MenuLabel(stringResource(R.string.toolsb_inventory_status))
             for (status in StockStatus.entries) {
                 DropdownMenuItem(
-                    text = { Text(status.displayName) },
+                    text = { Text(stringResource(status.labelRes)) },
                     onClick = { model.toggleStatus(status) },
                     leadingIcon = {
                         Icon(
@@ -1009,7 +1072,7 @@ private fun InventoryOptionsMenu(
             if (categories.size > 1) {
                 HorizontalDivider()
                 DropdownMenuItem(
-                    text = { Text("Class…") },
+                    text = { Text(stringResource(R.string.toolsb_inventory_class_menu)) },
                     onClick = {
                         filterOpen = false
                         classOpen = true
@@ -1019,7 +1082,7 @@ private fun InventoryOptionsMenu(
             if (model.hasActiveFilters) {
                 HorizontalDivider()
                 DropdownMenuItem(
-                    text = { Text("Clear filters") },
+                    text = { Text(stringResource(R.string.toolsb_inventory_clear_filters)) },
                     onClick = { model.clearFilters() },
                 )
             }
@@ -1028,7 +1091,7 @@ private fun InventoryOptionsMenu(
         DropdownMenu(expanded = classOpen, onDismissRequest = { classOpen = false }) {
             for (category in categories) {
                 DropdownMenuItem(
-                    text = { Text(category.label()) },
+                    text = { Text(CoreLabels.category(category)) },
                     onClick = { model.toggleCategory(category) },
                     leadingIcon = if (category in model.filterCategories) {
                         { Icon(Icons.Filled.Check, contentDescription = null) }
@@ -1080,19 +1143,25 @@ internal fun InventoryClassOrderScreen(
             modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Arrange classes", modifier = Modifier.weight(1f), style = MaterialTheme.typography.headlineSmall)
+            Text(
+                stringResource(R.string.toolsb_inventory_arrange_classes_title),
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.headlineSmall,
+            )
             TextButton(
                 onClick = {
                     model.resetCategoryOrder()
                     ordered = categories
                 },
                 enabled = model.hasCustomCategoryOrder,
-            ) { Text("Reset") }
-            IconButton(onClick = onDone) { Icon(Icons.Filled.Check, contentDescription = "Done") }
+            ) { Text(stringResource(R.string.toolsb_inventory_reset)) }
+            IconButton(onClick = onDone) {
+                Icon(Icons.Filled.Check, contentDescription = stringResource(R.string.common_done))
+            }
         }
 
         Text(
-            "Drag to set the order class sections appear in. Reset to let the current sort decide.",
+            stringResource(R.string.toolsb_inventory_arrange_classes_body),
             style = MaterialTheme.typography.bodyMedium,
             color = PiruTheme.colors.secondaryLabel,
         )
@@ -1104,15 +1173,25 @@ internal fun InventoryClassOrderScreen(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(category.label(), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                    Text(CoreLabels.category(category), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
                     IconButton(
                         onClick = { ordered = ordered.moved(index, index - 1).also(model::applyCategoryOrder) },
                         enabled = index > 0,
-                    ) { Icon(Icons.Filled.KeyboardArrowUp, contentDescription = "Move up") }
+                    ) {
+                        Icon(
+                            Icons.Filled.KeyboardArrowUp,
+                            contentDescription = stringResource(R.string.toolsb_inventory_move_up),
+                        )
+                    }
                     IconButton(
                         onClick = { ordered = ordered.moved(index, index + 1).also(model::applyCategoryOrder) },
                         enabled = index < ordered.lastIndex,
-                    ) { Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Move down") }
+                    ) {
+                        Icon(
+                            Icons.Filled.KeyboardArrowDown,
+                            contentDescription = stringResource(R.string.toolsb_inventory_move_down),
+                        )
+                    }
                 }
             }
         }

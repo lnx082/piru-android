@@ -20,8 +20,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.engine.ActiveSubstanceState
 import glass.kagerou.piru.engine.DoseRecord
@@ -30,6 +32,7 @@ import glass.kagerou.piru.engine.timeline
 import glass.kagerou.piru.model.P3Color
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.labels.appLocale
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.meds.MyMedsCard
 import glass.kagerou.piru.ui.nav.PushRoute
@@ -38,7 +41,6 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 /**
  * The journal's root: the day's curves, then the day's doses.
@@ -101,6 +103,11 @@ fun JournalScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
 
     val today = LocalDate.now()
     val zone = ZoneId.systemDefault()
+    // The language these strings resolved to, hoisted out of the `item { … }`
+    // below for the heading's weekday name. Not the device's language: this
+    // app ships two, so a third-language phone gets English screens and would
+    // otherwise get that language's month names inside them.
+    val dateLocale = appLocale()
     val dayStart = today.atStartOfDay(zone).toInstant()
     val dayEnd = today.plusDays(1).atStartOfDay(zone).toInstant()
     val todaysEntries = entries.filter { it.timestamp.toInstant() in dayStart..dayEnd }
@@ -112,12 +119,22 @@ fun JournalScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     ) {
         item {
             Column(modifier = Modifier.padding(top = 16.dp)) {
+                // The pattern is a resource, not a literal: it localizes the
+                // *field order*, which the locale cannot. Chinese reads
+                // 9月28日星期一 where the English pattern gives
+                // "Monday, 28 September"; the names come from `dateLocale`,
+                // the app's own resolved language rather than the device's.
                 Text(
-                    today.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.getDefault())),
+                    today.format(
+                        DateTimeFormatter.ofPattern(
+                            context.getString(R.string.datefmt_full_weekday_day_month),
+                            dateLocale,
+                        )
+                    ),
                     style = MaterialTheme.typography.titleLarge,
                 )
                 Text(
-                    "${todaysEntries.size} logged today",
+                    stringResource(R.string.journal_logged_today, todaysEntries.size),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -139,7 +156,7 @@ fun JournalScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         }
 
         if (loading) {
-            item { Centered("Loading…") }
+            item { Centered(stringResource(R.string.journal_loading)) }
         } else if (entries.isEmpty()) {
             item {
                 PiruCard {
@@ -147,10 +164,12 @@ fun JournalScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                         modifier = Modifier.padding(20.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Text("Nothing logged yet", style = MaterialTheme.typography.titleMedium)
                         Text(
-                            "A dose is not a confession. Log one when you want the record, " +
-                                "and the curves will follow it.",
+                            stringResource(R.string.journal_nothing_logged_yet),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Text(
+                            stringResource(R.string.journal_nothing_logged_blurb),
                             style = MaterialTheme.typography.bodyMedium,
                             color = PiruTheme.colors.secondaryLabel,
                         )
@@ -162,7 +181,7 @@ fun JournalScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                 PiruCard {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(
-                            "Today",
+                            stringResource(R.string.journal_today),
                             style = MaterialTheme.typography.labelLarge,
                             color = PiruTheme.colors.secondaryLabel,
                             modifier = Modifier.padding(bottom = 8.dp),
@@ -247,11 +266,23 @@ private fun Centered(text: String) {
 /**
  * A day's heading: "Today" and "Yesterday" by name, because that is how someone
  * reads their own log, and the date otherwise.
+ *
+ * `@Composable` for the two names and the pattern: a name is a resource, and so
+ * is the pattern — the locale localizes the month and weekday *names* a pattern
+ * produces but not their *order*, so the order has to come from somewhere
+ * locale-aware, which is the resources. The locale itself is the app's own
+ * resolved language, not the device's.
  */
+@Composable
 private fun dayLabel(day: LocalDate, today: LocalDate): String = when (day) {
-    today -> "Today"
-    today.minusDays(1) -> "Yesterday"
-    else -> day.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.getDefault()))
+    today -> stringResource(R.string.journal_today)
+    today.minusDays(1) -> stringResource(R.string.journal_yesterday)
+    else -> day.format(
+        DateTimeFormatter.ofPattern(
+            LocalContext.current.getString(R.string.datefmt_full_weekday_day_month),
+            appLocale(),
+        )
+    )
 }
 
 private fun DoseEntryEntity.toDoseRecord(): DoseRecord = DoseRecord(

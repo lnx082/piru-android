@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The notification layer: every title, body and button label a notification can
+  carry, the three channel names and descriptions the system settings screen
+  shows, and the Health Connect rationale string the manifest points at.
+
+  ## These are read with `context.getString`, never `stringResource`
+  The notification layer is not Compose. A `PlannedNotification` carries its
+  title and body as `String` fields, and those fields are encoded into an alarm's
+  intent by `PiruNotifications.encodePayload` and read back by `decodeActions`
+  when the alarm fires — days later, in a broadcast receiver, where the resource
+  table is reachable but the scheduler that chose the words is not. So the text
+  is resolved once, at **construction**, and travels as a plain string.
+
+  ## A scheduled notification keeps the language it was built in
+  The reminders are materialized ahead of time — three days of re-asks, two due
+  days per routine slot. Changing the device language does not rewrite what is
+  already in the alarm queue, so a notification armed before the switch arrives
+  in the old language and one armed after it arrives in the new one. That is
+  accepted behaviour, and it is what iOS does: `UNNotificationContent` freezes
+  its strings at `add(request:)` time the same way. The alternative — storing a
+  translation key plus arguments in the intent and resolving at delivery — would
+  put a resource lookup on the boot path for a case that lasts one horizon.
+-->
+<resources>
+
+    <!--
+      Shown by Health Connect in its own permission list, as the name of the
+      screen explaining why this app wants the data. AndroidManifest.xml points
+      at this id.
+    -->
+    <string name="health_permissions_rationale_label">Why Piru reads your health data</string>
+
+    <!--
+      Notification channels. The user sees these three names and descriptions in
+      system settings, so they are written for someone who has never opened the
+      app — no internal vocabulary, and no promise the platform does not keep.
+    -->
+    <string name="channel_session_alerts_name">Session alerts</string>
+    <string name="channel_session_alerts_description">Hydration and wind-down nudges, and onset and peak cues, while something you logged is still active.</string>
+    <string name="channel_reminders_name">Med reminders</string>
+    <string name="channel_reminders_description">Reminders at the times you set for each medication, and a re-ask a little later if you have not logged it.</string>
+    <string name="channel_safety_name">Safety and supplies</string>
+    <string name="channel_safety_description">A heads-up when one substance&#8217;s daily total climbs into a heavy range, or when tracked stock runs low.</string>
+
+    <!--
+      Session alerts: the hydration and wind-down nudges.
+
+      The hydration line is chosen by class because the advice differs — a
+      stimulant masks thirst, and an empathogen makes "drink more water" the
+      wrong instruction rather than a gentler one. Each is one sentence and one
+      resource, so a translator never has to reassemble them.
+    -->
+    <string name="notif_hydration_title">Stay hydrated</string>
+    <string name="notif_hydration_body_stimulant">A reminder to drink some water. Stimulants can mask thirst.</string>
+    <string name="notif_hydration_body_empathogen">A reminder to sip, and to favor electrolytes. With this class more water is not safer.</string>
+    <string name="notif_hydration_body_dissociative">A reminder to have some water if you can.</string>
+    <string name="notif_hydration_body_default">A reminder to drink some water.</string>
+    <string name="notif_hydration_check_title">Hydration check</string>
+    <string name="notif_hydration_check_body">Have some water and a snack if you haven\'t recently.</string>
+    <string name="notif_sleep_title">Time to rest</string>
+    <string name="notif_sleep_body">It\'s been a long session. Your body and brain need sleep to recover. Try to wind down.</string>
+    <string name="notif_sleep_body_extended">You\'ve been going for over %1$d hours. Try to wind down — dim the lights, put the phone away, and let yourself sleep.</string>
+
+    <!--
+      Phase alerts. The title is the substance's own name (never translated —
+      it comes from the catalog) joined to the phase, which is why the join is
+      a resource and the dash is not hard-coded: Chinese does not have to keep
+      the same separator.
+    -->
+    <string name="notif_phase_title">%1$s — %2$s</string>
+    <string name="notif_phase_name_onset">Onset</string>
+    <string name="notif_phase_name_comeup">Come-up</string>
+    <string name="notif_phase_name_peak">Peak</string>
+    <string name="notif_phase_body_onset_reference">Reference onset for this route: %1$d-%2$d minutes.</string>
+    <string name="notif_phase_body_tracking_started">Tracking started.</string>
+    <string name="notif_phase_body_comeup">Estimated onset from reference data. How are you feeling?</string>
+    <string name="notif_phase_body_peak">Estimated peak window from reference data. How are you feeling?</string>
+
+    <!--
+      The cumulative safety net. The tip that follows the first sentence is
+      chosen by class and is the whole point of the notification, so each one is
+      a complete resource rather than a fragment bolted onto a shared stem.
+
+      The opioid tip is the one that has to survive translation intact: it is
+      the only copy here that is about not dying, and every clause in it — not
+      alone, not mixed with other downers, an overdose has no warning, you
+      cannot give yourself naloxone — is load-bearing.
+    -->
+    <string name="notif_cumulative_title">Heads up — %1$s%2$s %3$s today</string>
+    <string name="notif_cumulative_body">That\'s a high cumulative dose. %1$s</string>
+    <string name="notif_cumulative_tip_stimulant">Remember to hydrate, eat, and try to get some sleep. Your heart has been working hard.</string>
+    <string name="notif_cumulative_tip_empathogen">That total is in the heavy range of the sources. Overheating, confusion or rigid muscles need emergency help.</string>
+    <string name="notif_cumulative_tip_opioid">Don\'t use alone and don\'t mix with other downers. An overdose is a sudden blackout with no warning — you can\'t naloxone yourself, so someone with you needs it and should call emergency services.</string>
+    <string name="notif_cumulative_tip_benzodiazepine">High cumulative benzo doses impair memory and coordination. Stay somewhere safe.</string>
+    <string name="notif_cumulative_tip_dissociative">Stay somewhere safe. Don\'t drive. Your coordination and judgment are affected.</string>
+    <string name="notif_cumulative_tip_default">Take it easy. Hydrate, eat, and rest.</string>
+
+    <!--
+      Med reminders. The medication name and dose are the scheduler's own
+      values and are never translated; everything around them is. The re-ask is
+      phrased as a question on purpose — it asks, it never implies the dose was
+      taken and it never scolds.
+    -->
+    <string name="notif_med_reminder_body">Time to log %1$s — %2$s.</string>
+    <string name="notif_med_follow_up_body">Still need to log %1$s?</string>
+    <string name="notif_med_group_title">%1$s supplements (%2$d)</string>
+    <string name="notif_med_group_follow_up_body">Still need your %1$s supplements?</string>
+    <string name="notif_action_skip_today">Skip today</string>
+
+    <!--
+      The time-of-day buckets, shared by the grouped quiet-med reminder and its
+      re-ask. `slug` on the Kotlin enum is the wire value and stays English;
+      only these labels are shown.
+    -->
+    <string name="notif_med_group_morning">Morning</string>
+    <string name="notif_med_group_afternoon">Afternoon</string>
+    <string name="notif_med_group_evening">Evening</string>
+    <string name="notif_med_group_night">Night</string>
+
+    <!--
+      Check-in prompts. Two wordings, picked by what the session actually
+      contains: a medication is asked whether it is working, everything else is
+      asked how it is going.
+    -->
+    <string name="notif_check_in_title_medication">Is it working?</string>
+    <string name="notif_check_in_title_session">How is it going?</string>
+    <string name="notif_check_in_body_medication">One tap records how this dose is going — less than usual, about right, or more.</string>
+    <string name="notif_check_in_body_session">Add a note to your session — what you notice, at this moment.</string>
+
+    <!--
+      Stock alerts. The substance name and the unit are the user's own data.
+      The low-stock body reorders its three arguments in Chinese, which is why
+      they are indexed rather than positional.
+    -->
+    <string name="notif_inventory_out_title">Out of %1$s</string>
+    <string name="notif_inventory_low_title">Running low on %1$s</string>
+    <string name="notif_inventory_out_body">You\'re out of %1$s. Restock when you can.</string>
+    <string name="notif_inventory_low_body">%1$s %2$s of %3$s left.</string>
+</resources>

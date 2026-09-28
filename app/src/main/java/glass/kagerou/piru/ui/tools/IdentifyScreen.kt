@@ -14,7 +14,9 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import glass.kagerou.piru.R
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
 import glass.kagerou.piru.ui.nav.AppNavigator
@@ -65,9 +67,9 @@ fun IdentifyScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     ) {
         item {
             Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Identify a box", style = MaterialTheme.typography.headlineSmall)
+                Text(stringResource(R.string.identify_title), style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    "What the scanner is for, and why this build has none.",
+                    stringResource(R.string.identify_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -77,18 +79,14 @@ fun IdentifyScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         item {
             PiruCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("What this screen is", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.identify_what_title), style = MaterialTheme.typography.titleSmall)
                     // Verbatim from IdentifyBoxView's intro card.
                     Text(
-                        "Point the camera at a medication box — the brand, the printed " +
-                            "name, or the barcode — and Piru opens what it knows about the " +
-                            "substance inside: the pharmacology, the doses on record, the " +
-                            "interactions.",
+                        stringResource(R.string.identify_intro),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Text(
-                        "Barcodes are matched offline against the US and French registries " +
-                            "the app ships with. Anything else resolves by name.",
+                        stringResource(R.string.identify_registries),
                         style = MaterialTheme.typography.bodySmall,
                         color = PiruTheme.colors.secondaryLabel,
                     )
@@ -96,9 +94,7 @@ fun IdentifyScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                         // The original's disclaimer, kept where it belongs: on the
                         // reading, which is a reading of the label. It is not this
                         // screen's footer, because this screen produces no reading.
-                        "Text detected from the label. Check the name, strength and " +
-                            "formulation before saving — a scan can't verify what is " +
-                            "inside the box.",
+                        stringResource(R.string.identify_label_disclaimer),
                         style = MaterialTheme.typography.bodySmall,
                         color = PiruTheme.colors.secondaryLabel,
                     )
@@ -109,18 +105,14 @@ fun IdentifyScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         item {
             PiruCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Not in this build", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.identify_not_built_title), style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "There is no camera scanner here. Reading a label on the device " +
-                            "needs on-device text recognition and barcode decoding over a " +
-                            "camera preview, plus the packaged product-code tables to match " +
-                            "what is read against. None of those is wired up in this build.",
+                        stringResource(R.string.identify_not_built_body),
                         style = MaterialTheme.typography.bodyMedium,
                         color = PiruTheme.colors.secondaryLabel,
                     )
                     Text(
-                        "Nothing is guessed in its place. A reading that looked right and " +
-                            "was not would be the one failure this feature exists to avoid.",
+                        stringResource(R.string.identify_nothing_guessed),
                         style = MaterialTheme.typography.bodySmall,
                         color = PiruTheme.colors.secondaryLabel,
                     )
@@ -130,15 +122,14 @@ fun IdentifyScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
 
         item {
             Text(
-                "What still works",
+                stringResource(R.string.identify_what_works),
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.padding(top = 6.dp),
             )
         }
         item {
             Text(
-                "The two things a scan hands off to are both here and both take a name " +
-                    "you type.",
+                stringResource(R.string.identify_what_works_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = PiruTheme.colors.secondaryLabel,
             )
@@ -152,18 +143,21 @@ fun IdentifyScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                     onClick = { navigator.select(AppTab.SEARCH) },
                     modifier = Modifier.weight(1f),
                 ) {
-                    Text("Search by name")
+                    Text(stringResource(R.string.identify_search_by_name))
                 }
                 OutlinedButton(
                     onClick = { navigator.select(AppTab.LIBRARY) },
                     modifier = Modifier.weight(1f),
                 ) {
-                    Text("Browse the library")
+                    Text(stringResource(R.string.identify_browse_library))
                 }
             }
         }
 
         item {
+            // Deliberately not a string resource: this is the one sentence that
+            // has to stay legible to someone who cannot read the rest of the
+            // screen, so it is English in every build.
             Text(
                 "Not medical advice.",
                 style = MaterialTheme.typography.bodySmall,

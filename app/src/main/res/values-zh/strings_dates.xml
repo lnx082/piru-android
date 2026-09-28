@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  日期与时间的渲染格式，简体中文。
+
+  这些是 java.time 的 DateTimeFormatter 模式串，不是完整的句子，
+  tools/zh_from_xcstrings.py 查不到，所以这一份是手写的：九条一条不少，
+  没有一条被标为「回退英文」——那个标记是待办，不是完成态。
+
+  中文的字段顺序和英文不同：中文说「9月28日星期一」，日在月后、星期在最后。
+  英文那份是 MMMM 在前，这里换成「M月d日 EEEE」，顺序变了，名字不变。
+  日期里的数字和冒号保持原样，只有字段的先后和量词（年/月/日）是中文的写法。
+
+  只显示时间的 HH:mm 不在这里：24 小时制中英文读法一样，留在 Kotlin 里就好。
+
+  文件名和英文那份对齐，一条不多一条不少；缺一条会静默回落到英文，构建不会报错。
+-->
+<resources>
+    <!-- "Mar 5" —— 图表的坐标轴与化验行。 -->
+    <string name="datefmt_month_day">M月d日</string>
+
+    <!-- "Mar 5, 2026" —— 化验采样日期。 -->
+    <string name="datefmt_month_day_year">yyyy年M月d日</string>
+
+    <!-- "5 Mar" —— 日在前的中文短日期。 -->
+    <string name="datefmt_day_month">M月d日</string>
+
+    <!-- "5 Mar 2026" —— 一条相互作用记录的日期。 -->
+    <string name="datefmt_day_month_year">yyyy年M月d日</string>
+
+    <!-- "5 Mar, 14:30" —— 库存变动的一条记录。 -->
+    <string name="datefmt_day_month_time">M月d日 HH:mm</string>
+
+    <!-- "5 Mar 2026, 14:30" —— 相互作用的日期与时刻。 -->
+    <string name="datefmt_day_month_year_time">yyyy年M月d日 HH:mm</string>
+
+    <!-- "Monday, 5 March" —— 记录页自己的日期标题，不带时刻。 -->
+    <string name="datefmt_full_weekday_day_month">M月d日 EEEE</string>
+
+    <!-- "Monday 5 March, 14:30" —— 单条记录的时间戳。 -->
+    <string name="datefmt_full_weekday_day_month_time">M月d日 EEEE HH:mm</string>
+
+    <!-- "Mon 5 Mar" —— 报告里的一天，星期在前、格式短。 -->
+    <string name="datefmt_short_weekday_day_month">M月d日 EEE</string>
+</resources>

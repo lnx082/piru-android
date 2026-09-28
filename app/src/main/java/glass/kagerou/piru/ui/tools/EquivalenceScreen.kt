@@ -1,5 +1,6 @@
 package glass.kagerou.piru.ui.tools
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -20,8 +21,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import glass.kagerou.piru.R
 import glass.kagerou.piru.engine.OpioidConvertibility
 import glass.kagerou.piru.model.doseFormatted
 import glass.kagerou.piru.substance.SubstanceReader
@@ -83,10 +86,9 @@ fun EquivalenceScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     ) {
         item {
             Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Equivalence", style = MaterialTheme.typography.headlineSmall)
+                Text(stringResource(R.string.equivalence_title), style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    "Published factors for reading one substance's amount in another's " +
-                        "units. Reference figures, not a dose calculator.",
+                    stringResource(R.string.equivalence_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -94,20 +96,18 @@ fun EquivalenceScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         }
 
         item {
-            SectionHeading("Opioid MME")
+            SectionHeading(stringResource(R.string.equivalence_opioid_heading))
         }
         item {
             PiruCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     // Verbatim from the reference table's own header.
                     Text(
-                        "Published oral morphine milligram equivalent (MME) factors compare " +
-                            "amounts across opioids. They must not be used to choose a " +
-                            "replacement dose when switching medications.",
+                        stringResource(R.string.equivalence_opioid_note),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Text(
-                        "CDC 2022 reference factors. Individual response varies.",
+                        stringResource(R.string.equivalence_opioid_source),
                         style = MaterialTheme.typography.bodySmall,
                         color = PiruTheme.colors.secondaryLabel,
                     )
@@ -116,7 +116,7 @@ fun EquivalenceScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         }
 
         if (loaded && opioids.isEmpty()) {
-            item { EmptyState("No MME factors are readable from the catalog on this build.") }
+            item { EmptyState(stringResource(R.string.equivalence_opioid_empty)) }
         }
 
         items(opioids, key = { it.name }) { entry ->
@@ -124,14 +124,16 @@ fun EquivalenceScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         }
 
         item {
-            SectionHeading("Diazepam equivalence", modifier = Modifier.padding(top = 8.dp))
+            SectionHeading(
+                stringResource(R.string.equivalence_benzo_heading),
+                modifier = Modifier.padding(top = 8.dp),
+            )
         }
         item {
             PiruCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
-                        "Published equivalences are approximate and vary between sources. " +
-                            "A prescriber must assess any medication change.",
+                        stringResource(R.string.equivalence_benzo_note),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
@@ -139,7 +141,7 @@ fun EquivalenceScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         }
 
         if (loaded && benzos.isEmpty()) {
-            item { EmptyState("No cited diazepam equivalences are readable from the catalog on this build.") }
+            item { EmptyState(stringResource(R.string.equivalence_benzo_empty)) }
         }
 
         items(benzos, key = { it.name }) { entry ->
@@ -147,8 +149,9 @@ fun EquivalenceScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         }
 
         item {
+            // The disclaimer stays English — see the note in IdentifyScreen.
             Text(
-                "Both tables are published references, not a model output. Not medical advice.",
+                stringResource(R.string.equivalence_footer) + " Not medical advice.",
                 style = MaterialTheme.typography.bodySmall,
                 color = PiruTheme.colors.secondaryLabel,
                 modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
@@ -169,7 +172,7 @@ private fun OpioidRow(entry: SubstanceReader.OpioidMmeRowEntry) {
                 Text(pickerLabel(entry), style = MaterialTheme.typography.titleSmall)
                 entry.mmePerMg?.let { factor ->
                     Text(
-                        "${doseFormatted(factor)} MME per mg",
+                        stringResource(R.string.equivalence_mme_per_mg, doseFormatted(factor)),
                         style = MaterialTheme.typography.bodyMedium,
                         color = PiruTheme.colors.secondaryLabel,
                     )
@@ -177,7 +180,7 @@ private fun OpioidRow(entry: SubstanceReader.OpioidMmeRowEntry) {
             }
             unconvertibleReason(entry.convertibility)?.let { reason ->
                 Text(
-                    reason,
+                    stringResource(reason),
                     style = MaterialTheme.typography.bodySmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -193,9 +196,10 @@ private fun OpioidRow(entry: SubstanceReader.OpioidMmeRowEntry) {
  * route, so the route it is dosed by is what the label has to disambiguate —
  * otherwise the row reads as an oral factor that does not exist.
  */
+@Composable
 private fun pickerLabel(entry: SubstanceReader.OpioidMmeRowEntry): String =
     if (entry.convertibility == OpioidConvertibility.TRANSDERMAL) {
-        "${entry.displayName} (transdermal)"
+        stringResource(R.string.equivalence_transdermal_label, entry.displayName)
     } else {
         entry.displayName
     }
@@ -208,18 +212,16 @@ private fun pickerLabel(entry: SubstanceReader.OpioidMmeRowEntry): String =
  * sees, so it is written once here where it can be translated, and a row can
  * never ship an untranslated reason. Null for a linear row, which is shown with
  * its factor instead.
+ *
+ * A resource id rather than the sentence itself: it is resolved at the call
+ * site, which is the only place a `stringResource` read can happen.
  */
-private fun unconvertibleReason(convertibility: OpioidConvertibility): String? = when (convertibility) {
+@StringRes
+private fun unconvertibleReason(convertibility: OpioidConvertibility): Int? = when (convertibility) {
     OpioidConvertibility.LINEAR -> null
-    OpioidConvertibility.NONLINEAR ->
-        "Methadone's half-life is long and variable, and its effect on breathing peaks " +
-            "later than its pain relief. CDC publishes a single population factor for it; " +
-            "Piru shows no figure."
-    OpioidConvertibility.TRANSDERMAL ->
-        "Transdermal fentanyl is dosed in micrograms per hour, a rate rather than a mass, " +
-            "so it has no figure in this mg-based table."
-    OpioidConvertibility.EXCLUDED ->
-        "CDC excludes buprenorphine from MME."
+    OpioidConvertibility.NONLINEAR -> R.string.equivalence_unconvertible_methadone
+    OpioidConvertibility.TRANSDERMAL -> R.string.equivalence_unconvertible_fentanyl
+    OpioidConvertibility.EXCLUDED -> R.string.equivalence_unconvertible_buprenorphine
 }
 
 @Composable
@@ -233,7 +235,7 @@ private fun BenzoRow(entry: SubstanceReader.BenzoEquivalentEntry) {
             // The attribution is on every row rather than once at the top: a
             // number copied out of a list carries no header with it.
             Text(
-                "Ashton Manual, Table 1",
+                stringResource(R.string.equivalence_ashton_source),
                 style = MaterialTheme.typography.bodySmall,
                 color = PiruTheme.colors.secondaryLabel,
             )

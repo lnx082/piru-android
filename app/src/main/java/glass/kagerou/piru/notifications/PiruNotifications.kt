@@ -33,6 +33,26 @@ import java.time.Instant
  * the deep link a tap follows. Policy — quiet hours, quiet tier, timing —
  * already happened by the time one of these exists, which is why there is no
  * `fireAt` on it.
+ *
+ * ## The copy is already in English or already in Chinese, and it is frozen
+ * [title], [body] and every action label are resolved with
+ * `context.getString(R.string.…)` by the scheduler that builds the payload —
+ * never by the code that posts it. That is forced by the transport: the payload
+ * is serialized into the alarm's intent by [encodePayload] and read back by
+ * [decodeActions] when the alarm fires, and the delivery path runs in a
+ * broadcast receiver with no scheduler and no decision left to make. A resource
+ * id cannot travel that way; a resolved `String` can.
+ *
+ * The visible consequence, and the reason it is worth stating rather than
+ * discovering: **a notification already in the alarm queue keeps the language it
+ * was scheduled in.** Med reminders are materialized up to three days ahead, so
+ * changing the device language does not retranslate what is already armed — the
+ * next few days' worth arrive in the old language and everything scheduled after
+ * the change arrives in the new one. iOS behaves identically, for the same
+ * reason (`UNNotificationContent` freezes its strings at `add(request:)`), and
+ * it is accepted here. Resolving at delivery instead would mean carrying a
+ * resource id plus arguments through the intent and doing a resource lookup on
+ * the boot path, to fix a window that closes by itself.
  */
 /**
  * A button on a notification.

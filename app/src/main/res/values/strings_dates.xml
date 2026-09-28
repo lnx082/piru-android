@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Date and time render patterns, one per shape the app shows.
+
+  These are `java.time` DateTimeFormatter patterns, not finished sentences, so
+  tools/zh_from_xcstrings.py cannot look them up — the Chinese file is written by
+  hand. That is the point of keeping them here rather than inline.
+
+  Why a resource at all. `DateTimeFormatter.ofPattern("EEEE, d MMMM", locale)`
+  localizes the *names* — the weekday and month come out in Chinese — but the
+  *field order* is fixed by the pattern, so a Chinese device rendered
+  "星期一, 28 九月". Chinese puts the day before the month and the weekday last
+  ("9月28日星期一"), which is a different pattern, not a different translation.
+  The names were never the problem; the order was. See docs/localization.md,
+  "Date patterns are not strings".
+
+  The English values below are byte-for-byte the patterns the code used before
+  this file existed, so the English build renders exactly what it did.
+
+  Time-only patterns ("HH:mm") are deliberately absent: 24-hour time reads
+  identically in both locales, so those stay a literal in Kotlin.
+
+  Every name here carries the `datefmt_` prefix. `common_` collided once already;
+  a pattern is not a sentence and should not be mistakable for one.
+-->
+<resources>
+    <!-- "Mar 5" — English month-first abreviations, chart axes and lab rows. -->
+    <string name="datefmt_month_day">MMM d</string>
+
+    <!-- "Mar 5, 2026" — the lab draw date. -->
+    <string name="datefmt_month_day_year">MMM d, yyyy</string>
+
+    <!-- "5 Mar" — the day-first short date. -->
+    <string name="datefmt_day_month">d MMM</string>
+
+    <!-- "5 Mar 2026" — an interaction's calendar date. -->
+    <string name="datefmt_day_month_year">d MMM yyyy</string>
+
+    <!-- "5 Mar, 14:30" — a stock history row. -->
+    <string name="datefmt_day_month_time">d MMM, HH:mm</string>
+
+    <!-- "5 Mar 2026, 14:30" — an interaction's date and clock together. -->
+    <string name="datefmt_day_month_year_time">d MMM yyyy, HH:mm</string>
+
+    <!-- "Monday, 5 March" — the journal's own heading, no clock. -->
+    <string name="datefmt_full_weekday_day_month">EEEE, d MMMM</string>
+
+    <!-- "Monday 5 March, 14:30" — one entry's timestamp. -->
+    <string name="datefmt_full_weekday_day_month_time">EEEE d MMMM, HH:mm</string>
+
+    <!-- "Mon 5 Mar" — a report row's day, weekday-led and short. -->
+    <string name="datefmt_short_weekday_day_month">EEE d MMM</string>
+</resources>

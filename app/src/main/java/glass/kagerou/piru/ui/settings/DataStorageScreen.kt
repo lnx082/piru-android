@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -37,6 +38,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationManagerCompat
 import glass.kagerou.piru.BuildConfig
+import glass.kagerou.piru.R
 import glass.kagerou.piru.PiruApplication
 import glass.kagerou.piru.data.backup.BackupCrypto
 import glass.kagerou.piru.data.export.DataExportImport
@@ -187,7 +189,12 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
         if (uri == null || text == null) return@rememberLauncherForActivityResult
         scope.launch {
             val wrote = withContext(Dispatchers.IO) { writeText(context, uri, text) }
-            if (!wrote) report("Export Failed", "The file could not be written to the location you chose.")
+            if (!wrote) {
+                report(
+                    context.getString(R.string.shell_data_export_failed),
+                    context.getString(R.string.shell_data_export_write_failed),
+                )
+            }
         }
     }
 
@@ -197,7 +204,12 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
         if (uri == null || bytes == null) return@rememberLauncherForActivityResult
         scope.launch {
             val wrote = withContext(Dispatchers.IO) { writeBytes(context, uri, bytes) }
-            if (!wrote) report("Export Failed", "The file could not be written to the location you chose.")
+            if (!wrote) {
+                report(
+                    context.getString(R.string.shell_data_export_failed),
+                    context.getString(R.string.shell_data_export_write_failed),
+                )
+            }
         }
     }
 
@@ -206,7 +218,10 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
         try {
             DataExportImport.validate(text)
         } catch (error: Throwable) {
-            report("Import Failed", DataExportImport.importErrorMessage(error))
+            report(
+                context.getString(R.string.shell_data_import_failed),
+                DataExportImport.importErrorMessage(error),
+            )
             return
         }
         pendingPayload = text
@@ -221,7 +236,10 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
             val bytes = withContext(Dispatchers.IO) { readBytes(context, uri) }
             busy = false
             if (bytes == null) {
-                report("Import Failed", "The file could not be read.")
+                report(
+                    context.getString(R.string.shell_data_import_failed),
+                    context.getString(R.string.shell_data_file_unreadable),
+                )
                 return@launch
             }
             val asText = bytes.toString(Charsets.UTF_8)
@@ -231,11 +249,8 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
             val inspection = runCatching { BackupCrypto.inspect(bytes) }.getOrNull()
             when (inspection) {
                 is BackupCrypto.Inspection.DeviceKey -> report(
-                    "Can't Open This Backup",
-                    "This is a device-key backup, made by the iOS app with a key kept in " +
-                        "your iCloud Keychain. The key is not in the file, and Android has " +
-                        "no equivalent store for it, so this build can't open it. Its " +
-                        "passphrase backups open normally.",
+                    context.getString(R.string.shell_data_device_key_title),
+                    context.getString(R.string.shell_data_device_key_body),
                 )
                 is BackupCrypto.Inspection.Passphrase -> {
                     lockedBackup = bytes
@@ -259,9 +274,8 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
                     }
                     if (snapshot == null) {
                         report(
-                            "Restore Failed",
-                            "A recovery copy of your current data could not be written, so " +
-                                "nothing was replaced.",
+                            context.getString(R.string.shell_data_restore_failed),
+                            context.getString(R.string.shell_data_snapshot_failed),
                         )
                         return@launch
                     }
@@ -275,9 +289,17 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
                 app.refreshLiveStores()
                 onChanged()
                 reload++
-                notice = Notice(if (replace) "Restore Complete" else "Import Complete", describe(report))
+                notice = Notice(
+                    context.getString(
+                        if (replace) R.string.shell_data_restore_complete else R.string.shell_data_import_complete,
+                    ),
+                    describe(context, report),
+                )
             } catch (error: Throwable) {
-                report("Restore Failed", DataExportImport.importErrorMessage(error))
+                report(
+                    context.getString(R.string.shell_data_restore_failed),
+                    DataExportImport.importErrorMessage(error),
+                )
             } finally {
                 busy = false
                 pendingPayload = null
@@ -293,7 +315,7 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
     ) {
         item {
             Text(
-                "Data & Backup",
+                stringResource(R.string.shell_settings_data_backup),
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.padding(top = 16.dp),
             )
@@ -327,7 +349,10 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
                 val text = withContext(Dispatchers.IO) { StoreRecovery.forContext(context).read(copy) }
                 busy = false
                 if (text == null) {
-                    report("Restore Failed", "That copy could not be read.")
+                    report(
+                        context.getString(R.string.shell_data_restore_failed),
+                        context.getString(R.string.shell_data_copy_unreadable),
+                    )
                     return@launch
                 }
                 prepareRestoreFrom(text, copy)
@@ -344,10 +369,13 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
     if (askingExportOptions) {
         AlertDialog(
             onDismissRequest = { askingExportOptions = false },
-            title = { Text("Export") },
+            title = { Text(stringResource(R.string.shell_data_export_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    ExportOption("Piru Backup", "A complete backup you can restore into Piru") {
+                    ExportOption(
+                        stringResource(R.string.shell_data_export_piru),
+                        stringResource(R.string.shell_data_export_piru_detail),
+                    ) {
                         askingExportOptions = false
                         scope.launch {
                             generating = true
@@ -362,7 +390,10 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
                             }.getOrNull()
                             generating = false
                             if (text == null) {
-                                report("Export Failed", "The export could not be built.")
+                                report(
+                                    context.getString(R.string.shell_data_export_failed),
+                                    context.getString(R.string.shell_data_export_build_failed),
+                                )
                                 return@launch
                             }
                             pendingPlainExport = text
@@ -370,9 +401,8 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
                         }
                     }
                     ExportOption(
-                        "PsychonautWiki Format",
-                        "For importing into the PsychonautWiki app. Plain JSON, and it " +
-                            "does not carry inventory, favorites or sessions' notes.",
+                        stringResource(R.string.shell_data_export_psywiki),
+                        stringResource(R.string.shell_data_export_psywiki_detail),
                     ) {
                         askingExportOptions = false
                         scope.launch {
@@ -388,7 +418,10 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
                             }.getOrNull()
                             generating = false
                             if (text == null) {
-                                report("Export Failed", "The export could not be built.")
+                                report(
+                                    context.getString(R.string.shell_data_export_failed),
+                                    context.getString(R.string.shell_data_export_build_failed),
+                                )
                                 return@launch
                             }
                             pendingPlainExport = text
@@ -396,8 +429,8 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
                         }
                     }
                     ExportOption(
-                        "Encrypted Backup",
-                        "Passphrase-protected — save or send it anywhere",
+                        stringResource(R.string.shell_data_export_encrypted),
+                        stringResource(R.string.shell_data_export_encrypted_detail),
                     ) {
                         askingExportOptions = false
                         askingCreatePassphrase = true
@@ -405,7 +438,11 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
                 }
             },
             confirmButton = {},
-            dismissButton = { TextButton(onClick = { askingExportOptions = false }) { Text("Cancel") } },
+            dismissButton = {
+                TextButton(onClick = { askingExportOptions = false }) {
+                    Text(stringResource(R.string.shell_cancel))
+                }
+            },
         )
     }
 
@@ -428,7 +465,10 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
                     }.getOrNull()
                     generating = false
                     if (bytes == null) {
-                        report("Export Failed", "The encrypted backup could not be built.")
+                        report(
+                            context.getString(R.string.shell_data_export_failed),
+                            context.getString(R.string.shell_data_export_encrypted_build_failed),
+                        )
                         return@launch
                     }
                     pendingEncryptedExport = bytes
@@ -459,16 +499,18 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
                         busy = false
                         val failure = (error as? BackupCrypto.BackupException)?.failure
                         report(
-                            "Restore Failed",
-                            when (failure) {
-                                // One message for both, because GCM cannot tell a
-                                // wrong passphrase from a tampered file.
-                                BackupCrypto.Failure.DECRYPTION_FAILED ->
-                                    "That passphrase did not open this backup."
-                                BackupCrypto.Failure.DEVICE_KEY_UNAVAILABLE ->
-                                    "This build can't open a device-key backup."
-                                else -> "This file is not a readable Piru backup."
-                            },
+                            context.getString(R.string.shell_data_restore_failed),
+                            context.getString(
+                                when (failure) {
+                                    // One message for both, because GCM cannot tell a
+                                    // wrong passphrase from a tampered file.
+                                    BackupCrypto.Failure.DECRYPTION_FAILED ->
+                                        R.string.shell_data_passphrase_wrong
+                                    BackupCrypto.Failure.DEVICE_KEY_UNAVAILABLE ->
+                                        R.string.shell_data_device_key_unsupported
+                                    else -> R.string.shell_data_not_a_backup
+                                },
+                            ),
                         )
                         return@launch
                     }
@@ -483,33 +525,30 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
         val copy = pendingCopy
         AlertDialog(
             onDismissRequest = { askingStrategy = false; pendingPayload = null; pendingCopy = null },
-            title = { Text("Restore Backup") },
+            title = { Text(stringResource(R.string.shell_data_restore_title)) },
             text = {
+                // Two sentences, and only the first is conditional: the copy's own
+                // date, when there is a copy. Joined rather than concatenated so the
+                // two stay separately translatable.
+                val prefix = copy?.timestamp?.let {
+                    stringResource(R.string.shell_data_restore_replace_prefix, whenText(it))
+                }
                 Text(
-                    buildString {
-                        val takenAt = copy?.timestamp
-                        if (takenAt != null) {
-                            append("This replaces your current data with the copy taken ${whenText(takenAt)}. ")
-                        }
-                        append(
-                            "Merge keeps your current entries and adds the backup's. Replace " +
-                                "deletes your current data first (a recovery copy is taken " +
-                                "automatically) and restores only the backup.",
-                        )
-                    },
+                    listOfNotNull(prefix, stringResource(R.string.shell_data_restore_strategy))
+                        .joinToString(" "),
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
                     askingStrategy = false
                     pendingPayload?.let { applyRestore(replace = false, payload = it) }
-                }) { Text("Merge With Current Data") }
+                }) { Text(stringResource(R.string.shell_data_merge)) }
             },
             dismissButton = {
                 TextButton(onClick = {
                     askingStrategy = false
                     pendingPayload?.let { applyRestore(replace = true, payload = it) }
-                }) { Text("Replace Everything") }
+                }) { Text(stringResource(R.string.shell_data_replace)) }
             },
         )
     }
@@ -517,21 +556,19 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
     if (askingDelete) {
         AlertDialog(
             onDismissRequest = { askingDelete = false },
-            title = { Text("Delete Everything") },
+            title = { Text(stringResource(R.string.shell_data_delete_title)) },
             text = {
-                Text(
-                    "This deletes your journal, profile, schedules, inventory, custom " +
-                        "presets and local recovery copies. Exported files and device " +
-                        "backups are not affected.",
-                )
+                Text(stringResource(R.string.shell_data_delete_body))
             },
             confirmButton = {
                 TextButton(onClick = {
                     askingDelete = false
                     scope.launch { deleteEverything(app, onDeleted = { reload++ }, onMessage = ::report) }
-                }) { Text("Delete") }
+                }) { Text(stringResource(R.string.shell_delete)) }
             },
-            dismissButton = { TextButton(onClick = { askingDelete = false }) { Text("Cancel") } },
+            dismissButton = {
+                TextButton(onClick = { askingDelete = false }) { Text(stringResource(R.string.shell_cancel)) }
+            },
         )
     }
 
@@ -540,7 +577,7 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
             onDismissRequest = { notice = null },
             title = { Text(current.title) },
             text = { Text(current.message) },
-            confirmButton = { TextButton(onClick = { notice = null }) { Text("OK") } },
+            confirmButton = { TextButton(onClick = { notice = null }) { Text(stringResource(R.string.shell_ok)) } },
         )
     }
 }
@@ -562,19 +599,22 @@ private data class Notice(val title: String, val message: String)
 
 @Composable
 private fun LocalStorageSection(counts: LocalCounts?, storeBytes: Long) {
+    val context = LocalContext.current
     SectionCard(
-        title = "On This Device",
-        footer = "Everything Piru stores in the app on this device. Device backups made by " +
-            "your phone's own settings include it.",
+        title = stringResource(R.string.shell_data_on_device),
+        footer = stringResource(R.string.shell_data_on_device_footer),
     ) {
-        CountRow("Entries", counts?.entries)
-        CountRow("Sessions", counts?.sessions)
-        CountRow("Daily Medications", counts?.meds)
-        CountRow("Quick-Log Shortcuts", counts?.quickLog)
-        CountRow("Favorites", counts?.favorites)
-        CountRow("Inventory", counts?.inventory)
-        CountRow("Custom Colours", counts?.customColors)
-        CountRow("Store Size", formatted = byteString(storeBytes))
+        CountRow(stringResource(R.string.shell_data_count_entries), counts?.entries)
+        CountRow(stringResource(R.string.shell_data_count_sessions), counts?.sessions)
+        CountRow(stringResource(R.string.shell_data_count_meds), counts?.meds)
+        CountRow(stringResource(R.string.shell_data_count_quicklog), counts?.quickLog)
+        CountRow(stringResource(R.string.shell_data_count_favorites), counts?.favorites)
+        CountRow(stringResource(R.string.shell_data_count_inventory), counts?.inventory)
+        CountRow(stringResource(R.string.shell_data_count_custom_colours), counts?.customColors)
+        CountRow(
+            stringResource(R.string.shell_data_count_store_size),
+            formatted = byteString(context, storeBytes),
+        )
     }
 }
 
@@ -607,24 +647,18 @@ private fun ExportImportSection(
     onImport: () -> Unit,
 ) {
     SectionCard(
-        title = "Export & Import",
-        footer = "Piru and PsychonautWiki files are plain, unencrypted JSON. Imports add to " +
-            "your journal and skip duplicates. Encrypted restores can merge or replace. " +
-            "Inventory is included in Piru and encrypted backups, but not in " +
-            "PsychonautWiki files.\n\n" +
-            "Automatic backup is not available here. On iOS it writes an encrypted copy to " +
-            "your private iCloud Drive whenever you leave the app; Android has no " +
-            "equivalent, so backups are made here when you make them.",
+        title = stringResource(R.string.shell_data_export_import),
+        footer = stringResource(R.string.shell_data_export_import_footer),
     ) {
         ActionRow(
-            title = "Export…",
-            subtitle = "Piru, PsychonautWiki, or an encrypted backup",
+            title = stringResource(R.string.shell_data_export_row),
+            subtitle = stringResource(R.string.shell_data_export_row_detail),
             showSpinner = generating,
             onClick = onExport,
         )
         ActionRow(
-            title = "Import…",
-            subtitle = "A Piru or PsychonautWiki file, or an encrypted backup",
+            title = stringResource(R.string.shell_data_import_row),
+            subtitle = stringResource(R.string.shell_data_import_row_detail),
             enabled = !generating,
             onClick = onImport,
         )
@@ -645,14 +679,12 @@ private fun ExportImportSection(
 @Composable
 private fun SubstanceDatabaseSection(substanceCount: Int) {
     SectionCard(
-        title = "Substance Database",
-        footer = "Which source wins when they disagree. The source-priority editor is not " +
-            "in this build; the bundled catalog supplies each substance's own sources, " +
-            "listed on its detail screen.",
+        title = stringResource(R.string.shell_data_substance_db),
+        footer = stringResource(R.string.shell_data_substance_db_footer),
     ) {
-        CountRow("Substances in the bundled catalog", count = substanceCount)
+        CountRow(stringResource(R.string.shell_data_substances_in_catalog), count = substanceCount)
         Text(
-            "Browse it from the Library tab.",
+            stringResource(R.string.shell_data_browse_library),
             style = MaterialTheme.typography.bodyMedium,
             color = PiruTheme.colors.secondaryLabel,
         )
@@ -663,27 +695,22 @@ private fun SubstanceDatabaseSection(substanceCount: Int) {
 
 @Composable
 private fun HowEncryptionWorksSection() {
-    SectionCard(title = "How Encryption Works") {
+    SectionCard(title = stringResource(R.string.shell_data_how_encryption)) {
         HowItWorksRow(
-            "Strong encryption",
-            "Sealed with AES-256-GCM. Tampering is detected and refused.",
+            stringResource(R.string.shell_data_enc_strong),
+            stringResource(R.string.shell_data_enc_strong_detail),
         )
         HowItWorksRow(
-            "Passphrase backups",
-            "Encrypted exports turn your passphrase into a key with 600,000 rounds of " +
-                "PBKDF2. Piru keeps no copy of the passphrase and cannot recover it. " +
-                "Plain exports are unencrypted.",
+            stringResource(R.string.shell_data_enc_passphrase),
+            stringResource(R.string.shell_data_enc_passphrase_detail),
         )
         HowItWorksRow(
-            "Restores keep a snapshot",
-            "Replacing your data on restore takes a recoverable copy first.",
+            stringResource(R.string.shell_data_enc_snapshot),
+            stringResource(R.string.shell_data_enc_snapshot_detail),
         )
         HowItWorksRow(
-            "Device-key backups don't open here",
-            "The iOS app can also seal a backup with a key it keeps in your iCloud " +
-                "Keychain. That key never enters the file, and Android has no equivalent " +
-                "key store, so this build recognises those backups and refuses them " +
-                "rather than failing with what looks like a wrong passphrase.",
+            stringResource(R.string.shell_data_enc_device_key),
+            stringResource(R.string.shell_data_enc_device_key_detail),
         )
     }
 }
@@ -711,11 +738,10 @@ private fun RecoverableCopiesSection(
     loading: Boolean,
     onSelect: (StoreRecovery.RecoverableCopy) -> Unit,
 ) {
+    val context = LocalContext.current
     SectionCard(
-        title = "Recoverable Copies",
-        footer = "Copies taken before a restore, or before Delete Everything, appear here " +
-            "ready to restore. Piru never restores one by itself: a copy you asked for " +
-            "exists so that a delete stays deleted.",
+        title = stringResource(R.string.shell_data_recoverable),
+        footer = stringResource(R.string.shell_data_recoverable_footer),
     ) {
         when {
             loading -> Row(
@@ -724,14 +750,14 @@ private fun RecoverableCopiesSection(
             ) {
                 CircularProgressIndicator()
                 Text(
-                    "Checking for recoverable copies…",
+                    stringResource(R.string.shell_data_checking_copies),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
             }
 
             stores.isEmpty() -> Text(
-                "No recoverable copies on this device.",
+                stringResource(R.string.shell_data_no_copies),
                 style = MaterialTheme.typography.bodyMedium,
                 color = PiruTheme.colors.secondaryLabel,
             )
@@ -743,18 +769,24 @@ private fun RecoverableCopiesSection(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            StoreRecovery.reasonTitle(store.reason) +
-                                if (store.isIntentional) "" else " (automatic)",
+                            if (store.isIntentional) {
+                                StoreRecovery.reasonTitle(store.reason)
+                            } else {
+                                StoreRecovery.reasonTitle(store.reason) +
+                                    context.getString(R.string.shell_data_automatic_suffix)
+                            },
                             style = MaterialTheme.typography.bodyLarge,
                         )
                         Text(
-                            copySubtitle(store),
+                            copySubtitle(context, store),
                             style = MaterialTheme.typography.bodySmall,
                             color = PiruTheme.colors.secondaryLabel,
                         )
                     }
                     if (store.rowCount > 0) {
-                        TextButton(onClick = { onSelect(store) }) { Text("Restore") }
+                        TextButton(onClick = { onSelect(store) }) {
+                            Text(stringResource(R.string.shell_restore))
+                        }
                     }
                 }
             }
@@ -767,12 +799,11 @@ private fun RecoverableCopiesSection(
 @Composable
 private fun DeleteEverythingSection(enabled: Boolean, onDelete: () -> Unit) {
     SectionCard(
-        title = "Danger Zone",
-        footer = "Deletes journal records, profile, schedules, inventory, custom presets " +
-            "and local recovery copies.",
+        title = stringResource(R.string.shell_data_danger_zone),
+        footer = stringResource(R.string.shell_data_danger_zone_footer),
     ) {
         TextButton(onClick = onDelete, enabled = enabled) {
-            Text("Delete Everything", color = PiruTheme.colors.dangerText)
+            Text(stringResource(R.string.shell_data_delete_title), color = PiruTheme.colors.dangerText)
         }
     }
 }
@@ -875,13 +906,13 @@ private fun PassphraseSheet(onDismiss: () -> Unit, onSubmit: (String) -> Unit) {
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Set a Passphrase") },
+        title = { Text(stringResource(R.string.shell_data_set_passphrase)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = passphrase,
                     onValueChange = { passphrase = it },
-                    label = { Text("Passphrase") },
+                    label = { Text(stringResource(R.string.shell_passphrase)) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(
@@ -894,7 +925,7 @@ private fun PassphraseSheet(onDismiss: () -> Unit, onSubmit: (String) -> Unit) {
                 OutlinedTextField(
                     value = confirmation,
                     onValueChange = { confirmation = it },
-                    label = { Text("Confirm Passphrase") },
+                    label = { Text(stringResource(R.string.shell_passphrase_confirm)) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(
@@ -916,16 +947,18 @@ private fun PassphraseSheet(onDismiss: () -> Unit, onSubmit: (String) -> Unit) {
                 )
                 HorizontalDivider()
                 Text(
-                    "If you lose this passphrase, the backup can't be recovered. There is no reset.",
+                    stringResource(R.string.shell_data_passphrase_warning),
                     style = MaterialTheme.typography.bodySmall,
                     color = PiruTheme.colors.cautionText,
                 )
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSubmit(passphrase) }, enabled = valid) { Text("Encrypt") }
+            TextButton(onClick = { onSubmit(passphrase) }, enabled = valid) {
+                Text(stringResource(R.string.shell_data_encrypt))
+            }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.shell_cancel)) } },
     )
 }
 
@@ -935,15 +968,35 @@ private fun PassphraseSheet(onDismiss: () -> Unit, onSubmit: (String) -> Unit) {
  * Four states in the source's order, and the wording is the source's: a short
  * passphrase is told it is short, a mismatched pair is told it does not match
  * yet, and a good one is confirmed rather than merely not-complained-about.
+ *
+ * `@Composable` rather than a pure function of the two strings: the copy is a
+ * resource now, and `PassphraseRulesTest` pins [passphraseFeedback] — the rule —
+ * rather than a sentence, so a wording change moves a resource and not a test.
  */
-internal fun strengthFooter(passphrase: String, confirmation: String): String = when {
-    passphrase.isEmpty() ->
-        "Use at least $PASSPHRASE_MIN_LENGTH characters. A phrase of several words is " +
-            "stronger and easier to remember than a short password."
-    passphrase.length < PASSPHRASE_MIN_LENGTH ->
-        "Too short — use at least $PASSPHRASE_MIN_LENGTH characters."
-    passphrase != confirmation -> "Passphrases don't match yet."
-    else -> "Passphrases match."
+@Composable
+private fun strengthFooter(passphrase: String, confirmation: String): String =
+    when (passphraseFeedback(passphrase, confirmation)) {
+        PassphraseFeedback.EMPTY -> stringResource(R.string.shell_passphrase_hint, PASSPHRASE_MIN_LENGTH)
+        PassphraseFeedback.TOO_SHORT -> stringResource(R.string.shell_passphrase_too_short, PASSPHRASE_MIN_LENGTH)
+        PassphraseFeedback.MISMATCH -> stringResource(R.string.shell_passphrase_mismatch)
+        PassphraseFeedback.MATCH -> stringResource(R.string.shell_passphrase_match)
+    }
+
+/** Which of the four states a new passphrase entry is in. */
+internal enum class PassphraseFeedback { EMPTY, TOO_SHORT, MISMATCH, MATCH }
+
+/**
+ * The rule behind [strengthFooter], as a pure function.
+ *
+ * Split out from the sentence so it can be tested without a composition: what has
+ * to hold is that the four inputs land in four different states and that a valid
+ * pair is the only one that reports a match.
+ */
+internal fun passphraseFeedback(passphrase: String, confirmation: String): PassphraseFeedback = when {
+    passphrase.isEmpty() -> PassphraseFeedback.EMPTY
+    passphrase.length < PASSPHRASE_MIN_LENGTH -> PassphraseFeedback.TOO_SHORT
+    passphrase != confirmation -> PassphraseFeedback.MISMATCH
+    else -> PassphraseFeedback.MATCH
 }
 
 /**
@@ -958,17 +1011,17 @@ private fun OpenBackupDialog(onDismiss: () -> Unit, onPassphrase: (String) -> Un
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Encrypted Backup") },
+        title = { Text(stringResource(R.string.shell_data_open_backup_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    "This backup is passphrase-protected. Enter the passphrase it was made with.",
+                    stringResource(R.string.shell_data_open_backup_body),
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 OutlinedTextField(
                     value = passphrase,
                     onValueChange = { passphrase = it },
-                    label = { Text("Passphrase") },
+                    label = { Text(stringResource(R.string.shell_passphrase)) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(
@@ -982,10 +1035,10 @@ private fun OpenBackupDialog(onDismiss: () -> Unit, onPassphrase: (String) -> Un
         },
         confirmButton = {
             TextButton(onClick = { onPassphrase(passphrase) }, enabled = passphrase.isNotEmpty()) {
-                Text("Open")
+                Text(stringResource(R.string.shell_data_open))
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.shell_cancel)) } },
     )
 }
 
@@ -1012,7 +1065,10 @@ private suspend fun deleteEverything(
     try {
         DataExportImport.deleteAll(app.database)
     } catch (error: Throwable) {
-        onMessage("Delete Failed", error.message ?: "The data could not be deleted.")
+        onMessage(
+            context.getString(R.string.shell_data_delete_failed),
+            error.message ?: context.getString(R.string.shell_data_delete_failed_body),
+        )
         return
     }
     // 3. `JournalResetGeneration.advance()` — no counterpart.
@@ -1056,7 +1112,7 @@ private suspend fun deleteEverything(
 
     onDeleted()
     if (cleanupErrors.isNotEmpty()) {
-        onMessage("Delete Failed", cleanupErrors.joinToString("\n"))
+        onMessage(context.getString(R.string.shell_data_delete_failed), cleanupErrors.joinToString("\n"))
     }
 }
 
@@ -1100,33 +1156,50 @@ private fun appVersion(): String = "Piru ${BuildConfig.VERSION_NAME} (${BuildCon
  * An empty count means nothing new was added, which is a normal answer for a
  * re-import and is said as one rather than as a failure.
  */
-private fun describe(report: DataExportImport.ImportReport): String {
+private fun describe(context: android.content.Context, report: DataExportImport.ImportReport): String {
     val parts = buildList {
         if (report.entriesAdded > 0) {
-            add("${report.entriesAdded} ${if (report.entriesAdded == 1) "entry" else "entries"}")
+            add(
+                context.getString(
+                    if (report.entriesAdded == 1) {
+                        R.string.shell_data_import_entry_one
+                    } else {
+                        R.string.shell_data_import_entry_many
+                    },
+                    report.entriesAdded,
+                ),
+            )
         }
-        if (report.sessionsAdded > 0) add("${report.sessionsAdded} sessions")
-        if (report.medsAdded > 0) add("${report.medsAdded} medications")
-        if (report.favoritesAdded > 0) add("${report.favoritesAdded} favorites")
+        if (report.sessionsAdded > 0) {
+            add(context.getString(R.string.shell_data_import_sessions, report.sessionsAdded))
+        }
+        if (report.medsAdded > 0) {
+            add(context.getString(R.string.shell_data_import_medications, report.medsAdded))
+        }
+        if (report.favoritesAdded > 0) {
+            add(context.getString(R.string.shell_data_import_favorites, report.favoritesAdded))
+        }
     }
     val head = if (parts.isEmpty()) {
-        "Nothing new was added — everything in the file was already here."
+        context.getString(R.string.shell_data_import_nothing_new)
     } else {
-        "Added " + parts.joinToString(", ") + "."
+        context.getString(R.string.shell_data_import_added, parts.joinToString(", "))
     }
     if (report.unsupported.isEmpty()) return head
     return head + " " + report.unsupported.joinToString(" ") { section ->
+        // The four section names are the file's own keys; anything else is a
+        // section this build has never heard of and is named as it arrived.
         val what = when (section.name) {
-            "labMeasurements" -> "lab measurements"
-            "customUnits" -> "custom units"
-            "drinkPresets" -> "drink presets"
-            "settings" -> "app settings"
+            "labMeasurements" -> context.getString(R.string.shell_data_section_lab)
+            "customUnits" -> context.getString(R.string.shell_data_section_units)
+            "drinkPresets" -> context.getString(R.string.shell_data_section_drinks)
+            "settings" -> context.getString(R.string.shell_data_section_settings)
             else -> section.name
         }
         if (section.rows > 0) {
-            "The file also carries ${section.rows} $what, which this build has nowhere to keep."
+            context.getString(R.string.shell_data_import_unsupported_rows, section.rows, what)
         } else {
-            "The file also carries $what, which this build has nowhere to keep."
+            context.getString(R.string.shell_data_import_unsupported, what)
         }
     }
 }
@@ -1172,10 +1245,14 @@ private fun writeBytes(context: android.content.Context, uri: Uri, bytes: ByteAr
  * for a copy it could not open, which is the difference between a file the user
  * should send to the developer and one they should not bother with.
  */
-private fun copySubtitle(copy: StoreRecovery.RecoverableCopy): String {
-    val rows = if (copy.rowCount > 0) "${copy.rowCount} records" else "unreadable"
-    val when_ = copy.timestamp?.let { whenText(it) } ?: "unknown date"
-    return listOf(rows, byteString(copy.bytes), when_).joinToString(" · ")
+private fun copySubtitle(context: android.content.Context, copy: StoreRecovery.RecoverableCopy): String {
+    val rows = if (copy.rowCount > 0) {
+        context.getString(R.string.shell_data_records, copy.rowCount)
+    } else {
+        context.getString(R.string.shell_data_unreadable)
+    }
+    val when_ = copy.timestamp?.let { whenText(it) } ?: context.getString(R.string.shell_data_unknown_date)
+    return listOf(rows, byteString(context, copy.bytes), when_).joinToString(" · ")
 }
 
 private fun whenText(at: Instant): String = DateTimeFormatter
@@ -1185,8 +1262,8 @@ private fun whenText(at: Instant): String = DateTimeFormatter
     .format(at)
 
 /** Upstream's `ByteCountFormatter.string(fromByteCount:countStyle:.file)`. */
-private fun byteString(bytes: Long): String {
-    if (bytes < 1_000) return "$bytes bytes"
+private fun byteString(context: android.content.Context, bytes: Long): String {
+    if (bytes < 1_000) return context.getString(R.string.shell_data_bytes, bytes)
     val units = listOf("KB", "MB", "GB", "TB")
     var value = bytes.toDouble() / 1_000
     var index = 0

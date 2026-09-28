@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.ui.components.PiruCard
@@ -229,7 +230,7 @@ private fun PiruNavigationBar(navigator: AppNavigator) {
                 selected = selected,
                 onClick = { navigator.select(tab) },
                 icon = { Icon(if (selected) tab.filledIcon() else tab.outlinedIcon(), contentDescription = null) },
-                label = { Text(tab.label) },
+                label = { Text(stringResource(tab.labelRes)) },
                 // Material's default indicator is `secondaryContainer`, which this
                 // theme never sets — so the selected tab would come out framework
                 // grey while everything around it is branded. The accent is the
@@ -351,7 +352,11 @@ private fun DefaultDestination(route: PushRoute, navigator: AppNavigator) {
  * the difference between "unfinished" and "malfunctioning".
  */
 @Composable
-fun NotPortedYet(tab: AppTab?, title: String = tab?.label ?: "Coming", detail: String = "") {
+fun NotPortedYet(
+    tab: AppTab?,
+    title: String = tab?.let { stringResource(it.labelRes) } ?: "Coming",
+    detail: String = "",
+) {
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,

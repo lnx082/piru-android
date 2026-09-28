@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The vocabularies that live in `:core:` and therefore cannot hold a resource
+  id: routes, substance categories, interaction severities, combination
+  severities, tolerance classes and their effect axes.
+
+  Those modules are plain JVM and carry no Android resources on purpose — it is
+  what lets the pharmacology be tested in milliseconds — so the English label
+  stays there as a fallback and the localized label lives here, resolved at the
+  point of drawing. `ui/labels/CoreLabels.kt` is the only thing that should read
+  these; a screen that reaches for `route.displayName`, or that prints a
+  `wireValue`, is showing English to a Chinese reader.
+
+  Exception, and the reason this file has no `binding_*` entries: `BindingAction`
+  and `BindingAffinity` are resolved through `shell_binding_*` in
+  `strings_shell.xml`, which is where they already lived and were already
+  translated. See `CoreLabels`' KDoc for why they were not moved.
+-->
+<resources>
+    <string name="route_oral">Oral</string>
+    <string name="route_sublingual">Sublingual</string>
+    <string name="route_buccal">Buccal</string>
+    <string name="route_insufflation">Insufflation</string>
+    <string name="route_inhalation">Inhalation</string>
+    <string name="route_intravenous">Intravenous</string>
+    <string name="route_intramuscular">Intramuscular</string>
+    <string name="route_subcutaneous">Subcutaneous</string>
+    <string name="route_transdermal">Transdermal</string>
+    <string name="route_rectal">Rectal</string>
+    <string name="route_other">Other</string>
+
+    <string name="category_stimulant">Stimulant</string>
+    <string name="category_psychedelic">Psychedelic</string>
+    <string name="category_dissociative">Dissociative</string>
+    <string name="category_dysdelic">Dysdelic</string>
+    <string name="category_deliriant">Deliriant</string>
+    <string name="category_opioid">Opioid</string>
+    <string name="category_benzodiazepine">Benzodiazepine</string>
+    <string name="category_gabapentinoid">GABAergic</string>
+    <string name="category_empathogen">Empathogen</string>
+    <string name="category_cannabinoid">Cannabinoid</string>
+    <string name="category_nootropic">Nootropic</string>
+    <string name="category_ampakine">AMPAkine</string>
+    <string name="category_eugeroic">Eugeroic</string>
+    <string name="category_depressant">Depressant</string>
+    <string name="category_orexin_antagonist">Orexin Antagonist</string>
+    <string name="category_antidepressant">Antidepressant</string>
+    <string name="category_antipsychotic">Antipsychotic</string>
+    <string name="category_analgesic">Analgesic</string>
+    <string name="category_antihistamine">Antihistamine</string>
+    <string name="category_cardiovascular">Cardiovascular</string>
+    <string name="category_antimicrobial">Antimicrobial</string>
+    <string name="category_gastrointestinal">Gastrointestinal</string>
+    <string name="category_respiratory">Respiratory</string>
+    <string name="category_endocrine">Endocrine</string>
+    <string name="category_immunological">Immunological</string>
+    <string name="category_supplement">Supplement</string>
+    <string name="category_peptide">Peptide</string>
+    <string name="category_anticonvulsant">Anticonvulsant</string>
+    <string name="category_other">Other</string>
+
+    <string name="severity_caution">Caution</string>
+    <string name="severity_unsafe">Unsafe</string>
+    <string name="severity_dangerous">Dangerous</string>
+
+    <!-- Combination.Severity is a second, unrelated tier system (`:core:model`),
+         so it needs its own word for its lowest rung: "Note" is not
+         `severity_caution`, and upstream attaches no label to this enum at all. -->
+    <string name="severity_note">Note</string>
+
+    <!-- ReceptorClasses.ReceptorClass (`:core:engine`). `displayName` carries the
+         receptor in parentheses for a reader who wants the mechanism; `casualName`
+         is the same class with no receptor in it, for the chart legend. Both are
+         English in `:core:` and rendered verbatim before this existed. -->
+    <string name="receptor_class_psychedelic_5ht2a">Psychedelics (5-HT2A)</string>
+    <string name="receptor_class_mu_opioid">Opioids (μ)</string>
+    <string name="receptor_class_catecholamine_stimulant">Stimulants (DAT/NET)</string>
+    <string name="receptor_class_serotonergic_releaser">Serotonin releasers (SERT)</string>
+    <string name="receptor_class_gaba">GABA (benzos / alcohol)</string>
+    <string name="receptor_class_nmda_antagonist">Dissociatives (NMDA)</string>
+    <string name="receptor_class_cannabinoid_cb1">Cannabinoids (CB1)</string>
+    <string name="receptor_class_adenosine">Adenosine (caffeine)</string>
+    <string name="receptor_class_nicotinic">Nicotinic (nAChR)</string>
+    <string name="receptor_class_alpha2_agonist">α₂-agonists (clonidine)</string>
+    <string name="receptor_class_beta_blocker">Beta-blockers (propranolol)</string>
+    <string name="receptor_class_alpha2_delta">Gabapentinoids (α2δ)</string>
+    <string name="receptor_class_unknown">Other</string>
+
+    <string name="receptor_casual_psychedelic_5ht2a">Psychedelics</string>
+    <string name="receptor_casual_mu_opioid">Opioids</string>
+    <string name="receptor_casual_catecholamine_stimulant">Stimulants</string>
+    <string name="receptor_casual_serotonergic_releaser">Serotonin releasers</string>
+    <string name="receptor_casual_gaba">Sedatives</string>
+    <string name="receptor_casual_nmda_antagonist">Dissociatives</string>
+    <string name="receptor_casual_cannabinoid_cb1">Cannabis</string>
+    <string name="receptor_casual_adenosine">Caffeine</string>
+    <string name="receptor_casual_nicotinic">Nicotine</string>
+    <string name="receptor_casual_alpha2_agonist">α₂-agonists</string>
+    <string name="receptor_casual_beta_blocker">Beta-blockers</string>
+    <string name="receptor_casual_alpha2_delta">Gabapentinoids</string>
+    <string name="receptor_casual_unknown">Other</string>
+
+    <!-- ReceptorClasses.EffectAxis (`:core:engine`) — the rungs of a tolerance
+         class's effect ladder. The wire values are lowercase identifiers
+         (`myorelaxation`, `hypnotic`); upstream's display names are not, and
+         printing the identifier put "myorelaxation" on the screen. -->
+    <string name="effect_axis_sedation">Sedation</string>
+    <string name="effect_axis_anxiolysis">Anxiolysis</string>
+    <string name="effect_axis_anticonvulsant">Anticonvulsant</string>
+    <string name="effect_axis_myorelaxation">Muscle relaxation</string>
+    <string name="effect_axis_memory">Memory</string>
+    <string name="effect_axis_coordination">Coordination</string>
+    <string name="effect_axis_hypnotic">Sleep</string>
+</resources>

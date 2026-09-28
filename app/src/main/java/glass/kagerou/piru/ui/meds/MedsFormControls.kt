@@ -20,6 +20,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,10 +28,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import glass.kagerou.piru.R
 import glass.kagerou.piru.model.DoseFrequency
 import glass.kagerou.piru.model.RouteOfAdministration
 import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.labels.CoreLabels
 import glass.kagerou.piru.ui.theme.PiruTheme
 import java.time.DayOfWeek
 import java.time.Instant
@@ -129,12 +133,12 @@ internal fun RoutePicker(
 ) {
     var expanded by remember { mutableStateOf(false) }
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("Route", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-        TextButton(onClick = { expanded = true }) { Text(selected.displayName) }
+        Text(stringResource(R.string.common_route), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        TextButton(onClick = { expanded = true }) { Text(CoreLabels.route(selected)) }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             for (route in routes) {
                 DropdownMenuItem(
-                    text = { Text(route.displayName) },
+                    text = { Text(CoreLabels.route(route)) },
                     onClick = {
                         onSelect(route)
                         expanded = false
@@ -149,11 +153,11 @@ internal fun RoutePicker(
 internal fun SchedulePicker(schedule: FormSchedule, onSelect: (FormSchedule) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     val label = when (schedule) {
-        is FormSchedule.AsNeeded -> "As needed"
+        is FormSchedule.AsNeeded -> stringResource(R.string.meds_time_group_as_needed)
         is FormSchedule.Frequency -> frequencyLongLabel(schedule.value)
     }
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("Schedule", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        Text(stringResource(R.string.meds_section_schedule), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
         TextButton(onClick = { expanded = true }) { Text(label) }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             for (frequency in DoseFrequency.entries) {
@@ -166,7 +170,7 @@ internal fun SchedulePicker(schedule: FormSchedule, onSelect: (FormSchedule) -> 
                 )
             }
             DropdownMenuItem(
-                text = { Text("As needed") },
+                text = { Text(stringResource(R.string.meds_time_group_as_needed)) },
                 onClick = {
                     onSelect(FormSchedule.AsNeeded)
                     expanded = false
@@ -177,14 +181,18 @@ internal fun SchedulePicker(schedule: FormSchedule, onSelect: (FormSchedule) -> 
 }
 
 /** The full cadence name, as the picker spells it. */
-internal fun frequencyLongLabel(frequency: DoseFrequency): String = when (frequency) {
-    DoseFrequency.DAILY -> "Daily"
-    DoseFrequency.EVERY_OTHER_DAY -> "Every other day"
-    DoseFrequency.WEEKLY -> "Weekly"
-    DoseFrequency.BIWEEKLY -> "Every two weeks"
-    DoseFrequency.MONTHLY -> "Monthly"
-    DoseFrequency.SPECIFIC_DAYS -> "Specific days"
-}
+@Composable
+@ReadOnlyComposable
+internal fun frequencyLongLabel(frequency: DoseFrequency): String = stringResource(
+    when (frequency) {
+        DoseFrequency.DAILY -> R.string.common_frequency_daily
+        DoseFrequency.EVERY_OTHER_DAY -> R.string.meds_frequency_long_every_other_day
+        DoseFrequency.WEEKLY -> R.string.common_frequency_weekly
+        DoseFrequency.BIWEEKLY -> R.string.meds_frequency_long_every_two_weeks
+        DoseFrequency.MONTHLY -> R.string.common_frequency_monthly
+        DoseFrequency.SPECIFIC_DAYS -> R.string.meds_frequency_long_specific_days
+    },
+)
 
 // MARK: - Steppers
 
@@ -231,7 +239,7 @@ internal fun StepArrow(symbol: String, onClick: () -> Unit) {
 internal fun DateOffsetPicker(startDate: Instant?, onShift: (Long) -> Unit, zone: ZoneId) {
     val label = (startDate ?: Instant.now()).atZone(zone).toLocalDate().toString()
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Starting from", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        Text(stringResource(R.string.meds_starting_from), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
         StepArrow("‹") { onShift(-1) }
         Text(label, style = MaterialTheme.typography.bodyMedium)
         StepArrow("›") { onShift(1) }
@@ -267,7 +275,7 @@ internal val FOUNDATION_WEEKDAYS: List<FoundationWeekday> = listOf(
 @Composable
 internal fun WeekdayPicker(selected: Set<Int>, onToggle: (Int) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Days", style = captionSecondaryStyle)
+        Text(stringResource(R.string.meds_days_label), style = captionSecondaryStyle)
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -310,7 +318,10 @@ internal fun ReminderTimeRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(MedTimeGroup.groupForMinutes(time.minutes).label, style = captionSecondaryStyle)
+            Text(
+                stringResource(MedTimeGroup.groupForMinutes(time.minutes).labelRes),
+                style = captionSecondaryStyle,
+            )
             Text(
                 timeText(time.minutes, zone),
                 style = MaterialTheme.typography.bodyMedium,
@@ -331,7 +342,9 @@ internal fun ReminderTimeRow(
                 is24Hour = DateFormat.is24HourFormat(LocalContext.current),
             )
             TimePicker(state = state)
-            TextButton(onClick = { onPick(state.hour * 60 + state.minute) }) { Text("Done") }
+            TextButton(onClick = { onPick(state.hour * 60 + state.minute) }) {
+                Text(stringResource(R.string.common_done))
+            }
         }
 
         // What that time actually does — onset, easing off, and (for the
@@ -347,7 +360,7 @@ internal fun ReminderTimeRow(
 @Composable
 internal fun RemindMeToggle(remind: Boolean, onChange: (Boolean) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("Remind Me", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        Text(stringResource(R.string.meds_remind_me), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
         Switch(checked = remind, onCheckedChange = onChange)
     }
 }
@@ -357,10 +370,10 @@ internal fun RemindMeToggle(remind: Boolean, onChange: (Boolean) -> Unit) {
 internal fun QuietMedSection(isQuiet: Boolean, onChange: (Boolean) -> Unit) {
     FormSection(null) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Quiet med", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+            Text(stringResource(R.string.meds_quiet_med), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
             Switch(checked = isQuiet, onCheckedChange = onChange)
         }
-        FormFooter("Grouped under Supplements, off the timeline graphs. Reminders are silent.")
+        FormFooter(stringResource(R.string.meds_quiet_med_footer))
     }
 }
 
@@ -368,7 +381,9 @@ internal fun QuietMedSection(isQuiet: Boolean, onChange: (Boolean) -> Unit) {
 @Composable
 internal fun AddTimeButton(hasTimes: Boolean, onClick: () -> Unit) {
     Text(
-        if (hasTimes) "+ Add Another Time" else "+ Add a Time",
+        stringResource(
+            if (hasTimes) R.string.meds_add_another_time else R.string.meds_add_a_time,
+        ),
         style = MaterialTheme.typography.labelLarge,
         color = PiruTheme.colors.accent,
         modifier = Modifier.clickable(onClick = onClick).padding(vertical = 8.dp),

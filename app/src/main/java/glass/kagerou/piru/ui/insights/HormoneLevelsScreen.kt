@@ -1,5 +1,6 @@
 package glass.kagerou.piru.ui.insights
 
+import android.content.Context
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -34,6 +35,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
@@ -41,10 +43,12 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.engine.SubstanceCatalog
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.labels.appLocale
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.theme.PiruTheme
 import glass.kagerou.piru.ui.tools.AddLabResultDialog
@@ -187,11 +191,15 @@ fun HormoneLevelsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) 
         if (analytes.size > 1) {
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    FieldLabel("Hormone")
+                    FieldLabel(stringResource(R.string.toolsb_hormone_analyte_label))
+                    // Read up front: `SegmentedRow`'s `label` is a plain lambda,
+                    // and a `@Composable` read cannot happen inside one.
+                    val analyteLabels = HashMap<Analyte, String>()
+                    for (candidate in analytes) analyteLabels[candidate] = stringResource(candidate.displayNameRes)
                     SegmentedRow(
                         options = analytes,
                         selected = current.analyte,
-                        label = { it.displayName },
+                        label = { analyteLabels.getValue(it) },
                         onSelect = { current.analyte = it },
                     )
                 }
@@ -370,7 +378,11 @@ fun HormoneLevelsInsightCard(navigator: AppNavigator, modifier: Modifier = Modif
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Hormone Levels", style = MaterialTheme.typography.titleSmall, color = tint)
+                Text(
+                    stringResource(R.string.toolsb_hormone_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = tint,
+                )
                 if (result != null && current != null) {
                     Text(
                         "${result.trough.toInt()}–${result.peak.toInt()} ${current.analyte.canonicalUnit}",
@@ -424,7 +436,8 @@ private fun cautionsOf(model: HormoneLevelsModel): List<String> {
  */
 @Composable
 private fun SerumCurveCard(model: HormoneLevelsModel, result: DepotCurveResult) {
-    DepotSectionCard(title = serumTitle(model.analyte)) {
+    val context = LocalContext.current
+    DepotSectionCard(title = serumTitle(context, model.analyte)) {
         DepotCurveChart(
             result = result,
             analyte = model.analyte,
@@ -439,17 +452,14 @@ private fun SerumCurveCard(model: HormoneLevelsModel, result: DepotCurveResult) 
             referenceBand = model.analyte.referenceRegion,
         )
         if (model.analyte.referenceRegion != null) {
-            Caption(
-                "Shaded: the 300–1000 ng/dL male reference range (FDA label; Wang 2010). " +
-                    "A reference, not a target.",
-            )
+            Caption(stringResource(R.string.toolsb_hormone_shaded_reference))
         }
     }
 }
 
-private fun serumTitle(analyte: Analyte): String = when (analyte) {
-    Analyte.ESTRADIOL -> "Estimated serum estradiol"
-    Analyte.TESTOSTERONE -> "Estimated serum testosterone"
+private fun serumTitle(context: Context, analyte: Analyte): String = when (analyte) {
+    Analyte.ESTRADIOL -> context.getString(R.string.toolsb_hormone_serum_estradiol)
+    Analyte.TESTOSTERONE -> context.getString(R.string.toolsb_hormone_serum_testosterone)
 }
 
 // MARK: - Per-ester assumed levels
@@ -468,7 +478,7 @@ private fun AssumedDepotLevelsCard(
     analyte: Analyte,
     perEster: List<Pair<EsterPKRecord, List<DepotCurveResult.Point>>>,
 ) {
-    DepotSectionCard(title = "Assumed depot levels") {
+    DepotSectionCard(title = stringResource(R.string.toolsb_hormone_assumed_depot_title)) {
         AssumedDepotLevelsChart(analyte = analyte, perEster = perEster)
 
         // The legend carries the line style as well as the colour, because the
@@ -486,7 +496,7 @@ private fun AssumedDepotLevelsCard(
                 )
             }
         }
-        Caption("Each ester's own release, before they sum to the serum estimate above.")
+        Caption(stringResource(R.string.toolsb_hormone_assumed_depot_caption))
     }
 }
 
@@ -523,13 +533,12 @@ private fun EsterCautionCard(cautions: List<String>) {
  */
 @Composable
 private fun CatalogEsterNote(markers: List<HormoneLevelsLog.Marker>) {
-    DepotSectionCard(title = "Logged, not modeled") {
+    DepotSectionCard(title = stringResource(R.string.toolsb_hormone_logged_not_modeled_title)) {
         val byEster = markers.groupBy { it.ester.esterID }
         for ((_, rows) in byEster.toSortedMap()) {
             val ester = rows.first().ester
             Caption(
-                "${rows.size} ${ester.label} injections logged. No serum curve is drawn for it " +
-                    "— no validated release data.",
+                stringResource(R.string.toolsb_hormone_logged_not_modeled_caption, rows.size, ester.label),
             )
         }
     }
@@ -575,10 +584,14 @@ private fun CompanionSeriesCard(
     val colors = PiruTheme.colors
     val measurer = rememberTextMeasurer()
     val zone = remember { ZoneId.systemDefault() }
-    val dateFormat = remember { DateTimeFormatter.ofPattern("MMM d", Locale.getDefault()) }
+    // Hoisted out of the `Canvas` below, where a resource read is not allowed,
+    // and keyed on the pattern so a locale change mid-session rebuilds it.
+    val datePattern = LocalContext.current.getString(R.string.datefmt_month_day)
+    val dateLocale = appLocale()
+    val dateFormat = remember(datePattern, dateLocale) { DateTimeFormatter.ofPattern(datePattern, dateLocale) }
     val labelStyle = TextStyle(fontSize = 10.sp, color = colors.secondaryLabel)
 
-    DepotSectionCard(title = measurement.title, trailing = { TrendLabel(measurement, points) }) {
+    DepotSectionCard(title = stringResource(measurement.titleRes), trailing = { TrendLabel(measurement, points) }) {
         when {
             points.size >= 2 -> {
                 Box(Modifier.fillMaxWidth().height(120.dp)) {
@@ -632,15 +645,21 @@ private fun CompanionSeriesCard(
             points.size == 1 -> {
                 val (date, value) = points.first()
                 Text(
-                    "${"%.1f".format(Locale.ROOT, value)} ${measurement.unit} on " +
+                    stringResource(
+                        R.string.toolsb_hormone_single_measurement,
+                        "%.1f".format(Locale.ROOT, value),
+                        measurement.unit,
                         dateFormat.withZone(zone).format(date),
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
         }
 
-        Caption(measurement.framing)
-        TextButton(onClick = onAdd) { Text("Add ${measurement.title}") }
+        Caption(stringResource(measurement.framingRes))
+        TextButton(onClick = onAdd) {
+            Text(stringResource(R.string.toolsb_hormone_add_companion, stringResource(measurement.titleRes)))
+        }
     }
 }
 
@@ -652,9 +671,9 @@ private fun TrendLabel(measurement: CompanionMeasurement, points: List<Pair<Inst
     if (first <= 0 || points.size < 2) return
     val change = (last - first) / first
     val label = when {
-        change > 0.05 -> "Increased"
-        change < -0.05 -> "Decreased"
-        else -> "Flat"
+        change > 0.05 -> stringResource(R.string.toolsb_hormone_trend_increased)
+        change < -0.05 -> stringResource(R.string.toolsb_hormone_trend_decreased)
+        else -> stringResource(R.string.toolsb_hormone_trend_flat)
     }
     Text(
         label,
@@ -682,20 +701,24 @@ private fun AddCompanionMeasurementDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(measurement.title) },
+        title = { Text(stringResource(measurement.titleRes)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 NumberField(
-                    label = "Level",
+                    label = stringResource(R.string.toolsb_hormone_level_field),
                     value = value,
                     unit = measurement.unit,
                     onValueChange = { value = it },
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = { date = date.minusSeconds(86_400) }) { Text("−1 day") }
-                    TextButton(onClick = { date = date.plusSeconds(86_400) }) { Text("+1 day") }
+                    TextButton(onClick = { date = date.minusSeconds(86_400) }) {
+                        Text(stringResource(R.string.toolsb_hormone_day_minus_one))
+                    }
+                    TextButton(onClick = { date = date.plusSeconds(86_400) }) {
+                        Text(stringResource(R.string.toolsb_hormone_day_plus_one))
+                    }
                 }
-                Caption(measurement.framing)
+                Caption(stringResource(measurement.framingRes))
             }
         },
         confirmButton = {
@@ -714,9 +737,11 @@ private fun AddCompanionMeasurementDialog(
                         ),
                     )
                 },
-            ) { Text("Save") }
+            ) { Text(stringResource(R.string.common_save)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
+        },
     )
 }
 
@@ -742,12 +767,13 @@ private fun HormoneLabCalibrationCard(
     onFitRatesChange: (Boolean) -> Unit,
     onMultiplierChange: (Double) -> Unit,
 ) {
+    val context = LocalContext.current
     DepotSectionCard(
-        title = "Lab calibration",
+        title = stringResource(R.string.toolsb_hormone_lab_calibration_title),
         trailing = { CalibrationChip(labs.count { !it.excludedFromCalibration }) },
     ) {
         if (labs.isEmpty()) {
-            Caption("Add a blood test to fit the curve to you. The band narrows.")
+            Caption(stringResource(R.string.toolsb_hormone_add_blood_test))
         } else {
             for (lab in labs) {
                 LabRow(
@@ -759,7 +785,7 @@ private fun HormoneLabCalibrationCard(
             }
         }
 
-        TextButton(onClick = onAdd) { Text("Add lab result") }
+        TextButton(onClick = onAdd) { Text(stringResource(R.string.toolsb_hormone_add_lab_result)) }
 
         SectionDivider()
         CalibrationControl(
@@ -792,28 +818,24 @@ private fun HormoneLabCalibrationCard(
                 },
             ) {
                 Text(
-                    "Add the guideline reference range " +
-                        "(${goal.start.toInt()}–${goal.endInclusive.toInt()} ${model.analyte.canonicalUnit})",
+                    stringResource(
+                        R.string.toolsb_hormone_add_guideline_range,
+                        goal.start.toInt(),
+                        goal.endInclusive.toInt(),
+                        model.analyte.canonicalUnit,
+                    ),
                 )
             }
-            Caption(
-                "The Endocrine Society / WPATH SOC8 monitoring range for adults on " +
-                    "masculinizing testosterone, drawn as reference lines. The range from your " +
-                    "clinician or laboratory report takes precedence.",
-            )
+            Caption(stringResource(R.string.toolsb_hormone_guideline_caption))
         }
 
-        Caption(drawTimingNote(model.analyte))
+        Caption(drawTimingNote(context, model.analyte))
     }
 }
 
-private fun drawTimingNote(analyte: Analyte): String = when (analyte) {
-    Analyte.TESTOSTERONE ->
-        "A level only means something with its draw time: for cypionate and enanthate, measure " +
-            "midway between injections; for undecanoate, measure at trough, just before the next dose."
-    Analyte.ESTRADIOL ->
-        "Note the time since your last injection when you draw — a peak and a trough tell " +
-            "different stories, and the curve reads both against your dose times."
+private fun drawTimingNote(context: Context, analyte: Analyte): String = when (analyte) {
+    Analyte.TESTOSTERONE -> context.getString(R.string.toolsb_hormone_draw_timing_testosterone)
+    Analyte.ESTRADIOL -> context.getString(R.string.toolsb_hormone_draw_timing_estradiol)
 }
 
 // MARK: - Provenance
@@ -830,7 +852,7 @@ private fun drawTimingNote(analyte: Analyte): String = when (analyte) {
 private fun ProvenanceCard(analyte: Analyte, esters: List<EsterPKRecord>) {
     val colors = PiruTheme.colors
     val uriHandler = LocalUriHandler.current
-    DepotSectionCard(title = "Sources") {
+    DepotSectionCard(title = stringResource(R.string.toolsb_hormone_sources_title)) {
         for (ester in esters) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Row(
@@ -847,15 +869,12 @@ private fun ProvenanceCard(analyte: Analyte, esters: List<EsterPKRecord>) {
                 Caption(ester.provenance)
             }
         }
-        Caption(
-            "Older studies used radioimmunoassay; modern LC-MS/MS reads lower. " +
-                "Calibrating to your own results absorbs the difference.",
-        )
+        Caption(stringResource(R.string.toolsb_hormone_assay_caption))
 
         when (analyte) {
             Analyte.ESTRADIOL -> {
                 Text(
-                    "Parameters from estrannaise.js (MIT), checked against the literature",
+                    stringResource(R.string.toolsb_hormone_estrannaise_link),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.accent,
                     modifier = Modifier.padding(vertical = 2.dp).clickable {
@@ -863,7 +882,7 @@ private fun ProvenanceCard(analyte: Analyte, esters: List<EsterPKRecord>) {
                     },
                 )
                 Text(
-                    "More on injectable estradiol dosing (diyhrt.info)",
+                    stringResource(R.string.toolsb_hormone_diyhrt_link),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.accent,
                     modifier = Modifier.padding(vertical = 2.dp).clickable {
@@ -872,9 +891,7 @@ private fun ProvenanceCard(analyte: Analyte, esters: List<EsterPKRecord>) {
                 )
             }
             Analyte.TESTOSTERONE -> Caption(
-                "Testosterone ester curves are fit from label and primary-literature half-lives " +
-                    "— there is no community PK simulator for them, so the band stays wide until " +
-                    "your lab results calibrate the model.",
+                stringResource(R.string.toolsb_hormone_testosterone_provenance),
             )
         }
     }
@@ -884,22 +901,11 @@ private fun ProvenanceCard(analyte: Analyte, esters: List<EsterPKRecord>) {
 
 @Composable
 private fun ExplanationCard() {
-    DepotSectionCard(title = "About this estimate") {
-        Caption(
-            "An injected ester releases slowly from the oil depot, splits into the free " +
-                "hormone, and clears. This curve sums your logged esters into an illustrative " +
-                "serum estimate. It is not a laboratory result.",
-        )
-        Caption(
-            "It estimates a level. It never suggests a dose or a target. Your lab results fit " +
-                "the model to your measurements, which doesn't establish accuracy between them. " +
-                "The reference lines are your own.",
-        )
-        Caption(
-            "Levels vary a lot between people, so an uncalibrated curve is a starting point, " +
-                "not a reading. Retest after any change in dose, ester, interval, or site.",
-        )
-        Caption("Predicted from a model, not measured. Not medical advice.")
+    DepotSectionCard(title = stringResource(R.string.toolsb_hormone_about_title)) {
+        Caption(stringResource(R.string.toolsb_hormone_about_model))
+        Caption(stringResource(R.string.toolsb_hormone_about_estimate))
+        Caption(stringResource(R.string.toolsb_hormone_about_variation))
+        Caption(stringResource(R.string.toolsb_model_disclaimer))
     }
 }
 
@@ -918,8 +924,7 @@ private fun NoDataCard() {
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                "Log an injectable estradiol or testosterone ester to see your estimated " +
-                    "hormone levels here.",
+                stringResource(R.string.toolsb_hormone_no_data),
                 style = MaterialTheme.typography.bodyMedium,
                 color = PiruTheme.colors.secondaryLabel,
             )

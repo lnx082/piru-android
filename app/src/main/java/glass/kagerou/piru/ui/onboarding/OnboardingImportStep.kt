@@ -1,6 +1,6 @@
 package glass.kagerou.piru.ui.onboarding
 
-import android.content.ContentResolver
+import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,7 +22,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import glass.kagerou.piru.R
 import glass.kagerou.piru.ui.theme.PiruTheme
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
@@ -68,15 +70,14 @@ fun OnboardingImportStep(nav: OnboardingNav) {
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
             reading = true
-            notice = readAndClassify(context.contentResolver, uri)
+            notice = readAndClassify(context, uri)
             reading = false
         }
     }
 
     OnboardingLayout(
-        title = "Bring your history",
-        subtitle = "Already keep a journal? Import a Piru backup or a PsyLog-format export — " +
-            "or start with a clean slate.",
+        title = stringResource(R.string.shell_onboarding_import_title),
+        subtitle = stringResource(R.string.shell_onboarding_import_subtitle),
         hero = { OnboardingIconHero(Icons.Filled.KeyboardArrowDown) },
         mid = {
             Column(
@@ -86,20 +87,18 @@ fun OnboardingImportStep(nav: OnboardingNav) {
                 OnboardingGroupedCard {
                     OnboardingBulletRow(
                         icon = Icons.Filled.KeyboardArrowDown,
-                        title = "Piru backup",
-                        detail = "Restore a full journal you exported from Piru.",
+                        title = stringResource(R.string.shell_onboarding_import_piru_title),
+                        detail = stringResource(R.string.shell_onboarding_import_piru_detail),
                     )
                     OnboardingBulletRow(
                         icon = Icons.Filled.Create,
-                        title = "PsyLog format",
-                        detail = "Import from PsyLog or any app that shares its format — both old " +
-                            "and new versions.",
+                        title = stringResource(R.string.shell_onboarding_import_psylog_title),
+                        detail = stringResource(R.string.shell_onboarding_import_psylog_detail),
                     )
                 }
                 OnboardingNote(
                     icon = Icons.Filled.Info,
-                    text = "This build can read a file but not yet turn one into entries — the " +
-                        "import layer is not ported.",
+                    text = stringResource(R.string.shell_onboarding_import_not_ported),
                 )
                 val result = notice
                 if (result != null) {
@@ -113,11 +112,19 @@ fun OnboardingImportStep(nav: OnboardingNav) {
         },
     ) {
         OnboardingPillButton(
-            title = if (reading) "Reading…" else "Import Data",
+            title = if (reading) {
+                stringResource(R.string.shell_onboarding_reading)
+            } else {
+                stringResource(R.string.shell_onboarding_import_action)
+            },
             enabled = !reading,
             onClick = { picker.launch(arrayOf("application/json")) },
         )
-        OnboardingPillButton(title = "Start Fresh", prominence = Prominence.NEUTRAL, onClick = nav.advance)
+        OnboardingPillButton(
+            title = stringResource(R.string.shell_start_fresh),
+            prominence = Prominence.NEUTRAL,
+            onClick = nav.advance,
+        )
     }
 }
 
@@ -134,25 +141,30 @@ fun OnboardingImportStep(nav: OnboardingNav) {
  *
  * `org.json` rather than a serialization library: it is on the platform, and this
  * needs one object's key set, not a typed model of a document nobody has ported.
+ *
+ * Takes a `Context` rather than being `@Composable`: it runs inside the picker's
+ * callback, where there is no composition to read a resource from. The keys it
+ * tests (`sealed`, `piruExportVersion`, `experiences`, `doseEntries`) are wire
+ * values and stay as they are.
  */
-private suspend fun readAndClassify(resolver: ContentResolver, uri: Uri): String {
+private suspend fun readAndClassify(context: Context, uri: Uri): String {
     val bytes = withContext(Dispatchers.IO) {
-        runCatching { resolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
-    } ?: return "Could not read that file."
+        runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
+    } ?: return context.getString(R.string.shell_onboarding_import_read_failed)
 
     val root = runCatching { JSONObject(String(bytes, Charsets.UTF_8)) }.getOrNull()
-        ?: return "That file is not JSON, so it is not an export Piru reads."
+        ?: return context.getString(R.string.shell_onboarding_import_not_json)
 
     return when {
         root.has("sealed") && root.has("kind") ->
-            "That is an encrypted Piru backup. This build cannot decrypt or restore one yet."
+            context.getString(R.string.shell_onboarding_import_encrypted)
         root.has("piruExportVersion") ->
-            "That is a Piru export. The import layer that would read it is not ported."
+            context.getString(R.string.shell_onboarding_import_piru_export)
         root.has("experiences") ->
-            "That is a PsyLog export. The import layer that would read it is not ported."
+            context.getString(R.string.shell_onboarding_import_psylog_export)
         root.has("doseEntries") ->
-            "That is an early Piru export. The import layer that would read it is not ported."
+            context.getString(R.string.shell_onboarding_import_legacy_export)
         else ->
-            "That JSON has neither a Piru nor a PsyLog export at its top level."
+            context.getString(R.string.shell_onboarding_import_unrecognised)
     }
 }

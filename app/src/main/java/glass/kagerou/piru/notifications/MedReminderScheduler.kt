@@ -1,12 +1,14 @@
 package glass.kagerou.piru.notifications
 
 import android.content.Context
+import androidx.annotation.StringRes
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.RoutineOccurrenceService
 import glass.kagerou.piru.data.entity.DailyDoseItemEntity
 import glass.kagerou.piru.engine.AdherenceCalculator
@@ -16,6 +18,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 /**
@@ -106,12 +109,17 @@ object MedReminderScheduler {
      * Ported from `MedTimeGroup`. The boundaries are the iOS ones: before 12:00,
      * 12:00-17:00, 17:00-21:00, after 21:00. A med slots itself in from its
      * reminder times — there are no named containers to create.
+     *
+     * [slug] is the wire value: it rides the `piru://quicklog?routine=<slug>`
+     * deep link and the `group|<slug>` skip target, so it stays English and
+     * stays put. [labelRes] is the word the user reads, which is why the two are
+     * no longer one field.
      */
-    enum class TimeGroup(val slug: String, val label: String) {
-        MORNING("morning", "Morning"),
-        AFTERNOON("afternoon", "Afternoon"),
-        EVENING("evening", "Evening"),
-        NIGHT("night", "Night"),
+    enum class TimeGroup(val slug: String, @StringRes val labelRes: Int) {
+        MORNING("morning", R.string.notif_med_group_morning),
+        AFTERNOON("afternoon", R.string.notif_med_group_afternoon),
+        EVENING("evening", R.string.notif_med_group_evening),
+        NIGHT("night", R.string.notif_med_group_night),
         ;
 
         companion object {
@@ -235,7 +243,7 @@ object MedReminderScheduler {
                         context = context,
                         identifier = NotificationType.ROUTINE.identifier(anchor, ordinal),
                         title = name,
-                        body = "Time to log $name — $doseText.",
+                        body = context.getString(R.string.notif_med_reminder_body, name, doseText),
                         fireAt = fireAt,
                         threadId = threadId,
                         deepLink = deepLink,
@@ -247,7 +255,7 @@ object MedReminderScheduler {
                     // The re-ask belongs to this primary, so it is only materialized
                     // where the primary is.
                     if (!followUpsAllowed || cadence.isEmpty()) continue
-                    val followUpBody = "Still need to log $name?"
+                    val followUpBody = context.getString(R.string.notif_med_follow_up_body, name)
                     for (slot in followUpFireDates(time, cadence, FOLLOW_UP_HORIZON_DAYS, isSatisfied, now, zone)) {
                         followUps += PlannedFollowUp(
                             identifier = NotificationType.ROUTINE_FOLLOW_UP.identifier(
@@ -285,6 +293,11 @@ object MedReminderScheduler {
             val anchor = "group.${group.slug}"
             val threadId = medThreadIdentifier(anchor)
             val deepLink = groupDeepLink(group.slug)
+            // Resolved once here because it is used twice — bare in the title,
+            // lowercased mid-sentence in the re-ask. English needs the case
+            // change; Chinese has no case, so the call is a no-op there rather
+            // than a second string to keep in step.
+            val groupLabel = context.getString(group.labelRes)
 
             for (fireAt in dailyFireDates(earliest, now, zone)) {
                 val allSatisfied = members.all { (med, time) ->
@@ -297,7 +310,7 @@ object MedReminderScheduler {
                         anchor,
                         if (fireAt < startOfTomorrow(now, zone)) null else dayKey(fireAt.atZone(zone).toLocalDate()),
                     ),
-                    title = "${group.label} supplements (${names.size})",
+                    title = context.getString(R.string.notif_med_group_title, groupLabel, names.size),
                     body = names.joinToString(", "),
                     fireAt = fireAt,
                     threadId = threadId,
@@ -322,8 +335,11 @@ object MedReminderScheduler {
                         anchor,
                         "${slot.dayKey}.${slot.ordinal}",
                     ),
-                    title = "${group.label} supplements (${names.size})",
-                    body = "Still need your ${group.label.lowercase()} supplements?",
+                    title = context.getString(R.string.notif_med_group_title, groupLabel, names.size),
+                    body = context.getString(
+                        R.string.notif_med_group_follow_up_body,
+                        groupLabel.lowercase(Locale.ROOT),
+                    ),
                     threadId = threadId,
                     deepLink = deepLink,
                     fireDate = slot.fireDate,
@@ -479,7 +495,12 @@ object MedReminderScheduler {
                 threadKey = threadId,
                 deepLink = deepLink,
                 silent = silent,
-                actions = listOfNotNull(skipTarget?.let { PlannedAction("Skip today", it) }),
+                // The label is resolved here, not at post time: the payload —
+                // label included — is encoded into the alarm's intent and read
+                // back by a receiver that has no scheduler around it.
+                actions = listOfNotNull(
+                    skipTarget?.let { PlannedAction(context.getString(R.string.notif_action_skip_today), it) },
+                ),
             ),
             fireAt = fireAt,
         )

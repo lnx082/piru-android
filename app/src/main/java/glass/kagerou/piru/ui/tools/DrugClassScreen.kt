@@ -1,6 +1,7 @@
 package glass.kagerou.piru.ui.tools
 
 import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -22,14 +23,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import glass.kagerou.piru.R
 import glass.kagerou.piru.model.SubstanceCategory
 import glass.kagerou.piru.model.SubstanceColorGenerator
 import glass.kagerou.piru.substance.SubstanceReader
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.labels.CoreLabels
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.nav.PushRoute
 import glass.kagerou.piru.ui.theme.PiruTheme
@@ -112,11 +117,9 @@ private fun DrugClassBrowse(onOpen: (String) -> Unit, modifier: Modifier = Modif
     ) {
         item {
             Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Drug classes", style = MaterialTheme.typography.headlineSmall)
+                Text(stringResource(R.string.drug_class_title), style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    "Groups of substances whose members share a mechanism, a " +
-                        "pharmacokinetics, or a safety profile. What each group has in " +
-                        "common, and which substances are in it.",
+                    stringResource(R.string.drug_class_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -126,7 +129,7 @@ private fun DrugClassBrowse(onOpen: (String) -> Unit, modifier: Modifier = Modif
         if (loaded && classes.isEmpty()) {
             item {
                 Text(
-                    "No class write-ups are readable from the catalog on this build.",
+                    stringResource(R.string.drug_class_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -158,9 +161,9 @@ private fun DrugClassBrowse(onOpen: (String) -> Unit, modifier: Modifier = Modif
         }
 
         item {
+            // The disclaimer stays English — see the note in IdentifyScreen.
             Text(
-                "The shared write-ups are authored per class in the curated research " +
-                    "data and ship in English. Not medical advice.",
+                stringResource(R.string.drug_class_footer) + " Not medical advice.",
                 style = MaterialTheme.typography.bodySmall,
                 color = PiruTheme.colors.secondaryLabel,
                 modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
@@ -192,7 +195,7 @@ private fun DrugClassDetail(className: String, navigator: AppNavigator, modifier
         item {
             Column(modifier = Modifier.padding(top = 16.dp)) {
                 Text(
-                    resolvedClass?.title ?: "Drug class",
+                    resolvedClass?.title ?: stringResource(R.string.drug_class_fallback_title),
                     style = MaterialTheme.typography.headlineSmall,
                 )
             }
@@ -204,9 +207,7 @@ private fun DrugClassDetail(className: String, navigator: AppNavigator, modifier
                     // An empty state is information: it says what would fill it,
                     // which for a route payload is the identifier that did not
                     // resolve and where a working one comes from.
-                    "No class in the catalog is called \"$className\". The write-ups " +
-                        "are keyed by the class slug or its display name, and both are " +
-                        "what a class list or a substance's own page carries.",
+                    stringResource(R.string.drug_class_not_found, className),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -220,10 +221,10 @@ private fun DrugClassDetail(className: String, navigator: AppNavigator, modifier
             ClassHeader(entry)
         }
 
-        Paragraph("Shared mechanism", entry.sharedMechanism)
-        Paragraph("Shared kinetics", entry.sharedPharmacokinetics)
-        Paragraph("Shared safety profile", entry.sharedSafety)
-        Paragraph("Structure and activity", entry.sarSummary)
+        Paragraph(R.string.drug_class_shared_mechanism, entry.sharedMechanism)
+        Paragraph(R.string.drug_class_shared_kinetics, entry.sharedPharmacokinetics)
+        Paragraph(R.string.drug_class_shared_safety, entry.sharedSafety)
+        Paragraph(R.string.drug_class_shared_sar, entry.sarSummary)
 
         if (entry.siblings.isNotEmpty()) {
             item {
@@ -250,7 +251,7 @@ private fun DrugClassDetail(className: String, navigator: AppNavigator, modifier
         if (entry.references.isNotEmpty()) {
             item {
                 Text(
-                    "References",
+                    stringResource(R.string.drug_class_references),
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.padding(top = 6.dp),
                 )
@@ -261,9 +262,9 @@ private fun DrugClassDetail(className: String, navigator: AppNavigator, modifier
         }
 
         item {
+            // The disclaimer stays English — see the note in IdentifyScreen.
             Text(
-                "The shared write-ups are authored per class in the curated research " +
-                    "data and ship in English. Not medical advice.",
+                stringResource(R.string.drug_class_footer) + " Not medical advice.",
                 style = MaterialTheme.typography.bodySmall,
                 color = PiruTheme.colors.secondaryLabel,
                 modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
@@ -310,13 +311,22 @@ private fun ClassHeader(entry: SubstanceReader.ClassContext) {
     }
 }
 
-/** One authored shared-write-up section, rendered only when the class carries it. */
-private fun androidx.compose.foundation.lazy.LazyListScope.Paragraph(title: String, text: String?) {
+/**
+ * One authored shared-write-up section, rendered only when the class carries it.
+ *
+ * The heading arrives as a resource id rather than a sentence: this runs in the
+ * `LazyListScope` builder, which is not a composable scope, so the read has to
+ * happen inside the `item`.
+ */
+private fun androidx.compose.foundation.lazy.LazyListScope.Paragraph(
+    @StringRes title: Int,
+    text: String?,
+) {
     if (text.isNullOrEmpty()) return
     item {
         PiruCard(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(title, style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(title), style = MaterialTheme.typography.titleSmall)
                 Text(
                     text,
                     style = MaterialTheme.typography.bodyMedium,
@@ -337,7 +347,7 @@ private fun ReferenceRow(reference: SubstanceReader.ClassReference) {
     PiruCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
-                reference.title ?: "Untitled reference",
+                reference.title ?: stringResource(R.string.drug_class_untitled_reference),
                 style = MaterialTheme.typography.bodySmall,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -367,22 +377,28 @@ private fun ReferenceRow(reference: SubstanceReader.ClassReference) {
 }
 
 /**
- * The member heading, pluralised by hand — this build has no inflection engine,
- * and the counts here run to a hundred so "1 substance" has to be right.
+ * The member heading. Hand-written pluralisation replaced by a `<plurals>`
+ * resource: the counts here run to a hundred, so "1 substance" has to be right,
+ * and Chinese has no plural form to get wrong.
  */
+@Composable
 private fun memberHeading(count: Int): String =
-    if (count == 1) "1 substance" else "$count substances"
+    pluralStringResource(R.plurals.drug_class_member_count, count, count)
 
 /**
  * The category's browse label.
  *
  * Two categories read better under a different name in a browse context, which
- * is the whole reason the source carries this alongside `displayName`. Every
- * other category is its own name, and the name is the wire value — the catalog
- * stores the human-readable spelling there.
+ * is the whole reason the source carries a browse title alongside the plain
+ * category name. Everything else is the category name itself, so it comes from
+ * [CoreLabels.category] — the wire value spells that name in English, and
+ * printing it put "Stimulant" on a Chinese screen. (It also spells it wrong for
+ * one category: the wire value is `OrexinAntagonist`, the name is "Orexin
+ * Antagonist".)
  */
+@Composable
 private fun browseTitle(category: SubstanceCategory): String = when (category) {
-    SubstanceCategory.DEPRESSANT -> "Sedative-Hypnotic"
-    SubstanceCategory.OTHER -> "Other / Miscellaneous"
-    else -> category.wireValue
+    SubstanceCategory.DEPRESSANT -> stringResource(R.string.drug_class_browse_depressant)
+    SubstanceCategory.OTHER -> stringResource(R.string.drug_class_browse_other)
+    else -> CoreLabels.category(category)
 }

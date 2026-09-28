@@ -6,7 +6,9 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import glass.kagerou.piru.R
 
 /**
  * Pick a look — the one step that mentions money, and the one this build has the
@@ -37,26 +39,25 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun OnboardingSkinsStep(nav: OnboardingNav) {
     OnboardingLayout(
-        title = "Make it yours",
-        subtitle = "This build ships one skin. The journal, the library, and every tool are free.",
+        title = stringResource(R.string.shell_onboarding_skins_title),
+        subtitle = stringResource(R.string.shell_onboarding_skins_subtitle),
         mid = {
             OnboardingGroupedCard(
                 modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 28.dp),
             ) {
                 OnboardingBulletRow(
                     icon = Icons.Filled.Star,
-                    title = "One look, for now",
-                    detail = "The alternate skins arrive with the appearance screen, which is " +
-                        "not in this build yet.",
+                    title = stringResource(R.string.shell_onboarding_skins_one_look_title),
+                    detail = stringResource(R.string.shell_onboarding_skins_one_look_detail),
                 )
                 OnboardingBulletRow(
                     icon = Icons.Filled.Lock,
-                    title = "Nothing to buy",
-                    detail = "There is no payment code here, and no feature behind one.",
+                    title = stringResource(R.string.shell_onboarding_skins_nothing_to_buy_title),
+                    detail = stringResource(R.string.shell_onboarding_skins_nothing_to_buy_detail),
                 )
             }
         },
     ) {
-        OnboardingPillButton(title = "Continue", onClick = nav.advance)
+        OnboardingPillButton(title = stringResource(R.string.shell_continue), onClick = nav.advance)
     }
 }

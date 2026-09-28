@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
@@ -41,6 +42,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.engine.PKModel
 import glass.kagerou.piru.engine.PKResolver
 import glass.kagerou.piru.engine.SteadyStateModel
@@ -50,6 +52,7 @@ import glass.kagerou.piru.model.doseFormatted
 import glass.kagerou.piru.substance.DbSubstanceCatalog
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.labels.CoreLabels
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.nav.PushRoute
 import glass.kagerou.piru.ui.theme.PiruTheme
@@ -133,8 +136,11 @@ fun SteadyStateToolScreen(navigator: AppNavigator, modifier: Modifier = Modifier
     ) {
         item {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Steady state", style = MaterialTheme.typography.headlineSmall)
-                Caption("Where a fixed schedule settles, and how long it takes to get there.")
+                Text(
+                    stringResource(R.string.toolsb_steadystate_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                )
+                Caption(stringResource(R.string.toolsb_steadystate_subtitle))
             }
         }
 
@@ -168,7 +174,7 @@ fun SteadyStateToolScreen(navigator: AppNavigator, modifier: Modifier = Modifier
         val current = result
         if (current != null) {
             item {
-                DepotSectionCard(title = "Modeled level over time") {
+                DepotSectionCard(title = stringResource(R.string.toolsb_steadystate_chart_title)) {
                     SteadyStateChart(result = current, unit = doseUnit)
                 }
             }
@@ -183,27 +189,24 @@ fun SteadyStateToolScreen(navigator: AppNavigator, modifier: Modifier = Modifier
         }
 
         item {
-            DepotSectionCard(title = "About this model") {
-                Caption(
-                    "On a fixed schedule doses overlap and the level climbs until intake and " +
-                        "clearance balance: steady state.",
-                )
-                Caption("Values are modeled body content in the dose's units.")
-                Caption("Predicted from a model, not measured. Not medical advice.")
+            DepotSectionCard(title = stringResource(R.string.toolsb_steadystate_about_title)) {
+                Caption(stringResource(R.string.toolsb_steadystate_about_accumulation))
+                Caption(stringResource(R.string.toolsb_steadystate_about_units))
+                Caption(stringResource(R.string.toolsb_model_disclaimer))
             }
         }
 
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                FieldLabel("Related")
+                FieldLabel(stringResource(R.string.toolsb_steadystate_related))
                 RelatedCard(
-                    title = "Half-Life",
-                    detail = "Model a single dose's decay over time",
+                    title = stringResource(R.string.toolsb_steadystate_related_halflife_title),
+                    detail = stringResource(R.string.toolsb_steadystate_related_halflife_detail),
                     onClick = { navigator.push(PushRoute.Tool(PushRoute.ToolKind.HALF_LIFE)) },
                 )
                 RelatedCard(
-                    title = "In your body",
-                    detail = "See the model's estimate of what is still active",
+                    title = stringResource(R.string.toolsb_steadystate_related_body_title),
+                    detail = stringResource(R.string.toolsb_steadystate_related_body_detail),
                     onClick = { navigator.push(PushRoute.Tool(PushRoute.ToolKind.BODY_LOAD)) },
                 )
             }
@@ -268,7 +271,7 @@ private fun InputSection(
     route: RouteOfAdministration,
     onRouteChange: (RouteOfAdministration) -> Unit,
 ) {
-    DepotSectionCard(title = "Schedule") {
+    DepotSectionCard(title = stringResource(R.string.toolsb_steadystate_schedule)) {
         SubstanceSearchField(
             catalog = catalog,
             query = substanceName,
@@ -278,12 +281,17 @@ private fun InputSection(
 
         val substance = selected
         if (substance != null && substance.routes.size > 1) {
+            val routes = substance.routes.map { it.route }
+            // Built with a loop rather than `associateWith { … }`: the lambda that
+            // helper takes is not a `@Composable` one, and `CoreLabels.route` is.
+            val routeLabels = HashMap<RouteOfAdministration, String>()
+            for (candidate in routes) routeLabels[candidate] = CoreLabels.route(candidate)
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                FieldLabel("Route")
+                FieldLabel(stringResource(R.string.toolsb_steadystate_route))
                 SegmentedRow(
-                    options = substance.routes.map { it.route },
+                    options = routes,
                     selected = route,
-                    label = { routeLabel(it) },
+                    label = { routeLabels.getValue(it) },
                     onSelect = onRouteChange,
                 )
             }
@@ -292,7 +300,7 @@ private fun InputSection(
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 NumberField(
-                    label = "Dose each time",
+                    label = stringResource(R.string.toolsb_steadystate_dose_each_time),
                     value = doseAmount,
                     unit = doseUnit,
                     onValueChange = onDoseAmountChange,
@@ -301,9 +309,9 @@ private fun InputSection(
             }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 NumberField(
-                    label = "Taken every",
+                    label = stringResource(R.string.toolsb_steadystate_taken_every),
                     value = intervalHours,
-                    unit = "hours",
+                    unit = stringResource(R.string.toolsb_steadystate_hours),
                     onValueChange = onIntervalHoursChange,
                 )
                 IntervalPresetMenu(onChoose = onIntervalHoursChange)
@@ -311,15 +319,15 @@ private fun InputSection(
         }
 
         ToggleRow(
-            label = "Custom half-life",
+            label = stringResource(R.string.toolsb_steadystate_custom_half_life),
             checked = useCustomHalfLife,
             onCheckedChange = onUseCustomHalfLifeChange,
         )
         if (useCustomHalfLife) {
             NumberField(
-                label = "Half-life",
+                label = stringResource(R.string.toolsb_steadystate_half_life),
                 value = customHalfLifeHours,
-                unit = "hours",
+                unit = stringResource(R.string.toolsb_steadystate_hours),
                 onValueChange = onCustomHalfLifeHoursChange,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -330,15 +338,15 @@ private fun InputSection(
 /** The dose units the schedule field accepts — upstream's own list. */
 private val DOSE_UNITS = listOf("mg", "g", "µg", "mL", "IU", "drops", "puffs")
 
-/** The interval shortcuts, upstream's `intervalPresets`. */
-private val INTERVAL_PRESETS: List<Pair<String, Double>> = listOf(
-    "Every 4 hours" to 4.0,
-    "Every 6 hours" to 6.0,
-    "Every 8 hours" to 8.0,
-    "Every 12 hours" to 12.0,
-    "Once daily" to 24.0,
-    "Twice daily" to 12.0,
-    "Weekly" to 168.0,
+/** The interval shortcuts, upstream's `intervalPresets` — keyed by resource. */
+private val INTERVAL_PRESETS: List<Pair<Int, Double>> = listOf(
+    R.string.toolsb_steadystate_preset_every_4_hours to 4.0,
+    R.string.toolsb_steadystate_preset_every_6_hours to 6.0,
+    R.string.toolsb_steadystate_preset_every_8_hours to 8.0,
+    R.string.toolsb_steadystate_preset_every_12_hours to 12.0,
+    R.string.toolsb_steadystate_preset_once_daily to 24.0,
+    R.string.toolsb_steadystate_preset_twice_daily to 12.0,
+    R.string.toolsb_steadystate_preset_weekly to 168.0,
 )
 
 @Composable
@@ -364,11 +372,11 @@ private fun UnitMenu(unit: String, onUnitChange: (String) -> Unit) {
 private fun IntervalPresetMenu(onChoose: (Double) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     Box {
-        TextButton(onClick = { expanded = true }) { Text("Presets") }
+        TextButton(onClick = { expanded = true }) { Text(stringResource(R.string.toolsb_steadystate_presets)) }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            for ((label, hours) in INTERVAL_PRESETS) {
+            for ((labelRes, hours) in INTERVAL_PRESETS) {
                 DropdownMenuItem(
-                    text = { Text(label) },
+                    text = { Text(stringResource(labelRes)) },
                     onClick = {
                         expanded = false
                         onChoose(hours)
@@ -403,12 +411,12 @@ private fun SubstanceSearchField(
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        FieldLabel("Substance")
+        FieldLabel(stringResource(R.string.common_substance))
         OutlinedTextField(
             value = query,
             onValueChange = onQueryChange,
             singleLine = true,
-            placeholder = { Text("Search the catalog") },
+            placeholder = { Text(stringResource(R.string.toolsb_steadystate_search_placeholder)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
             modifier = Modifier.fillMaxWidth(),
         )
@@ -452,30 +460,33 @@ private fun RelatedCard(title: String, detail: String, onClick: () -> Unit) {
 @Composable
 private fun MetricsCard(result: SteadyStateModel.Result, unit: String) {
     val peakMultiple = if (result.dose > 0) result.peakAmount / result.dose else 1.0
-    DepotSectionCard(title = "At steady state") {
+    DepotSectionCard(title = stringResource(R.string.toolsb_steadystate_metrics_title)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             MetricTile(
-                key = "Steady state by",
+                key = stringResource(R.string.toolsb_steadystate_metric_steady_state_by),
                 value = formatDays(result.time95 / 1_440),
-                sub = "fully settled in ${formatDays(result.time97 / 1_440)}",
+                sub = stringResource(
+                    R.string.toolsb_steadystate_metric_fully_settled,
+                    formatDays(result.time97 / 1_440),
+                ),
                 modifier = Modifier.weight(1f),
             )
             MetricTile(
-                key = "Accumulation",
+                key = stringResource(R.string.toolsb_steadystate_metric_accumulation),
                 value = "%.1f×".format(Locale.ROOT, peakMultiple),
-                sub = "at the peak, vs. one dose",
+                sub = stringResource(R.string.toolsb_steadystate_metric_accumulation_note),
                 modifier = Modifier.weight(1f),
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             MetricTile(
-                key = "Plateau range",
+                key = stringResource(R.string.toolsb_steadystate_metric_plateau_range),
                 value = "${doseFormatted(result.troughAmount)}–${doseFormatted(result.peakAmount)}",
-                sub = "$unit · trough to peak",
+                sub = stringResource(R.string.toolsb_steadystate_metric_plateau_note, unit),
                 modifier = Modifier.weight(1f),
             )
             MetricTile(
-                key = "Fluctuation",
+                key = stringResource(R.string.toolsb_steadystate_metric_fluctuation),
                 value = "${result.fluctuationPercent.toInt()}%",
                 sub = fluctuationLabel(result.fluctuationPercent),
                 modifier = Modifier.weight(1f),
@@ -484,11 +495,18 @@ private fun MetricsCard(result: SteadyStateModel.Result, unit: String) {
     }
 }
 
-/** "10 hours" below a day, "3 days" above it — upstream's `formatDays`. */
+/**
+ * "10 hours" below a day, "3 days" above it — upstream's `formatDays`.
+ *
+ * `@Composable` because the two unit words are copy: unlike the abbreviations in
+ * `hours()` on the body-load screen, they are spoken rather than symbols, and
+ * upstream localizes `days` and `hours` as strings.
+ */
+@Composable
 private fun formatDays(days: Double): String = if (days < 1) {
-    "${(days * 24).toInt()} hours"
+    stringResource(R.string.toolsb_steadystate_format_hours, (days * 24).toInt())
 } else {
-    "${days.toInt()} days"
+    stringResource(R.string.toolsb_steadystate_format_days, days.toInt())
 }
 
 /**
@@ -497,16 +515,20 @@ private fun formatDays(days: Double): String = if (days < 1) {
  * Upstream's three bands, verbatim. "Spiky" is the most judgmental word in the
  * app and it is still about the curve, not about the person taking it.
  */
+@Composable
 private fun fluctuationLabel(pct: Double): String = when {
-    pct < 40 -> "smooth"
-    pct < 120 -> "moderate swing"
-    else -> "spiky"
+    pct < 40 -> stringResource(R.string.toolsb_steadystate_fluctuation_smooth)
+    pct < 120 -> stringResource(R.string.toolsb_steadystate_fluctuation_moderate)
+    else -> stringResource(R.string.toolsb_steadystate_fluctuation_spiky)
 }
 
 // MARK: - No data
 
 @Composable
 private fun NoDataCard(substanceName: String?, onUseCustomHalfLife: () -> Unit) {
+    // The fallback is copy too, so it comes from the resources rather than
+    // sitting as an English literal inside a format argument.
+    val name = substanceName ?: stringResource(R.string.toolsb_steadystate_this_substance)
     PiruCard(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(24.dp),
@@ -514,12 +536,14 @@ private fun NoDataCard(substanceName: String?, onUseCustomHalfLife: () -> Unit) 
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(
-                "Half-life data not available for ${substanceName ?: "this substance"}.",
+                stringResource(R.string.toolsb_steadystate_no_half_life_title, name),
                 style = MaterialTheme.typography.bodyMedium,
                 color = PiruTheme.colors.secondaryLabel,
             )
-            Caption("The catalog carries none for this compound, and the model has no default to fall back on.")
-            TextButton(onClick = onUseCustomHalfLife) { Text("Use Custom Half-Life") }
+            Caption(stringResource(R.string.toolsb_steadystate_no_half_life_note))
+            TextButton(onClick = onUseCustomHalfLife) {
+                Text(stringResource(R.string.toolsb_steadystate_use_custom_half_life))
+            }
         }
     }
 }
@@ -546,6 +570,15 @@ private fun SteadyStateChart(result: SteadyStateModel.Result, unit: String) {
     val fillColor = accent.copy(alpha = 0.10f)
     val labelStyle = TextStyle(fontSize = 10.sp, color = secondary)
     val valueStyle = TextStyle(fontSize = 11.sp, color = accent, fontWeight = FontWeight.SemiBold)
+
+    // Also hoisted, and for the same reason: `stringResource` is a `@Composable`
+    // read and the `Canvas` content is a plain lambda. Which unit the x-axis
+    // carries is known before the draw scope opens, so the read moves up here.
+    val useDays = result.totalMinutes > 2 * 1_440
+    val unitMinutes = if (useDays) 1_440.0 else 60.0
+    val axisUnitLabel = stringResource(
+        if (useDays) R.string.toolsb_steadystate_days else R.string.toolsb_steadystate_hours,
+    )
 
     Canvas(Modifier.fillMaxWidth().height(230.dp)) {
         if (result.curve.isEmpty()) return@Canvas
@@ -619,8 +652,6 @@ private fun SteadyStateChart(result: SteadyStateModel.Result, unit: String) {
         drawText(yTitle, topLeft = Offset(leftPad - yTitle.size.width / 2f, 0f))
 
         // X ticks: hours for a short window, days for a long one.
-        val useDays = xMax > 2 * 1_440
-        val unitMinutes = if (useDays) 1_440.0 else 60.0
         val stepUnits = niceStep(xMax / unitMinutes, targetTicks = 5)
         val axisLabelWidth = 34.dp.toPx()
         var tickValue = stepUnits
@@ -643,7 +674,7 @@ private fun SteadyStateChart(result: SteadyStateModel.Result, unit: String) {
             }
             tickValue += stepUnits
         }
-        val axisLabel = measurer.measure(if (useDays) "days" else "hours", labelStyle)
+        val axisLabel = measurer.measure(axisUnitLabel, labelStyle)
         drawText(
             textLayoutResult = axisLabel,
             topLeft = Offset(
@@ -674,6 +705,3 @@ private fun niceStep(span: Double, targetTicks: Int): Double {
     }
     return stepNorm * magnitude
 }
-
-/** A route's display name — the model's own, not a second table that can drift. */
-internal fun routeLabel(route: RouteOfAdministration): String = route.displayName

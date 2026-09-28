@@ -20,14 +20,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
+import glass.kagerou.piru.model.Combination
 import glass.kagerou.piru.model.CompoundDisplayClass
 import glass.kagerou.piru.model.MechanismOfAction
 import glass.kagerou.piru.model.Substance
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.labels.CoreLabels
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.theme.PiruTheme
 
@@ -69,8 +73,8 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
 
     val resolved = substance
     when {
-        failed -> CenteredMessage("No entry for \"$name\".")
-        resolved == null -> CenteredMessage("Loading…")
+        failed -> CenteredMessage(stringResource(R.string.shell_substance_not_found, name))
+        resolved == null -> CenteredMessage(stringResource(R.string.shell_substance_loading))
         else -> LazyColumn(
             modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -124,19 +128,24 @@ private fun Header(substance: Substance) {
                 color = PiruTheme.colors.secondaryLabel,
             )
         }
+        // Hoisted: `CoreLabels.category` is a composable read and `buildString`'s
+        // lambda is not composable.
+        val category = CoreLabels.category(substance.category)
         Text(
             buildString {
-                append(substance.category.wireValue)
+                append(category)
                 substance.tags.firstOrNull()?.let { append(" · $it") }
             },
             style = MaterialTheme.typography.bodyMedium,
             color = PiruTheme.colors.secondaryLabel,
         )
-        // The chemical identity line, when the catalog carries any of it.
+        // The chemical identity line, when the catalog carries any of it. The
+        // formula, the mass and the CAS number are the catalog's data; only the
+        // two labels around them are copy.
         listOfNotNull(
-            substance.formula?.let { "Formula $it" },
-            substance.molarMass?.let { "%.2f g/mol".format(it) },
-            substance.cas?.let { "CAS $it" },
+            substance.formula?.let { stringResource(R.string.shell_substance_formula, it) },
+            substance.molarMass?.let { stringResource(R.string.shell_substance_molar_mass, it) },
+            substance.cas?.let { stringResource(R.string.shell_substance_cas, it) },
         ).takeIf { it.isNotEmpty() }?.let {
             Text(it.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = PiruTheme.colors.secondaryLabel)
         }
@@ -153,18 +162,18 @@ private fun Header(substance: Substance) {
 private fun DoseLadderCard(substance: Substance) {
     PiruCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            SectionTitle("Dosage")
+            SectionTitle(stringResource(R.string.shell_section_dosage))
             for (route in substance.routes.filter { it.doses.hasAnyValue }) {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        "${route.route.displayName} · ${route.unit}",
+                        "${CoreLabels.route(route.route)} · ${route.unit}",
                         style = MaterialTheme.typography.labelLarge,
                     )
-                    TierRow("Threshold", route.doses.threshold?.let { format(it) })
-                    TierRow("Light", route.doses.light?.let { "${format(it.start)}–${format(it.endInclusive)}" })
-                    TierRow("Common", route.doses.common?.let { "${format(it.start)}–${format(it.endInclusive)}" })
-                    TierRow("Strong", route.doses.strong?.let { "${format(it.start)}–${format(it.endInclusive)}" })
-                    TierRow("Heavy", route.doses.heavy?.let { format(it) })
+                    TierRow(stringResource(R.string.shell_dose_tier_threshold), route.doses.threshold?.let { format(it) })
+                    TierRow(stringResource(R.string.shell_dose_tier_light), route.doses.light?.let { "${format(it.start)}–${format(it.endInclusive)}" })
+                    TierRow(stringResource(R.string.shell_dose_tier_common), route.doses.common?.let { "${format(it.start)}–${format(it.endInclusive)}" })
+                    TierRow(stringResource(R.string.shell_dose_tier_strong), route.doses.strong?.let { "${format(it.start)}–${format(it.endInclusive)}" })
+                    TierRow(stringResource(R.string.shell_dose_tier_heavy), route.doses.heavy?.let { format(it) })
                 }
                 if (route != substance.routes.last()) HorizontalDivider()
             }
@@ -184,15 +193,11 @@ private fun TierRow(label: String, value: String?) {
 private fun WithheldCard(substance: Substance) {
     PiruCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            SectionTitle("Dosage")
+            SectionTitle(stringResource(R.string.shell_section_dosage))
             Text(
                 when (substance.displayClass) {
-                    CompoundDisplayClass.MEDICAL_RX ->
-                        "This is a prescription medicine. Piru shows what it does and what to watch " +
-                            "for, and leaves the numbers to the label your prescriber gave you."
-                    else ->
-                        "The catalog carries no recreational dosing frame for this compound, so none " +
-                            "is shown."
+                    CompoundDisplayClass.MEDICAL_RX -> stringResource(R.string.shell_dose_withheld_rx)
+                    else -> stringResource(R.string.shell_dose_withheld_other)
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = PiruTheme.colors.secondaryLabel,
@@ -203,17 +208,25 @@ private fun WithheldCard(substance: Substance) {
 
 @Composable
 private fun DurationsCard(substance: Substance) {
+    // The four spans are formatted through the resources rather than concatenated:
+    // "1 h 30 m" is 1 小时 30 分钟 in Chinese, and neither half reorders on its own.
+    val context = LocalContext.current
     PiruCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            SectionTitle("Duration")
+            SectionTitle(stringResource(R.string.shell_section_duration))
             for (route in substance.routes.filter { it.duration != null }) {
                 val profile = route.duration!!
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(route.route.displayName, style = MaterialTheme.typography.labelLarge)
+                    Text(CoreLabels.route(route.route), style = MaterialTheme.typography.labelLarge)
                     val boundaries = profile.phaseBoundaries
                     Text(
-                        "Onset ${minutes(boundaries.onsetEnd)} · Come-up to ${minutes(boundaries.comeupEnd)} · " +
-                            "Peak to ${minutes(boundaries.peakEnd)} · Total ${minutes(profile.estimatedTotalMinutes)}",
+                        stringResource(
+                            R.string.shell_duration_line,
+                            minutes(context, boundaries.onsetEnd),
+                            minutes(context, boundaries.comeupEnd),
+                            minutes(context, boundaries.peakEnd),
+                            minutes(context, profile.estimatedTotalMinutes),
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
@@ -226,7 +239,7 @@ private fun DurationsCard(substance: Substance) {
 private fun MechanismCard(mechanism: MechanismOfAction) {
     PiruCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            SectionTitle("Mechanism")
+            SectionTitle(stringResource(R.string.shell_section_mechanism))
             if (mechanism.summary.isNotEmpty()) {
                 Text(mechanism.summary, style = MaterialTheme.typography.bodyMedium)
             }
@@ -235,8 +248,12 @@ private fun MechanismCard(mechanism: MechanismOfAction) {
                     Text(binding.target, style = MaterialTheme.typography.bodyMedium)
                     Text(
                         // The tier prints as words, not dots: a dot's meaning is a
-                        // legend away, and this screen has no legend.
-                        "${binding.action.wireValue} · ${binding.affinity.name.lowercase()}",
+                        // legend away, and this screen has no legend. Both halves are
+                        // `:core:` vocabulary — `BindingAction` carries a `wireValue`
+                        // and `BindingAffinity` a tier, and both are storage, which is
+                        // how "reuptakeInhibitor · significant" got on screen.
+                        "${CoreLabels.bindingAction(binding.action)} · " +
+                            CoreLabels.bindingAffinity(binding.affinity),
                         style = MaterialTheme.typography.bodySmall,
                         color = PiruTheme.colors.secondaryLabel,
                     )
@@ -250,7 +267,7 @@ private fun MechanismCard(mechanism: MechanismOfAction) {
 private fun EffectsCard(effects: List<String>) {
     PiruCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            SectionTitle("Effects")
+            SectionTitle(stringResource(R.string.shell_section_effects))
             Text(effects.joinToString(" · "), style = MaterialTheme.typography.bodyMedium)
         }
     }
@@ -261,7 +278,7 @@ private fun MisconceptionCard(claim: String, correction: String) {
     PiruCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
-                "“$claim”",
+                stringResource(R.string.shell_substance_quote, claim),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
                 color = PiruTheme.colors.secondaryLabel,
@@ -275,16 +292,16 @@ private fun MisconceptionCard(claim: String, correction: String) {
 private fun CombinationsCard(substance: Substance) {
     PiruCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            SectionTitle("Combinations")
+            SectionTitle(stringResource(R.string.shell_section_combinations))
             for (combination in substance.combinations) {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        "${combination.name} · ${combination.severity.wireValue}",
+                        "${combination.name} · ${CoreLabels.severity(combination.severity)}",
                         style = MaterialTheme.typography.labelLarge,
                         color = when (combination.severity) {
-                            glass.kagerou.piru.model.Combination.Severity.DANGER -> PiruTheme.colors.dangerText
-                            glass.kagerou.piru.model.Combination.Severity.CAUTION -> PiruTheme.colors.cautionText
-                            glass.kagerou.piru.model.Combination.Severity.NOTE -> PiruTheme.colors.secondaryLabel
+                            Combination.Severity.DANGER -> PiruTheme.colors.dangerText
+                            Combination.Severity.CAUTION -> PiruTheme.colors.cautionText
+                            Combination.Severity.NOTE -> PiruTheme.colors.secondaryLabel
                         },
                     )
                     Text(combination.description, style = MaterialTheme.typography.bodyMedium)
@@ -298,7 +315,7 @@ private fun CombinationsCard(substance: Substance) {
 private fun WaterHeatCard(headline: String, body: String) {
     PiruCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            SectionTitle("Water & heat")
+            SectionTitle(stringResource(R.string.shell_section_water_heat))
             Text(headline, style = MaterialTheme.typography.titleMedium)
             Text(body, style = MaterialTheme.typography.bodyMedium)
         }
@@ -315,13 +332,13 @@ private fun WaterHeatCard(headline: String, body: String) {
 private fun Footer(substance: Substance) {
     Column(modifier = Modifier.padding(vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
-            "Not medical advice.",
+            stringResource(R.string.shell_not_medical_advice),
             style = MaterialTheme.typography.labelLarge,
             color = PiruTheme.colors.secondaryLabel,
         )
         if (substance.sources.isNotEmpty()) {
             Text(
-                "Sources: " + substance.sources.joinToString(", "),
+                stringResource(R.string.shell_substance_sources, substance.sources.joinToString(", ")),
                 style = MaterialTheme.typography.bodySmall,
                 color = PiruTheme.colors.secondaryLabel,
             )
@@ -352,14 +369,20 @@ private fun format(value: Double): String =
     if (value == value.toLong().toDouble()) value.toLong().toString()
     else "%.2f".format(value).trimEnd('0').trimEnd('.')
 
-/** Minutes as a readable span: "1 h 30 m", "45 m". */
-private fun minutes(value: Double): String {
+/**
+ * Minutes as a readable span: "1 h 30 m", "45 m" — and 1 小时 30 分钟 in Chinese.
+ *
+ * A `Context` rather than a `@Composable` read: it is called four times inside one
+ * `stringResource` argument list, where a nested composable call would be legal
+ * but would read four resources to build one sentence.
+ */
+private fun minutes(context: android.content.Context, value: Double): String {
     val total = value.toLong()
     val hours = total / 60
     val mins = total % 60
     return when {
-        hours > 0 && mins > 0 -> "${hours} h ${mins} m"
-        hours > 0 -> "${hours} h"
-        else -> "${mins} m"
+        hours > 0 && mins > 0 -> context.getString(R.string.shell_duration_hours_minutes, hours, mins)
+        hours > 0 -> context.getString(R.string.shell_duration_hours, hours)
+        else -> context.getString(R.string.shell_duration_minutes, mins)
     }
 }

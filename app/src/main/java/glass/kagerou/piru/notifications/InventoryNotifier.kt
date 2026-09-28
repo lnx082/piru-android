@@ -1,6 +1,7 @@
 package glass.kagerou.piru.notifications
 
 import android.content.Context
+import glass.kagerou.piru.R
 import glass.kagerou.piru.model.doseFormatted
 import java.util.UUID
 
@@ -54,11 +55,24 @@ object InventoryNotifier {
             payload = PlannedNotification(
                 identifier = NotificationType.INVENTORY.identifier(itemId.toString()),
                 channelId = NotificationType.INVENTORY.channelId,
-                title = if (isOut) "Out of $substance" else "Running low on $substance",
-                body = if (isOut) {
-                    "You're out of $substance. Restock when you can."
+                // The substance name and the unit are the user's own data and are
+                // never translated — only the sentence they sit in is. The
+                // low-stock body states its three arguments in a different order
+                // in Chinese, which is why the resource indexes them.
+                title = if (isOut) {
+                    context.getString(R.string.notif_inventory_out_title, substance)
                 } else {
-                    "${doseFormatted(remaining)} $unit of $substance left."
+                    context.getString(R.string.notif_inventory_low_title, substance)
+                },
+                body = if (isOut) {
+                    context.getString(R.string.notif_inventory_out_body, substance)
+                } else {
+                    context.getString(
+                        R.string.notif_inventory_low_body,
+                        doseFormatted(remaining),
+                        unit,
+                        substance,
+                    )
                 },
                 threadKey = THREAD,
                 deepLink = "$SCHEME://inventory/$itemId",

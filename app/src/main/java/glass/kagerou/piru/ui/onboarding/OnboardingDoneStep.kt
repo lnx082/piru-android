@@ -8,7 +8,9 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import glass.kagerou.piru.R
 
 /**
  * The last screen: what to do next, and what the app is.
@@ -51,8 +53,8 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun OnboardingDoneStep(nav: OnboardingNav) {
     OnboardingLayout(
-        title = "You're all set",
-        subtitle = "Tap the + button to record your first entry. Everything else is a tab away.",
+        title = stringResource(R.string.shell_onboarding_done_title),
+        subtitle = stringResource(R.string.shell_onboarding_done_subtitle),
         hero = { OnboardingIconHero(Icons.Filled.CheckCircle, size = 108.dp) },
         mid = {
             OnboardingGroupedCard(
@@ -60,24 +62,22 @@ fun OnboardingDoneStep(nav: OnboardingNav) {
             ) {
                 OnboardingBulletRow(
                     icon = Icons.Filled.DateRange,
-                    title = "Watch a session take shape",
-                    detail = "Log a dose and it becomes a curve on the timeline, with the " +
-                        "overlaps and the fade-out drawn in.",
+                    title = stringResource(R.string.shell_onboarding_done_timeline_title),
+                    detail = stringResource(R.string.shell_onboarding_done_timeline_detail),
                 )
                 OnboardingBulletRow(
                     icon = Icons.Filled.Search,
-                    title = "Look anything up",
-                    detail = "Dosing, duration, effects and interactions for 1,500+ substances, " +
-                        "each with its sources named.",
+                    title = stringResource(R.string.shell_onboarding_done_lookup_title),
+                    detail = stringResource(R.string.shell_onboarding_done_lookup_detail),
                 )
                 OnboardingBulletRow(
                     icon = Icons.Filled.Lock,
-                    title = "Yours alone",
-                    detail = "The journal lives on this device. No account, no server, no ads.",
+                    title = stringResource(R.string.shell_onboarding_done_private_title),
+                    detail = stringResource(R.string.shell_onboarding_done_private_detail),
                 )
             }
         },
     ) {
-        OnboardingPillButton(title = "Start Using Piru", onClick = nav.finish)
+        OnboardingPillButton(title = stringResource(R.string.shell_onboarding_start_using), onClick = nav.finish)
     }
 }

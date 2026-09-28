@@ -1,6 +1,8 @@
 package glass.kagerou.piru.ui.tools
 
 import android.content.Context
+import glass.kagerou.piru.R
+import androidx.annotation.StringRes
 import glass.kagerou.piru.data.catalog.AndroidSubstanceDb
 import glass.kagerou.piru.data.catalog.SubstanceCatalogInstaller
 import glass.kagerou.piru.data.entity.DoseEntryEntity
@@ -61,7 +63,14 @@ internal const val SECONDS_PER_DAY: Double = 86_400.0
 internal enum class Analyte(
     /** The `ester_pk.analyte` key, and the `analyteKey` a lab measurement is stored under. */
     val key: String,
-    val displayName: String,
+    /**
+     * The hormone's name as a reader sees it.
+     *
+     * A resource rather than a literal because it is not a catalog value: this is
+     * a hard-coded table in app code, and it lands inside a translated sentence
+     * ("Estimated %s level" → 「预计%s水平」). Upstream translates both names.
+     */
+    @StringRes val displayNameRes: Int,
     /** The unit levels are stored, fit and drawn in. */
     val canonicalUnit: String,
     /** The molar (SI) unit labs outside the US commonly report in. */
@@ -69,8 +78,8 @@ internal enum class Analyte(
     /** Molar mass, g/mol — a physical constant, not substance-keyed pharmacology. */
     private val molarMass: Double,
 ) {
-    ESTRADIOL("estradiol", "Estradiol", "pg/mL", "pmol/L", 272.38),
-    TESTOSTERONE("testosterone", "Testosterone", "ng/dL", "nmol/L", 288.42),
+    ESTRADIOL("estradiol", R.string.toolsb_analyte_estradiol, "pg/mL", "pmol/L", 272.38),
+    TESTOSTERONE("testosterone", R.string.toolsb_analyte_testosterone, "ng/dL", "nmol/L", 288.42),
     ;
 
     /** Both units the lab-entry sheet accepts, canonical first. */

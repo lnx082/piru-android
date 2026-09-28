@@ -1,5 +1,7 @@
 package glass.kagerou.piru.ui.tools
 
+import android.content.Context
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -51,9 +53,11 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.InventoryMath
 import glass.kagerou.piru.data.entity.InventoryItemEntity
 import glass.kagerou.piru.engine.SubstanceCatalog
@@ -102,10 +106,10 @@ import kotlin.math.round
  * and the rows rank by. Kotlin makes `compareTo` final, so the two must not be
  * confused for one another.
  */
-enum class StockStatus(val displayName: String) {
-    OK("In Stock"),
-    LOW("Low"),
-    OUT("Out"),
+enum class StockStatus(@StringRes val labelRes: Int) {
+    OK(R.string.toolsb_inventory_status_in_stock),
+    LOW(R.string.toolsb_inventory_status_low),
+    OUT(R.string.toolsb_inventory_status_out),
     ;
 
     /**
@@ -228,19 +232,23 @@ fun InventoryItemEntity.displayTitle(catalog: SubstanceCatalog?): String {
  * Takes [dosesLeft] rather than the item, unlike the Swift original: deriving it
  * needs the catalog and the whole row, and every caller here already has both.
  */
-fun inventorySupplyLine(dosesLeft: Int?, runOut: InventoryMath.RunOut?): String? {
+fun inventorySupplyLine(context: Context, dosesLeft: Int?, runOut: InventoryMath.RunOut?): String? {
     if (runOut != null) {
-        val humanized = inventoryHumanizeDays(runOut.daysLeft)
-        return if (dosesLeft != null) "~$dosesLeft doses · $humanized left" else "$humanized left"
+        val humanized = inventoryHumanizeDays(context, runOut.daysLeft)
+        return if (dosesLeft != null) {
+            context.getString(R.string.toolsb_inventory_doses_and_runout, dosesLeft, humanized)
+        } else {
+            context.getString(R.string.toolsb_inventory_runout_left, humanized)
+        }
     }
-    return dosesLeft?.let { "~$it doses left" }
+    return dosesLeft?.let { context.getString(R.string.toolsb_inventory_doses_left, it) }
 }
 
 /** Days left, humanized: under a fortnight in days, under two months in weeks, else months. */
-fun inventoryHumanizeDays(days: Double): String = when {
-    days < 14 -> "~${round(days).toInt()} days"
-    days < 60 -> "~${round(days / 7).toInt()} weeks"
-    else -> "~${round(days / 30).toInt()} months"
+fun inventoryHumanizeDays(context: Context, days: Double): String = when {
+    days < 14 -> context.getString(R.string.toolsb_inventory_approx_days, round(days).toInt())
+    days < 60 -> context.getString(R.string.toolsb_inventory_approx_weeks, round(days / 7).toInt())
+    else -> context.getString(R.string.toolsb_inventory_approx_months, round(days / 30).toInt())
 }
 
 /** `nil` for a non-positive value; the value otherwise. The "0 = off" convention, in one place. */
@@ -362,7 +370,7 @@ fun InventoryStepperRow(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        StepButton("−", "Decrease $label") { bump(max(0.0, value - step)) }
+        StepButton("−", stringResource(R.string.toolsb_inventory_decrease_label, label)) { bump(max(0.0, value - step)) }
 
         Row(
             modifier = Modifier.weight(1f),
@@ -387,7 +395,7 @@ fun InventoryStepperRow(
             UnitLabel(unit = unit, choices = unitChoices, onUnitChange = onUnitChange, label = label)
         }
 
-        StepButton("+", "Increase $label") { bump(value + step) }
+        StepButton("+", stringResource(R.string.toolsb_inventory_increase_label, label)) { bump(value + step) }
     }
 }
 
@@ -434,7 +442,7 @@ private fun UnitLabel(unit: String, choices: List<String>?, onUnitChange: ((Stri
             )
             Icon(
                 Icons.Filled.ArrowDropDown,
-                contentDescription = "$label unit",
+                contentDescription = stringResource(R.string.toolsb_inventory_unit_label, label),
                 tint = PiruTheme.colors.secondaryLabel,
             )
         }
@@ -481,7 +489,7 @@ fun StockAmountText(item: InventoryItemEntity, modifier: Modifier = Modifier) {
     val status = item.stockStatus
     if (status == StockStatus.OUT) {
         Text(
-            "Out",
+            stringResource(R.string.toolsb_inventory_status_out),
             modifier = modifier,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.SemiBold,
@@ -551,10 +559,10 @@ fun InventorySummaryCard(
 
     PiruCard(modifier = modifier.fillMaxWidth(), onClick = onOpen) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Inventory", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.toolsb_inventory_title), style = MaterialTheme.typography.titleSmall)
             if (topItems.isEmpty()) {
                 Text(
-                    "Track how much you have on hand",
+                    stringResource(R.string.toolsb_inventory_card_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -568,7 +576,7 @@ fun InventorySummaryCard(
                 }
                 if (items.size > topItems.size) {
                     Text(
-                        "${items.size - topItems.size} more",
+                        stringResource(R.string.toolsb_inventory_more_count, items.size - topItems.size),
                         style = MaterialTheme.typography.bodySmall,
                         color = PiruTheme.colors.secondaryLabel,
                     )

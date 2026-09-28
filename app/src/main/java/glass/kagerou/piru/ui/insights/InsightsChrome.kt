@@ -1,5 +1,6 @@
 package glass.kagerou.piru.ui.insights
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -33,12 +35,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.colorspace.ColorSpaces
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import glass.kagerou.piru.R
 import glass.kagerou.piru.model.RouteOfAdministration
 import glass.kagerou.piru.model.SubstanceCategory
 import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.labels.CoreLabels
 import glass.kagerou.piru.ui.theme.PiruTheme
 
 /**
@@ -254,7 +259,7 @@ internal fun InsightsCategoryFilterBar(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         InsightsFilterPill(
-            label = "All",
+            label = stringResource(R.string.toolsb_insights_chrome_filter_all),
             color = PiruTheme.colors.accent,
             isSelected = selection == null,
             showDot = false,
@@ -263,7 +268,7 @@ internal fun InsightsCategoryFilterBar(
         for (item in categories) {
             val category = UsageAxes.category(item.categoryIndex)
             InsightsFilterPill(
-                label = category.displayLabel,
+                label = CoreLabels.category(category),
                 color = categoryAccent(category),
                 isSelected = selection == item.categoryIndex,
                 onClick = { onSelect(if (selection == item.categoryIndex) null else item.categoryIndex) },
@@ -407,23 +412,6 @@ internal fun categoryAccent(category: SubstanceCategory): Color {
     val dark = PiruTheme.colors.isDark
     return (CATEGORY_ACCENTS[category] ?: CATEGORY_ACCENTS.getValue(SubstanceCategory.OTHER)).of(dark)
 }
-
-/**
- * The class's label.
- *
- * Two of the stored wire values are the pipeline's spelling rather than a
- * reader's ("GABAergic" for the gabapentinoids, "OrexinAntagonist" for the
- * orexin antagonists), so those two are spelled out and the rest pass through.
- * The port carries no localized class table; when it grows one this is where it
- * plugs in.
- */
-internal val SubstanceCategory.displayLabel: String
-    get() = when (this) {
-        SubstanceCategory.GABAPENTINOID -> "Gabapentinoid"
-        SubstanceCategory.OREXIN_ANTAGONIST -> "Orexin antagonist"
-        SubstanceCategory.AMPAKINE -> "AMPAkine"
-        else -> wireValue
-    }
 
 private val ROUTE_ACCENTS: Map<RouteOfAdministration, Pairing> = mapOf(
     RouteOfAdministration.ORAL to pairing(0.258, 0.536, 0.994, 0.049, 0.354, 0.799),

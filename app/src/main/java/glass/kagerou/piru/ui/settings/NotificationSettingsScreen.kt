@@ -26,8 +26,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.NotificationPreferencesEntity
 import glass.kagerou.piru.notifications.NotificationPreferencesStore
 import glass.kagerou.piru.notifications.NotificationType
@@ -102,21 +104,22 @@ fun NotificationSettingsScreen(modifier: Modifier = Modifier) {
     ) {
         item {
             Text(
-                "Notifications",
+                stringResource(R.string.shell_settings_notifications),
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.padding(top = 16.dp),
             )
         }
 
         item {
-            SectionCard("Permission") {
+            SectionCard(stringResource(R.string.shell_notif_permission)) {
                 Text(
                     when (authorization) {
-                        PiruNotifications.Authorization.AUTHORIZED -> "Piru may send notifications."
+                        PiruNotifications.Authorization.AUTHORIZED ->
+                            stringResource(R.string.shell_notif_authorized)
                         PiruNotifications.Authorization.NOT_DETERMINED ->
-                            "Piru has not asked yet. Nothing below will arrive until it may."
+                            stringResource(R.string.shell_notif_not_determined)
                         PiruNotifications.Authorization.DENIED ->
-                            "Notifications are off for Piru. Nothing below will arrive."
+                            stringResource(R.string.shell_notif_denied)
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
@@ -126,17 +129,17 @@ fun NotificationSettingsScreen(modifier: Modifier = Modifier) {
                         PiruNotifications.notePermissionRequest(context)
                         permissionLauncher.launch(Unit)
                     }) {
-                        Text("Allow notifications")
+                        Text(stringResource(R.string.shell_notif_allow))
                     }
                 }
             }
         }
 
         item {
-            SectionCard("All notifications") {
+            SectionCard(stringResource(R.string.shell_notif_all)) {
                 ToggleRow(
-                    title = "Pause all",
-                    detail = "Stops everything without losing the choices below.",
+                    title = stringResource(R.string.shell_notif_pause_all),
+                    detail = stringResource(R.string.shell_notif_pause_all_detail),
                     checked = prefs.masterEnabled,
                     onCheckedChange = { value -> scope.launch { store.setMasterEnabled(value); reload() } },
                 )
@@ -145,9 +148,8 @@ fun NotificationSettingsScreen(modifier: Modifier = Modifier) {
 
         item {
             GroupCard(
-                title = "Session Alerts",
-                detail = "Hydration and wind-down nudges, onset and peak cues, and check-ins " +
-                    "while something you logged is still active.",
+                title = stringResource(R.string.shell_notif_group_session),
+                detail = stringResource(R.string.shell_notif_group_session_detail),
             ) {
                 for (type in listOf(
                     NotificationType.PHASE,
@@ -167,9 +169,8 @@ fun NotificationSettingsScreen(modifier: Modifier = Modifier) {
 
         item {
             GroupCard(
-                title = "Med Reminders",
-                detail = "Reminders at each routine's time, and a re-ask a little later if it has " +
-                    "not been logged.",
+                title = stringResource(R.string.shell_notif_group_meds),
+                detail = stringResource(R.string.shell_notif_group_meds_detail),
             ) {
                 for (type in listOf(NotificationType.ROUTINE, NotificationType.ROUTINE_FOLLOW_UP)) {
                     TypeRow(
@@ -181,16 +182,22 @@ fun NotificationSettingsScreen(modifier: Modifier = Modifier) {
                 }
                 HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
                 Text(
-                    "Ask again",
+                    stringResource(R.string.shell_notif_ask_again),
                     style = MaterialTheme.typography.titleSmall,
                 )
                 Text(
                     if (prefs.askAgainDefaultMinutes.isEmpty()) {
-                        "Off — a reminder that has not been logged is not asked about again."
+                        stringResource(R.string.shell_notif_ask_again_off)
                     } else {
-                        "A re-ask at " + prefs.askAgainDefaultMinutes.joinToString(", ") {
-                            "+${it}m"
-                        } + " after each reminder."
+                        stringResource(
+                            R.string.shell_notif_ask_again_schedule,
+                            // Each entry is a resource of its own: "+10m" is
+                            // "+10 分钟" in Chinese, and the list is joined before
+                            // the sentence around it can be translated.
+                            prefs.askAgainDefaultMinutes.joinToString(", ") {
+                                context.getString(R.string.shell_notif_reask_minutes, it)
+                            },
+                        )
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
@@ -204,7 +211,7 @@ fun NotificationSettingsScreen(modifier: Modifier = Modifier) {
                             scope.launch { store.setAskAgainDefault(next); reload() }
                         },
                     ) {
-                        Text("Add re-ask")
+                        Text(stringResource(R.string.shell_notif_add_reask))
                     }
                     TextButton(
                         enabled = cadence.size > 1,
@@ -212,7 +219,7 @@ fun NotificationSettingsScreen(modifier: Modifier = Modifier) {
                             scope.launch { store.setAskAgainDefault(cadence.dropLast(1)); reload() }
                         },
                     ) {
-                        Text("Remove last")
+                        Text(stringResource(R.string.shell_notif_remove_last))
                     }
                     TextButton(
                         enabled = cadence.isNotEmpty(),
@@ -220,7 +227,7 @@ fun NotificationSettingsScreen(modifier: Modifier = Modifier) {
                             scope.launch { store.setAskAgainDefault(emptyList()); reload() }
                         },
                     ) {
-                        Text("Turn off")
+                        Text(stringResource(R.string.shell_notif_turn_off))
                     }
                 }
             }
@@ -228,9 +235,8 @@ fun NotificationSettingsScreen(modifier: Modifier = Modifier) {
 
         item {
             GroupCard(
-                title = "Safety & Supplies",
-                detail = "A heads-up when one substance's daily total climbs into a heavy range, " +
-                    "or when tracked stock runs low.",
+                title = stringResource(R.string.shell_notif_group_safety),
+                detail = stringResource(R.string.shell_notif_group_safety_detail),
             ) {
                 for (type in listOf(NotificationType.CUMULATIVE, NotificationType.INVENTORY)) {
                     TypeRow(
@@ -244,11 +250,10 @@ fun NotificationSettingsScreen(modifier: Modifier = Modifier) {
         }
 
         item {
-            SectionCard("Quiet hours") {
+            SectionCard(stringResource(R.string.shell_notif_quiet_hours)) {
                 ToggleRow(
-                    title = "Quiet hours",
-                    detail = "Reminders whose time falls inside the window are not sent. The " +
-                        "cumulative dose warning is never silenced — it is the one that has to arrive.",
+                    title = stringResource(R.string.shell_notif_quiet_hours),
+                    detail = stringResource(R.string.shell_notif_quiet_hours_detail),
                     checked = prefs.quietHoursEnabled,
                     onCheckedChange = { value ->
                         scope.launch { store.setQuietHours(enabled = value); reload() }
@@ -256,12 +261,12 @@ fun NotificationSettingsScreen(modifier: Modifier = Modifier) {
                 )
                 if (prefs.quietHoursEnabled) {
                     TimeRow(
-                        label = "Start",
+                        label = stringResource(R.string.shell_notif_quiet_start),
                         minutes = prefs.quietHoursStartMinutes,
                         onPicked = { scope.launch { store.setQuietHours(true, startMinutes = it); reload() } },
                     )
                     TimeRow(
-                        label = "End",
+                        label = stringResource(R.string.shell_notif_quiet_end),
                         minutes = prefs.quietHoursEndMinutes,
                         onPicked = { scope.launch { store.setQuietHours(true, endMinutes = it); reload() } },
                     )
@@ -270,13 +275,9 @@ fun NotificationSettingsScreen(modifier: Modifier = Modifier) {
         }
 
         item {
-            SectionCard("Time Sensitive") {
+            SectionCard(stringResource(R.string.shell_notif_time_sensitive)) {
                 Text(
-                    "iOS lets a notification break through Focus. Android has no equivalent: " +
-                        "overriding Do Not Disturb needs a system-wide permission that also lets " +
-                        "an app read and rewrite your DND rules, and Piru does not ask for that. " +
-                        "Reminders about doses you logged still arrive at their time, as ordinary " +
-                        "notifications.",
+                    stringResource(R.string.shell_notif_time_sensitive_body),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -412,30 +413,35 @@ private fun SectionCard(title: String, content: @Composable () -> Unit) {
  * "Reminders" and "Ask Again" are the parts of one idea — a routine time and its
  * follow-up — and they read as separate switches because a user may want the
  * first without the second.
+ *
+ * `@Composable get()` because the copy is a resource and the extension is read
+ * from `TypeRow`'s own composition. `ROUTINE` reuses the group's own title: the
+ * two are the same words on purpose, and two resources would be two strings a
+ * translator could drift apart.
  */
 private val NotificationType.rowTitle: String
-    get() = when (this) {
-        NotificationType.HYDRATION -> "Hydration Reminders"
-        NotificationType.SLEEP -> "Sleep Reminders"
-        NotificationType.PHASE -> "Phase Alerts"
-        NotificationType.CUMULATIVE -> "Cumulative Dose Warnings"
-        NotificationType.ROUTINE -> "Med Reminders"
-        NotificationType.ROUTINE_FOLLOW_UP -> "Ask Again"
-        NotificationType.INVENTORY -> "Low Stock Alerts"
-        NotificationType.CHECK_IN -> "Check-ins"
+    @Composable get() = when (this) {
+        NotificationType.HYDRATION -> stringResource(R.string.shell_notif_type_hydration)
+        NotificationType.SLEEP -> stringResource(R.string.shell_notif_type_sleep)
+        NotificationType.PHASE -> stringResource(R.string.shell_notif_type_phase)
+        NotificationType.CUMULATIVE -> stringResource(R.string.shell_notif_type_cumulative)
+        NotificationType.ROUTINE -> stringResource(R.string.shell_notif_group_meds)
+        NotificationType.ROUTINE_FOLLOW_UP -> stringResource(R.string.shell_notif_type_follow_up)
+        NotificationType.INVENTORY -> stringResource(R.string.shell_notif_type_inventory)
+        NotificationType.CHECK_IN -> stringResource(R.string.shell_notif_type_check_in)
     }
 
 /** What the row says under its name, so a switch is never the only description of itself. */
 private val NotificationType.rowDetail: String?
-    get() = when (this) {
-        NotificationType.HYDRATION -> "A water reminder about an hour in, and one when the effect starts to fade."
-        NotificationType.SLEEP -> "A wind-down nudge after a long session on something that keeps you up."
-        NotificationType.PHASE -> "Onset, come-up and peak, timed from the dose's own modelled curve."
-        NotificationType.CUMULATIVE -> "When one substance's total over twelve hours reaches the heavy range."
-        NotificationType.ROUTINE -> "At the times you set for each medication."
-        NotificationType.ROUTINE_FOLLOW_UP -> "A question a little later if a reminder has not been logged."
-        NotificationType.INVENTORY -> "When a tracked supply crosses its low-stock threshold."
-        NotificationType.CHECK_IN -> "A prompt to note how a session is going, on sessions you turn it on for."
+    @Composable get() = when (this) {
+        NotificationType.HYDRATION -> stringResource(R.string.shell_notif_type_hydration_detail)
+        NotificationType.SLEEP -> stringResource(R.string.shell_notif_type_sleep_detail)
+        NotificationType.PHASE -> stringResource(R.string.shell_notif_type_phase_detail)
+        NotificationType.CUMULATIVE -> stringResource(R.string.shell_notif_type_cumulative_detail)
+        NotificationType.ROUTINE -> stringResource(R.string.shell_notif_type_routine_detail)
+        NotificationType.ROUTINE_FOLLOW_UP -> stringResource(R.string.shell_notif_type_follow_up_detail)
+        NotificationType.INVENTORY -> stringResource(R.string.shell_notif_type_inventory_detail)
+        NotificationType.CHECK_IN -> stringResource(R.string.shell_notif_type_check_in_detail)
     }
 
 /** How many re-ask times the cadence editor allows, matching the iOS editor's cap of four. */

@@ -1,18 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name" translatable="false">Piru</string>
-
-    <!--
-      Shown by Health Connect in its own permission list, as the name of the
-      screen explaining why this app wants the data.
-    -->
-    <string name="health_permissions_rationale_label">Why Piru reads your health data</string>
-
-    <!-- Notification channels. The user sees these three names in system settings. -->
-    <string name="channel_session_alerts_name">Session alerts</string>
-    <string name="channel_session_alerts_description">Hydration and wind-down nudges, and onset and peak cues, while something you logged is still active.</string>
-    <string name="channel_reminders_name">Med reminders</string>
-    <string name="channel_reminders_description">Reminders at the times you set for each medication, and a re-ask a little later if you have not logged it.</string>
-    <string name="channel_safety_name">Safety and supplies</string>
-    <string name="channel_safety_description">A heads-up when one substance&#8217;s daily total climbs into a heavy range, or when tracked stock runs low.</string>
 </resources>

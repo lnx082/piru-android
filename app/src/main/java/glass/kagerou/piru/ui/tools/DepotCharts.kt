@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -40,6 +41,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import glass.kagerou.piru.R
+import glass.kagerou.piru.ui.labels.appLocale
 import glass.kagerou.piru.ui.theme.PiruTheme
 import java.time.Instant
 import java.time.ZoneId
@@ -94,9 +97,23 @@ private val SERIES_PALETTE: List<Color> = listOf(
     Color(0xFF43A047), // green
 )
 
-/** The month-and-day axis format, `.dateTime.month(.abbreviated).day()` upstream. */
-private fun axisDateFormat(): DateTimeFormatter =
-    DateTimeFormatter.ofPattern("MMM d", Locale.getDefault())
+/**
+ * The month-and-day axis format, `.dateTime.month(.abbreviated).day()` upstream.
+ *
+ * The pattern arrives as a string rather than being written here: the field
+ * order is locale-specific (Chinese reads M月d日, not "d MMM"), and this runs
+ * inside `Canvas { … }`, where a `@Composable` resource read is not allowed. The
+ * callers hoist the resource and pass it down.
+ *
+ * The locale arrives the same way, and for the same reason: the month *name* is
+ * a word, so it has to be the app's own language rather than the device's. A
+ * German phone runs this build's English screens, and `Locale.getDefault()` here
+ * put "28. Sep" on an English axis.
+ *
+ * See docs/localization.md, "Dates need two things".
+ */
+private fun axisDateFormat(pattern: String, locale: Locale): DateTimeFormatter =
+    DateTimeFormatter.ofPattern(pattern, locale)
 
 /**
  * The depot serum-level chart: the calibrated curve with its typical-range band,
@@ -105,6 +122,8 @@ private fun axisDateFormat(): DateTimeFormatter =
  * @param referenceBand a citable laboratory reference region shaded behind the
  *   curve (the male total-T range) — a reference, not a target.
  * @param onPinch the visible window in days, or null to fall back to the preset.
+ * @param title a caller-supplied heading; null takes the default "Estimated
+ *   <analyte> level", which is a resource and so cannot be a default value here.
  */
 @Composable
 internal fun DepotCurveChart(
@@ -116,14 +135,21 @@ internal fun DepotCurveChart(
     onChartRangeChange: (ChartRange) -> Unit,
     onPinch: (Double) -> Unit,
     modifier: Modifier = Modifier,
-    title: String = "Estimated ${analyte.displayName} level",
+    title: String? = null,
     referenceBand: ClosedRange<Double>? = null,
 ) {
     val colors = PiruTheme.colors
+    val heading = if (title != null) {
+        title
+    } else {
+        stringResource(R.string.toolsb_depot_chart_estimated_level_title, stringResource(analyte.displayNameRes))
+    }
     val secondary = colors.secondaryLabel
     val accent = colors.accent
     val measurer = rememberTextMeasurer()
     val zone = remember { ZoneId.systemDefault() }
+    val axisPattern = stringResource(R.string.datefmt_month_day)
+    val dateLocale = appLocale()
 
     // Hoisted: a `@Composable` theme read cannot happen inside `Canvas { … }`.
     val referenceFill = secondary.copy(alpha = OPACITY_HAIRLINE)
@@ -141,7 +167,7 @@ internal fun DepotCurveChart(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                title,
+                heading,
                 style = MaterialTheme.typography.labelMedium,
                 color = secondary,
             )
@@ -175,6 +201,8 @@ internal fun DepotCurveChart(
                     labelStyle = labelStyle,
                     measurer = measurer,
                     zone = zone,
+                    axisPattern = axisPattern,
+                    locale = dateLocale,
                 )
             }
         }
@@ -186,9 +214,10 @@ internal fun DepotCurveChart(
 private fun RangeMenu(chartRange: ChartRange, onChartRangeChange: (ChartRange) -> Unit) {
     val accent = PiruTheme.colors.accent
     var expanded by remember { mutableStateOf(false) }
+    val currentLabel = stringResource(chartRange.labelRes)
     Box {
         Text(
-            chartRange.label,
+            currentLabel,
             style = MaterialTheme.typography.labelMedium,
             color = accent,
             modifier = Modifier
@@ -198,7 +227,7 @@ private fun RangeMenu(chartRange: ChartRange, onChartRangeChange: (ChartRange) -
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             for (range in ChartRange.entries) {
                 DropdownMenuItem(
-                    text = { Text(range.label) },
+                    text = { Text(stringResource(range.labelRes)) },
                     onClick = {
                         expanded = false
                         onChartRangeChange(range)
@@ -270,6 +299,8 @@ internal fun DepotCurveMiniChart(
     val secondary = PiruTheme.colors.secondaryLabel
     val measurer = rememberTextMeasurer()
     val zone = remember { ZoneId.systemDefault() }
+    val axisPattern = stringResource(R.string.datefmt_month_day)
+    val dateLocale = appLocale()
 
     val referenceFill = secondary.copy(alpha = OPACITY_HAIRLINE)
     val bandFill = tint.copy(alpha = OPACITY_TINT)
@@ -294,6 +325,8 @@ internal fun DepotCurveMiniChart(
             labelStyle = labelStyle,
             measurer = measurer,
             zone = zone,
+            axisPattern = axisPattern,
+            locale = dateLocale,
             axes = false,
             lineWidth = 2f,
         )
@@ -319,6 +352,8 @@ internal fun AssumedDepotLevelsChart(
     val zone = remember { ZoneId.systemDefault() }
     val gridColor = secondary.copy(alpha = OPACITY_DIMMED)
     val labelStyle = TextStyle(fontSize = 10.sp, color = secondary)
+    val axisPattern = stringResource(R.string.datefmt_month_day)
+    val dateLocale = appLocale()
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         val totalSpan = perEster
@@ -361,7 +396,7 @@ internal fun AssumedDepotLevelsChart(
                     pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f)),
                 )
                 val date = Instant.ofEpochMilli(start.toEpochMilli() + (spanMillis * fraction).toLong())
-                val label = axisDateFormat().withZone(zone).format(date)
+                val label = axisDateFormat(axisPattern, dateLocale).withZone(zone).format(date)
                 val measured = measurer.measure(label, labelStyle)
                 drawText(
                     textLayoutResult = measured,
@@ -416,6 +451,8 @@ private fun DrawScope.drawDepotCurve(
     labelStyle: TextStyle,
     measurer: TextMeasurer,
     zone: ZoneId,
+    axisPattern: String,
+    locale: Locale,
     axes: Boolean = true,
     lineWidth: Float = 2.2f,
 ) {
@@ -539,8 +576,9 @@ private fun DrawScope.drawDepotCurve(
         strokeWidth = 1.dp.toPx(),
     )
 
-    // X ticks — four across the span, gridline dashed, label "Mon d".
-    val formatter = axisDateFormat().withZone(zone)
+    // X ticks — four across the span, gridline dashed, labelled with the
+    // caller's month-and-day pattern.
+    val formatter = axisDateFormat(axisPattern, locale).withZone(zone)
     for (i in 0..3) {
         val fraction = i / 3f
         val gx = leftPad + fraction * plotW

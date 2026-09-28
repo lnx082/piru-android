@@ -23,9 +23,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.engine.SubstanceCatalog
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
@@ -190,22 +192,31 @@ fun InjectionLevelsScreen(navigator: AppNavigator, modifier: Modifier = Modifier
  */
 @Composable
 private fun InputSection(model: InjectionLevelsModel) {
-    DepotSectionCard(title = "Curve inputs") {
+    // Hoisted: `SegmentedRow`'s label lambda is a plain `(T) -> String`, not a
+    // `@Composable` one, so the two strings have to be read before it.
+    val fromLogLabel = stringResource(R.string.toolsb_injection_from_your_log)
+    val manualScheduleLabel = stringResource(R.string.toolsb_injection_manual_schedule)
+
+    DepotSectionCard(title = stringResource(R.string.toolsb_injection_curve_inputs)) {
         val analytes = model.availableAnalytes
         if (analytes.size > 1) {
+            // Read up front: `SegmentedRow`'s `label` is a plain lambda, and a
+            // `@Composable` read cannot happen inside one.
+            val analyteLabels = HashMap<Analyte, String>()
+            for (candidate in analytes) analyteLabels[candidate] = stringResource(candidate.displayNameRes)
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                FieldLabel("Hormone")
+                FieldLabel(stringResource(R.string.toolsb_injection_hormone))
                 SegmentedRow(
                     options = analytes,
                     selected = model.analyte,
-                    label = { it.displayName },
+                    label = { analyteLabels.getValue(it) },
                     onSelect = { model.analyte = it },
                 )
             }
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            FieldLabel("Ester")
+            FieldLabel(stringResource(R.string.toolsb_injection_ester))
             SegmentedRow(
                 options = model.availableEsters,
                 selected = model.selectedEster,
@@ -216,69 +227,69 @@ private fun InputSection(model: InjectionLevelsModel) {
 
         if (model.volumeLoggedCount > 0) {
             NumberField(
-                label = "Vial concentration",
+                label = stringResource(R.string.toolsb_injection_vial_concentration),
                 value = model.volumeConcentrationMgPerML,
                 unit = "mg/mL",
                 onValueChange = { model.persistVolumeConcentration(it) },
             )
             Caption(
                 if ((model.volumeConcentrationMgPerML ?: 0.0) > 0) {
-                    "${model.volumeLoggedCount} mL injections converted at this strength"
+                    stringResource(R.string.toolsb_injection_ml_injections_converted, model.volumeLoggedCount)
                 } else {
-                    "${model.volumeLoggedCount} injections are in mL. Enter the vial strength to include them."
+                    stringResource(R.string.toolsb_injection_injections_in_ml, model.volumeLoggedCount)
                 },
             )
         }
 
         if (model.hasLogHistory) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                FieldLabel("Source")
+                FieldLabel(stringResource(R.string.toolsb_injection_source))
                 SegmentedRow(
                     options = listOf(true, false),
                     selected = model.useLogHistory,
-                    label = { if (it) "From your log" else "Manual schedule" },
+                    label = { if (it) fromLogLabel else manualScheduleLabel },
                     onSelect = { model.useLogHistory = it },
                 )
             }
         }
 
         if (model.useLogHistory && model.hasLogHistory) {
-            Caption("${model.injectionCount} injections from your log")
+            Caption(stringResource(R.string.toolsb_injection_injections_from_log, model.injectionCount))
         } else {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 NumberField(
-                    label = "Dose each time",
+                    label = stringResource(R.string.toolsb_injection_dose_each_time),
                     value = model.doseMg,
                     unit = "mg",
                     onValueChange = { model.doseMg = it },
                     modifier = Modifier.weight(1f),
                 )
                 NumberField(
-                    label = "Every",
+                    label = stringResource(R.string.toolsb_injection_every),
                     value = model.intervalDays,
-                    unit = "days",
+                    unit = stringResource(R.string.toolsb_injection_days),
                     onValueChange = { model.intervalDays = it },
                     modifier = Modifier.weight(1f),
                 )
             }
             if (model.hasLogHistory) {
                 ToggleRow(
-                    label = "Start from your log",
+                    label = stringResource(R.string.toolsb_injection_start_from_log),
                     checked = model.startFromLog,
                     onCheckedChange = { model.startFromLog = it },
                 )
             }
             if (model.continuesFromLog) {
-                Caption("Starts at today's level from your log. Next dose one interval after your last.")
+                Caption(stringResource(R.string.toolsb_injection_starts_at_today))
             } else {
                 NumberField(
-                    label = "Starting level",
+                    label = stringResource(R.string.toolsb_injection_starting_level),
                     value = model.startingLevel,
                     unit = model.analyte.canonicalUnit,
                     onValueChange = { model.startingLevel = it },
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Caption("The level in your body today, if any. First dose today.")
+                Caption(stringResource(R.string.toolsb_injection_starting_level_note))
             }
         }
     }
@@ -302,11 +313,11 @@ private fun LabCalibrationSection(
     onDelete: (LabMeasurement) -> Unit,
 ) {
     DepotSectionCard(
-        title = "Lab calibration",
+        title = stringResource(R.string.toolsb_injection_lab_calibration),
         trailing = { CalibrationChip(labs.count { !it.excludedFromCalibration }) },
     ) {
         if (labs.isEmpty()) {
-            Caption("Add a blood test to fit the curve to you. The band narrows.")
+            Caption(stringResource(R.string.toolsb_injection_add_lab_note))
         } else {
             for (lab in labs) {
                 LabRow(
@@ -318,7 +329,7 @@ private fun LabCalibrationSection(
             }
         }
 
-        TextButton(onClick = onAdd) { Text("Add lab result") }
+        TextButton(onClick = onAdd) { Text(stringResource(R.string.toolsb_injection_add_lab_result)) }
 
         SectionDivider()
 
@@ -360,18 +371,15 @@ private fun LabCalibrationSection(
 private fun ProvenanceCard(ester: EsterPKRecord) {
     val colors = PiruTheme.colors
     val uriHandler = LocalUriHandler.current
-    DepotSectionCard(title = "Sources", trailing = { ConfidenceBadge(ester.confidence) }) {
+    DepotSectionCard(
+        title = stringResource(R.string.toolsb_injection_sources),
+        trailing = { ConfidenceBadge(ester.confidence) },
+    ) {
         Caption(ester.provenance)
-        Caption(
-            "Older studies used radioimmunoassay; modern LC-MS/MS reads lower. " +
-                "Calibrating to your own results absorbs the difference.",
-        )
-        Caption(
-            "Subcutaneous and intramuscular reach similar levels (196 vs 190 pg/mL " +
-                "head-to-head), so one curve serves both (Herndon 2023; Misakian 2025).",
-        )
+        Caption(stringResource(R.string.toolsb_injection_provenance_assay))
+        Caption(stringResource(R.string.toolsb_injection_provenance_routes))
         Text(
-            "Parameters from estrannaise.js (MIT), checked against the literature",
+            stringResource(R.string.toolsb_injection_provenance_params_link),
             style = MaterialTheme.typography.bodySmall,
             color = colors.accent,
             modifier = Modifier.padding(vertical = 2.dp).clickable {
@@ -379,7 +387,7 @@ private fun ProvenanceCard(ester: EsterPKRecord) {
             },
         )
         Text(
-            "More on injectable estradiol dosing (diyhrt.info)",
+            stringResource(R.string.toolsb_injection_provenance_more_link),
             style = MaterialTheme.typography.bodySmall,
             color = colors.accent,
             modifier = Modifier.padding(vertical = 2.dp).clickable {
@@ -394,9 +402,9 @@ private fun ProvenanceCard(ester: EsterPKRecord) {
 internal fun ConfidenceBadge(confidence: String) {
     val colors = PiruTheme.colors
     val label = when (confidence) {
-        "high" -> "High confidence"
-        "medium" -> "Medium confidence"
-        else -> "Low confidence"
+        "high" -> stringResource(R.string.toolsb_injection_confidence_high)
+        "medium" -> stringResource(R.string.toolsb_injection_confidence_medium)
+        else -> stringResource(R.string.toolsb_injection_confidence_low)
     }
     Text(
         label,
@@ -420,21 +428,11 @@ internal fun ConfidenceBadge(confidence: String) {
  */
 @Composable
 internal fun ExplanationCard() {
-    DepotSectionCard(title = "About this curve") {
-        Caption(
-            "An injected ester releases slowly from the oil depot, splits into the free " +
-                "hormone, and clears. The curve models that from your doses.",
-        )
-        Caption(
-            "It estimates a level. It never suggests a dose or a target. Your lab results " +
-                "fit the model to your measurements, which doesn't establish accuracy between them.",
-        )
-        Caption(
-            "Levels vary a lot between people, so an uncalibrated curve is a starting point, " +
-                "not a reading. One blood test fits the height. Two on different days fit the " +
-                "shape too. Retest after any change in dose, ester, interval, or site.",
-        )
-        Caption("Predicted from a model, not measured. Not medical advice.")
+    DepotSectionCard(title = stringResource(R.string.toolsb_injection_about_curve)) {
+        Caption(stringResource(R.string.toolsb_injection_about_para_depot))
+        Caption(stringResource(R.string.toolsb_injection_about_para_estimate))
+        Caption(stringResource(R.string.toolsb_injection_about_para_variation))
+        Caption(stringResource(R.string.toolsb_model_disclaimer))
     }
 }
 
@@ -453,11 +451,11 @@ private fun NoDataCard() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text("No injectable ester data in this build.", style = MaterialTheme.typography.bodyMedium)
-            Caption(
-                "The ester table ships with the substance catalog, and this one has no rows " +
-                    "for estradiol or testosterone.",
+            Text(
+                stringResource(R.string.toolsb_injection_no_ester_data_title),
+                style = MaterialTheme.typography.bodyMedium,
             )
+            Caption(stringResource(R.string.toolsb_injection_no_ester_data_note))
         }
     }
 }

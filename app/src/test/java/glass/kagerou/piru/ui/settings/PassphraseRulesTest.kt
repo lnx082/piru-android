@@ -1,7 +1,6 @@
 package glass.kagerou.piru.ui.settings
 
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.string.shouldContain
 import org.junit.jupiter.api.Test
 
 /**
@@ -12,6 +11,12 @@ import org.junit.jupiter.api.Test
  * character passphrase is a backup that is easier to brute-force, and one sealed
  * with a typo is a backup nobody can open. Pinning them here means a change to
  * the sheet has to move a test rather than a file.
+ *
+ * The sheet's feedback **sentence** is a resource now (`strings_shell.xml`,
+ * `shell_passphrase_*`) and cannot be read from a JVM test with no Android
+ * runtime — so what is pinned here is [passphraseFeedback], the state behind the
+ * sentence. The wording itself is subject to the house copy rules at review,
+ * which is where every other string in the app is checked too.
  */
 class PassphraseRulesTest {
 
@@ -39,27 +44,29 @@ class PassphraseRulesTest {
     }
 
     @Test
-    fun `the footer says which of the four states the entry is in`() {
-        strengthFooter("", "") shouldContain "at least 12 characters"
-        strengthFooter("short", "") shouldContain "Too short"
-        strengthFooter("long enough one", "long enough two") shouldContain "don't match yet"
-        strengthFooter("long enough one", "long enough one") shouldContain "Passphrases match"
+    fun `the footer reports which of the four states the entry is in`() {
+        passphraseFeedback("", "") shouldBe PassphraseFeedback.EMPTY
+        passphraseFeedback("short", "") shouldBe PassphraseFeedback.TOO_SHORT
+        // Eleven characters, so the length rule wins over the mismatch rule.
+        passphraseFeedback("long enough one", "long enough two") shouldBe PassphraseFeedback.MISMATCH
+        passphraseFeedback("long enough one", "long enough one") shouldBe PassphraseFeedback.MATCH
     }
 
     @Test
-    fun `the footer never congratulates and never scolds`() {
-        // The house copy rules, applied to the one place in this feature that gives
-        // feedback about user input: it may say which state the entry is in, and
-        // nothing about the person who typed it.
-        for (footer in listOf(
-            strengthFooter("", ""),
-            strengthFooter("short", "short"),
-            strengthFooter("long enough one", "long enough two"),
-            strengthFooter("long enough one", "long enough one"),
-        )) {
-            footer.lowercase().contains("harm reduction") shouldBe false
-            footer.lowercase().contains("weak") shouldBe false
-            footer.lowercase().contains("strong password") shouldBe false
+    fun `only a long, matching pair reports a match`() {
+        // The state the sheet draws in green is the state a backup can actually be
+        // sealed with, so nothing else may reach it.
+        val refused = listOf(
+            "" to "",
+            "short" to "short",
+            "12345678901" to "12345678901",
+            "short" to "",
+            "correct horse battery staple" to "correct horse battery stapl",
+        )
+        for ((passphrase, confirmation) in refused) {
+            (passphraseFeedback(passphrase, confirmation) == PassphraseFeedback.MATCH) shouldBe false
         }
+        passphraseFeedback("correct horse battery staple", "correct horse battery staple") shouldBe
+            PassphraseFeedback.MATCH
     }
 }

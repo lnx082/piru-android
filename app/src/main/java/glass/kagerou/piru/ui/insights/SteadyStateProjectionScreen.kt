@@ -1,5 +1,6 @@
 package glass.kagerou.piru.ui.insights
 
+import android.content.Context
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -32,9 +33,11 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.engine.PKResolver
 import glass.kagerou.piru.engine.SteadyStateModel
@@ -102,11 +105,8 @@ fun SteadyStateProjectionScreen(navigator: AppNavigator, modifier: Modifier = Mo
     ) {
         item {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Steady state", style = MaterialTheme.typography.headlineSmall)
-                Caption(
-                    "Where each substance you take on a rhythm is heading. Only a regular " +
-                        "cadence is projected — a burst of doses is not a schedule.",
-                )
+                Text(stringResource(R.string.toolsb_ssproj_title), style = MaterialTheme.typography.headlineSmall)
+                Caption(stringResource(R.string.toolsb_ssproj_subtitle))
             }
         }
 
@@ -114,11 +114,11 @@ fun SteadyStateProjectionScreen(navigator: AppNavigator, modifier: Modifier = Mo
             item {
                 PiruCard(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("No regular cadence yet", style = MaterialTheme.typography.titleSmall)
-                        Caption(
-                            "A projection needs at least five doses of one substance, spread at a " +
-                                "steady interval. Log a few more on the same rhythm and it will appear here.",
+                        Text(
+                            stringResource(R.string.toolsb_ssproj_no_cadence_title),
+                            style = MaterialTheme.typography.titleSmall,
                         )
+                        Caption(stringResource(R.string.toolsb_ssproj_no_cadence_body))
                     }
                 }
             }
@@ -141,6 +141,7 @@ fun SteadyStateProjectionScreen(navigator: AppNavigator, modifier: Modifier = Mo
 @Composable
 private fun SteadyStateProjectionCard(projection: SteadyStateProjection) {
     val colors = PiruTheme.colors
+    val context = LocalContext.current
     val accumulates = projection.result.accumulationRatio >= 1.15
 
     PiruCard(modifier = Modifier.fillMaxWidth()) {
@@ -164,28 +165,45 @@ private fun SteadyStateProjectionCard(projection: SteadyStateProjection) {
                     Text(projection.displayName, style = MaterialTheme.typography.titleSmall)
                 }
                 Caption(
-                    "${doseFormatted(projection.medianDose)} ${projection.unit} · ${projection.cadenceText}",
+                    stringResource(
+                        R.string.toolsb_ssproj_dose_cadence,
+                        doseFormatted(projection.medianDose),
+                        projection.unit,
+                        projection.cadenceText(context),
+                    ),
                 )
             }
 
             SteadyStateProjectionChart(projection)
 
             Row(modifier = Modifier.fillMaxWidth()) {
-                StatColumn("Plateau", "${doseFormatted(projection.result.averageAmount)} ${projection.unit}")
-                StatColumn("Peak", "${doseFormatted(projection.result.peakAmount)} ${projection.unit}")
+                StatColumn(
+                    stringResource(R.string.toolsb_ssproj_stat_plateau),
+                    "${doseFormatted(projection.result.averageAmount)} ${projection.unit}",
+                )
+                StatColumn(
+                    stringResource(R.string.toolsb_ssproj_stat_peak),
+                    "${doseFormatted(projection.result.peakAmount)} ${projection.unit}",
+                )
                 if (accumulates) {
                     StatColumn(
-                        "Buildup",
+                        stringResource(R.string.toolsb_ssproj_stat_buildup),
                         "%.1f×".format(Locale.ROOT, projection.result.accumulationRatio),
                     )
-                    StatColumn("Reaches", projection.daysToSteadyText)
+                    StatColumn(
+                        stringResource(R.string.toolsb_ssproj_stat_reaches),
+                        projection.daysToSteadyText(context),
+                    )
                 } else {
-                    StatColumn("Between doses", "clears, no buildup")
+                    StatColumn(
+                        stringResource(R.string.toolsb_ssproj_stat_between_doses),
+                        stringResource(R.string.toolsb_ssproj_clears_no_buildup),
+                    )
                 }
             }
 
-            Caption(projection.summary)
-            Caption("Predicted from a model, not measured. Not medical advice.")
+            Caption(projection.summary(context))
+            Caption(stringResource(R.string.toolsb_model_disclaimer))
         }
     }
 }
@@ -270,7 +288,7 @@ private fun SteadyStateProjectionChart(projection: SteadyStateProjection) {
     // The colour is read above the canvas; the caption below keeps the axis
     // readable without a full labelled axis on a 130 dp card.
     Text(
-        "days",
+        stringResource(R.string.toolsb_ssproj_days),
         style = MaterialTheme.typography.labelSmall,
         color = secondary,
     )
@@ -294,30 +312,45 @@ internal data class SteadyStateProjection(
     /** Days to about 95 % of steady state. */
     val daysToSteady: Double get() = result.time95 / 1_440
 
-    /** The cadence in words, ported from `cadenceText`. */
-    val cadenceText: String
-        get() {
-            val hours = intervalHours
-            if (abs(hours - 24) < 3) return "about daily"
-            if (hours in 44.0..52.0) return "about every 2 days"
-            if (hours < 36) return "every ~${hours.toInt()} h"
-            return "every ~${"%.1f".format(Locale.ROOT, hours / 24)} days"
-        }
+    /**
+     * The cadence in words, ported from `cadenceText`.
+     *
+     * Takes a [Context] rather than reading `stringResource`: this is a data-class
+     * body with no composition behind it, and the strings it needs are read from
+     * the composable that renders the card.
+     */
+    fun cadenceText(context: Context): String {
+        val hours = intervalHours
+        if (abs(hours - 24) < 3) return context.getString(R.string.toolsb_ssproj_cadence_daily)
+        if (hours in 44.0..52.0) return context.getString(R.string.toolsb_ssproj_cadence_two_days)
+        if (hours < 36) return context.getString(R.string.toolsb_ssproj_cadence_hours, hours.toInt())
+        return context.getString(
+            R.string.toolsb_ssproj_cadence_days,
+            "%.1f".format(Locale.ROOT, hours / 24),
+        )
+    }
 
     /** "~3 days", or "<1 day" — ported from `daysToSteadyText`. */
-    val daysToSteadyText: String
-        get() = if (daysToSteady < 1) "<1 day" else "~${daysToSteady.toInt()} days"
+    fun daysToSteadyText(context: Context): String = if (daysToSteady < 1) {
+        context.getString(R.string.toolsb_ssproj_days_to_steady_less)
+    } else {
+        context.getString(R.string.toolsb_ssproj_days_to_steady, daysToSteady.toInt())
+    }
 
     /** The one-line reading, ported from `summary`. */
-    val summary: String
-        get() {
-            val plateau = "${doseFormatted(result.averageAmount)} $unit"
-            if (result.accumulationRatio >= 1.15) {
-                val ratio = "%.1f".format(Locale.ROOT, result.accumulationRatio)
-                return "Plateaus around $plateau, ${ratio}× one dose, reached in $daysToSteadyText"
-            }
-            return "Clears between doses; each peaks around $plateau"
+    fun summary(context: Context): String {
+        val plateau = "${doseFormatted(result.averageAmount)} $unit"
+        if (result.accumulationRatio >= 1.15) {
+            val ratio = "%.1f".format(Locale.ROOT, result.accumulationRatio)
+            return context.getString(
+                R.string.toolsb_ssproj_summary_accumulates,
+                plateau,
+                ratio,
+                daysToSteadyText(context),
+            )
         }
+        return context.getString(R.string.toolsb_ssproj_summary_clears, plateau)
+    }
 }
 
 /**

@@ -12,9 +12,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.BuildConfig
+import glass.kagerou.piru.R
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
 import glass.kagerou.piru.ui.nav.AppNavigator
@@ -55,17 +57,16 @@ fun SettingsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     ) {
         item {
             Text(
-                "Settings",
+                stringResource(R.string.shell_settings_title),
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.padding(top = 16.dp),
             )
         }
 
         item {
-            SectionCard("Appearance") {
+            SectionCard(stringResource(R.string.shell_settings_appearance)) {
                 Text(
-                    "Piru ships one skin in this build. The alternate skins and the " +
-                        "light/dark override arrive with the appearance screen.",
+                    stringResource(R.string.shell_settings_appearance_note),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -78,10 +79,12 @@ fun SettingsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                 onClick = { navigator.push(PushRoute.SubstanceColors) },
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Substance colours", style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "Every substance has a colour from its class. Set your own for the " +
-                            "ones you log.",
+                        stringResource(R.string.shell_settings_substance_colours),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(
+                        stringResource(R.string.shell_settings_substance_colours_detail),
                         style = MaterialTheme.typography.bodyMedium,
                         color = PiruTheme.colors.secondaryLabel,
                     )
@@ -95,10 +98,12 @@ fun SettingsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                 onClick = { navigator.push(PushRoute.NotificationSettings) },
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Notifications", style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "Which reminders and alerts Piru may send, switch by switch, and " +
-                            "the hours it stays quiet.",
+                        stringResource(R.string.shell_settings_notifications),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(
+                        stringResource(R.string.shell_settings_notifications_detail),
                         style = MaterialTheme.typography.bodyMedium,
                         color = PiruTheme.colors.secondaryLabel,
                     )
@@ -112,10 +117,12 @@ fun SettingsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                 onClick = { navigator.push(PushRoute.HealthData) },
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Health data", style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "Show your heart rate, blood pressure and weight next to your " +
-                            "doses. Read-only, and it never leaves the phone.",
+                        stringResource(R.string.shell_settings_health_data),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(
+                        stringResource(R.string.shell_settings_health_data_detail),
                         style = MaterialTheme.typography.bodyMedium,
                         color = PiruTheme.colors.secondaryLabel,
                     )
@@ -129,10 +136,12 @@ fun SettingsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                 onClick = { navigator.push(PushRoute.DataStorage) },
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Data & Backup", style = MaterialTheme.typography.titleSmall)
                     Text(
-                        "What is stored here, export and import, encrypted backups, and " +
-                            "the copies kept before anything destructive.",
+                        stringResource(R.string.shell_settings_data_backup),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(
+                        stringResource(R.string.shell_settings_data_backup_detail),
                         style = MaterialTheme.typography.bodyMedium,
                         color = PiruTheme.colors.secondaryLabel,
                     )
@@ -141,27 +150,29 @@ fun SettingsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         }
 
         item {
-            SectionCard("About") {
+            SectionCard(stringResource(R.string.shell_settings_about)) {
                 Text(
-                    "Not medical advice.",
+                    stringResource(R.string.shell_not_medical_advice),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Medium,
                 )
                 Text(
-                    "Piru is a dose log and a reference. It does not diagnose, it does not " +
-                        "recommend a dose, and it cannot know what you took.",
+                    stringResource(R.string.shell_settings_about_body),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
                 HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
                 Text(
-                    "Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                    stringResource(
+                        R.string.shell_settings_version,
+                        BuildConfig.VERSION_NAME,
+                        BuildConfig.VERSION_CODE,
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
                 Text(
-                    "A dose is not a confession — the app records what you tell it and " +
-                        "assumes you know what you are doing.",
+                    stringResource(R.string.shell_settings_tagline),
                     style = MaterialTheme.typography.bodySmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -169,19 +180,15 @@ fun SettingsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         }
 
         item {
-            SectionCard("Sources") {
+            SectionCard(stringResource(R.string.shell_settings_sources)) {
                 Text(
-                    "Substance data is assembled from substance.wiki (LGPL-2.1), " +
-                        "PsychonautWiki and FreeOD (CC BY-SA 4.0), dose.wiki (CC0), TripSit, " +
-                        "DailyMed, PubChem and Wikidata. Each substance names its own " +
-                        "contributing sources on its detail screen.",
+                    stringResource(R.string.shell_settings_sources_body),
                     style = MaterialTheme.typography.bodySmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
                 HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
                 Text(
-                    "Piru is free software under the GPLv3, from the work of pharmacykitty " +
-                        "and @kageroumado.",
+                    stringResource(R.string.shell_settings_license_body),
                     style = MaterialTheme.typography.bodySmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )

@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.annotation.StringRes
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,12 +44,14 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.engine.ActiveSubstanceState
 import glass.kagerou.piru.engine.DoseRecord
@@ -71,6 +74,7 @@ import glass.kagerou.piru.model.RouteOfAdministration
 import glass.kagerou.piru.substance.DbSubstanceCatalog
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.labels.appLocale
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.theme.PiruTheme
 import java.time.Duration
@@ -279,7 +283,7 @@ fun InteractionTimelineScreen(
                 if (onBack != null) {
                     Icon(
                         Icons.Filled.KeyboardArrowLeft,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(R.string.timeline_back),
                         tint = PiruTheme.colors.secondaryLabel,
                         modifier = Modifier
                             .size(24.dp)
@@ -287,7 +291,7 @@ fun InteractionTimelineScreen(
                     )
                     Spacer(Modifier.width(4.dp))
                 }
-                Text("Interaction Timeline", style = MaterialTheme.typography.titleLarge)
+                Text(stringResource(R.string.timeline_title), style = MaterialTheme.typography.titleLarge)
             }
         }
 
@@ -307,14 +311,13 @@ fun InteractionTimelineScreen(
                         )
                         for (name in missing) {
                             Text(
-                                "Half-life data unavailable for $name",
+                                stringResource(R.string.timeline_half_life_unavailable, name),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = PiruTheme.colors.secondaryLabel,
                             )
                         }
                         Text(
-                            "Without it there is no curve to draw for that substance. The " +
-                                "warning below still applies.",
+                            stringResource(R.string.timeline_no_curve_note),
                             style = MaterialTheme.typography.bodySmall,
                             color = PiruTheme.colors.tertiaryLabel,
                         )
@@ -369,16 +372,16 @@ fun InteractionTimelineScreen(
         item {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    "A one-compartment model with population-average half-lives. Real overlap " +
-                        "depends on your metabolism, dose, route, and tolerance.",
+                    stringResource(R.string.timeline_model_note),
                     style = MaterialTheme.typography.bodySmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
                 // On the always-drawn footer rather than inside the depression card:
                 // a caveat that disappears whenever the model finds nothing to say is
                 // a caveat the reader will not have when the model does speak.
+                // The disclaimer stays English — see the note in IdentifyScreen.
                 Text(
-                    "Predicted from a model, not measured. Not medical advice.",
+                    stringResource(R.string.timeline_predicted_note) + " Not medical advice.",
                     style = MaterialTheme.typography.bodySmall,
                     color = PiruTheme.colors.tertiaryLabel,
                 )
@@ -755,10 +758,14 @@ private fun DetailsCard(
                 )
                 Text(
                     if (window != null) {
-                        "Both active ${formatHours(window.first)}–${formatHours(window.second)} " +
-                            "(${formatHours(window.second - window.first)} overlap)"
+                        stringResource(
+                            R.string.timeline_both_active,
+                            formatHours(window.first),
+                            formatHours(window.second),
+                            formatHours(window.second - window.first),
+                        )
                     } else {
-                        "No overlap shown by this model. The interaction may still apply."
+                        stringResource(R.string.timeline_no_overlap)
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = PiruTheme.colors.secondaryLabel,
@@ -800,13 +807,23 @@ private fun SubstanceDetailRow(
                 // A logged dose already fixes the time. Offering a control that
                 // silently disagrees with the log would be worse than offering none.
                 Text(
-                    formatDateTime(time, zone),
+                    formatDateTime(
+                        time,
+                        zone,
+                        LocalContext.current.getString(R.string.datefmt_day_month_year_time),
+                        appLocale(),
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
             } else {
                 Text(
-                    formatDateTime(time, zone),
+                    formatDateTime(
+                        time,
+                        zone,
+                        LocalContext.current.getString(R.string.datefmt_day_month_year_time),
+                        appLocale(),
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.accent,
                     modifier = Modifier.clickable { editing = true },
@@ -820,19 +837,19 @@ private fun SubstanceDetailRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
-                    "t½ ${formatDuration(params.halfLifeMinutes)}",
+                    stringResource(R.string.timeline_half_life_value, formatDuration(params.halfLifeMinutes)),
                     style = MaterialTheme.typography.bodySmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
                 Text(
-                    "Peak ${formatDuration(params.timeToPeakMinutes)}",
+                    stringResource(R.string.timeline_peak_value, formatDuration(params.timeToPeakMinutes)),
                     style = MaterialTheme.typography.bodySmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
             }
         } else {
             Text(
-                "No half-life in the catalog, so no curve is drawn for this one.",
+                stringResource(R.string.timeline_no_half_life_row),
                 style = MaterialTheme.typography.bodySmall,
                 color = PiruTheme.colors.tertiaryLabel,
                 modifier = Modifier.padding(start = 16.dp),
@@ -877,7 +894,7 @@ private fun DoseTimeDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("When was it taken?") },
+        title = { Text(stringResource(R.string.timeline_dialog_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(
@@ -886,11 +903,19 @@ private fun DoseTimeDialog(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     TextButton(onClick = { value = (value.minus(Duration.ofDays(1))).coerceIn(earliest, latest) }) {
-                        Text("−1 d")
+                        Text(stringResource(R.string.timeline_dialog_minus_day))
                     }
-                    Text(formatDate(value, zone), style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        formatDate(
+                            value,
+                            zone,
+                            LocalContext.current.getString(R.string.datefmt_day_month_year),
+                            appLocale(),
+                        ),
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
                     TextButton(onClick = { value = (value.plus(Duration.ofDays(1))).coerceIn(earliest, latest) }) {
-                        Text("+1 d")
+                        Text(stringResource(R.string.timeline_dialog_plus_day))
                     }
                 }
                 Row(
@@ -899,11 +924,11 @@ private fun DoseTimeDialog(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     TextButton(onClick = { value = (value.minus(Duration.ofMinutes(15))).coerceIn(earliest, latest) }) {
-                        Text("−15 m")
+                        Text(stringResource(R.string.timeline_dialog_minus_quarter))
                     }
                     Text(formatClock(value, zone), style = MaterialTheme.typography.bodyLarge)
                     TextButton(onClick = { value = (value.plus(Duration.ofMinutes(15))).coerceIn(earliest, latest) }) {
-                        Text("+15 m")
+                        Text(stringResource(R.string.timeline_dialog_plus_quarter))
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -914,18 +939,26 @@ private fun DoseTimeDialog(
                         modifier = Modifier.size(16.dp),
                     )
                     TextButton(onClick = { value = Instant.now().coerceIn(earliest, latest) }) {
-                        Text("Now")
+                        Text(stringResource(R.string.timeline_dialog_now))
                     }
                 }
                 Text(
-                    "The model uses this as the dose time. It does not write anything to your log.",
+                    stringResource(R.string.timeline_dialog_note),
                     style = MaterialTheme.typography.bodySmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
             }
         },
-        confirmButton = { TextButton(onClick = { onConfirm(value) }) { Text("Done") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(value) }) {
+                Text(stringResource(R.string.timeline_dialog_done))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.timeline_dialog_cancel))
+            }
+        },
     )
 }
 
@@ -973,7 +1006,7 @@ private fun AnalysisCard(
                 Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     if (severity != null) {
                         Text(
-                            "${severity.label}: $nameA + $nameB",
+                            stringResource(R.string.timeline_severity_pair, severity.label, nameA, nameB),
                             style = MaterialTheme.typography.labelLarge,
                             color = InteractionSeverityPalette.text(severity),
                         )
@@ -987,14 +1020,12 @@ private fun AnalysisCard(
                         // a name it cannot resolve, or a pair the database does not
                         // cover. Said plainly rather than left as a blank card.
                         Text(
-                            "$nameA + $nameB",
+                            stringResource(R.string.timeline_pair, nameA, nameB),
                             style = MaterialTheme.typography.labelLarge,
                             color = PiruTheme.colors.secondaryLabel,
                         )
                         Text(
-                            "No rule in Piru's database covers this pair. The curve above is " +
-                                "the pharmacokinetics alone — absence of a listed interaction " +
-                                "does not mean absence of risk.",
+                            stringResource(R.string.timeline_no_rule),
                             style = MaterialTheme.typography.bodySmall,
                             color = PiruTheme.colors.secondaryLabel,
                         )
@@ -1042,7 +1073,7 @@ private fun DepressionSection(
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                "Combined depression peaks around ${formatClock(d.peakDate, zone)}",
+                stringResource(R.string.timeline_depression_peaks, formatClock(d.peakDate, zone)),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.weight(1f),
             )
@@ -1053,7 +1084,7 @@ private fun DepressionSection(
                         .background(fill.copy(alpha = 0.10f))
                         .padding(horizontal = 10.dp, vertical = 3.dp),
                 ) {
-                    Text(level, style = MaterialTheme.typography.labelSmall, color = bandColour)
+                    Text(stringResource(level), style = MaterialTheme.typography.labelSmall, color = bandColour)
                 }
             }
         }
@@ -1132,12 +1163,21 @@ private fun DepressionSection(
  * Ported verbatim from `InteractionTimelineView.depressionCaveat(_:)`. Three
  * sentences, one per honest case: fully modeled, entirely estimated, or a mix.
  */
+@Composable
 private fun depressionCaveat(d: CombinedDepressionResult): String {
     val confidence = confidenceLabel(d.confidence)
-    if (d.isFullyModeled) return "Modeled from receptor occupancy · $confidence."
-    if (d.modeledCount == 0) return "Estimated from effect curves · $confidence."
-    return "${d.modeledCount} of ${d.totalCount} substances from receptor occupancy, the rest " +
-        "estimated from effect curves · $confidence."
+    if (d.isFullyModeled) {
+        return stringResource(R.string.timeline_depression_caveat_modeled, confidence)
+    }
+    if (d.modeledCount == 0) {
+        return stringResource(R.string.timeline_depression_caveat_estimated, confidence)
+    }
+    return stringResource(
+        R.string.timeline_depression_caveat_mixed,
+        d.modeledCount,
+        d.totalCount,
+        confidence,
+    )
 }
 
 /**
@@ -1150,12 +1190,16 @@ private fun depressionCaveat(d: CombinedDepressionResult): String {
 private fun AttenuationSection(a: EffectAttenuationResult, modifier: Modifier = Modifier) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
-            "Reduced effect (~${a.reductionRangeText})",
+            stringResource(R.string.timeline_reduced_effect, a.reductionRangeText),
             style = MaterialTheme.typography.bodyMedium,
         )
         Text(
-            "${joinedList(a.blockers)} blocks the ${a.transporter.displayName} that " +
-                "${a.attenuated} needs to work.",
+            stringResource(
+                R.string.timeline_blocks,
+                joinedList(a.blockers),
+                stringResource(a.transporter.displayNameRes),
+                a.attenuated,
+            ),
             style = MaterialTheme.typography.bodySmall,
             color = PiruTheme.colors.secondaryLabel,
         )
@@ -1457,11 +1501,11 @@ private data class CombinedDepressionResult(
      * Wording kept distinct from the pair rule's own severity vocabulary, so the two
      * readouts do not visually clash when they disagree.
      */
-    val levelLabel: String?
+    val levelLabel: Int?
         get() = when (band) {
-            InteractionSeverity.DANGEROUS -> "Severe"
-            InteractionSeverity.UNSAFE -> "High"
-            InteractionSeverity.CAUTION -> "Moderate"
+            InteractionSeverity.DANGEROUS -> R.string.timeline_level_severe
+            InteractionSeverity.UNSAFE -> R.string.timeline_level_high
+            InteractionSeverity.CAUTION -> R.string.timeline_level_moderate
             null -> null
         }
 }
@@ -1656,11 +1700,11 @@ private object EffectAttenuation {
  * band is not something to improvise.
  */
 private enum class CompetingTransporter(
-    val displayName: String,
+    @StringRes val displayNameRes: Int,
     /** The evidence-anchored fractional-reduction band `(low, high)`, or null when none is curated. */
     val reductionBand: Pair<Double, Double>?,
 ) {
-    SERT("serotonin transporter", 0.30 to 0.80),
+    SERT(R.string.timeline_transporter_sert, 0.30 to 0.80),
     ;
 
     companion object {
@@ -1693,29 +1737,53 @@ private data class EffectAttenuationResult(
 /**
  * `formatDuration` upstream. Locale.ROOT throughout: Swift's `String(format:)` is
  * locale-independent and Kotlin's is not, so a Turkish device would otherwise
- * render "1,5 h" where the model computed 1.5.
+ * render "1,5 h" where the model computed 1.5. The number is still formatted
+ * here; only the unit word around it comes from a resource.
  */
+@Composable
 private fun formatDuration(minutes: Double): String {
-    if (minutes < 60) return "${minutes.toInt()} min"
+    if (minutes < 60) return stringResource(R.string.timeline_duration_minutes, minutes.toInt())
     val hours = minutes / 60.0
     if (hours < 24) {
-        return if (hours == hours.toLong().toDouble()) "${hours.toLong()}h"
-        else String.format(Locale.ROOT, "%.1f h", hours)
+        return if (hours == hours.toLong().toDouble()) {
+            stringResource(R.string.timeline_duration_hours, hours.toLong())
+        } else {
+            stringResource(
+                R.string.timeline_duration_decimal_hours,
+                String.format(Locale.ROOT, "%.1f", hours),
+            )
+        }
     }
-    return String.format(Locale.ROOT, "%.1f days", hours / 24.0)
+    return stringResource(
+        R.string.timeline_duration_days,
+        String.format(Locale.ROOT, "%.1f", hours / 24.0),
+    )
 }
 
+@Composable
 private fun formatHours(hours: Double): String {
-    if (hours < 1) return "${(hours * 60).toInt()}min"
-    return if (hours == hours.toLong().toDouble()) "${hours.toLong()}h"
-    else String.format(Locale.ROOT, "%.1f h", hours)
+    if (hours < 1) return stringResource(R.string.timeline_hours_minutes, (hours * 60).toInt())
+    return if (hours == hours.toLong().toDouble()) {
+        stringResource(R.string.timeline_hours_short, hours.toLong())
+    } else {
+        stringResource(
+            R.string.timeline_duration_decimal_hours,
+            String.format(Locale.ROOT, "%.1f", hours),
+        )
+    }
 }
 
-private fun formatDateTime(instant: Instant, zone: ZoneId): String =
-    DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", Locale.ROOT).format(instant.atZone(zone))
+/**
+ * The dialog's date and clock. `Locale.ROOT` was wrong here: it localizes the
+ * *names* to English, so a Chinese device read "28 Sep 2026". The app's own
+ * resolved locale supplies the names, which the caller passes in, and the
+ * resource supplies the field order — Chinese reads yyyy年M月d日 HH:mm.
+ */
+private fun formatDateTime(instant: Instant, zone: ZoneId, pattern: String, locale: Locale): String =
+    DateTimeFormatter.ofPattern(pattern, locale).format(instant.atZone(zone))
 
-private fun formatDate(instant: Instant, zone: ZoneId): String =
-    DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ROOT).format(instant.atZone(zone))
+private fun formatDate(instant: Instant, zone: ZoneId, pattern: String, locale: Locale): String =
+    DateTimeFormatter.ofPattern(pattern, locale).format(instant.atZone(zone))
 
 private fun formatClock(instant: Instant, zone: ZoneId): String =
     DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT).format(instant.atZone(zone))
@@ -1723,14 +1791,15 @@ private fun formatClock(instant: Instant, zone: ZoneId): String =
 /**
  * `ListFormatter.localizedString(byJoining:)`: "A", "A and B", "A, B, and C".
  *
- * Hand-written rather than framework-provided because Kotlin has no locale-aware
- * list joiner, and the copy is English throughout this build — the same reason
- * `InteractionRuleCopy` carries English sentences. Worth revisiting with the
- * translation pass, which is where the other hard-coded English also lands.
+ * The joiners are resources rather than punctuation written here: Chinese
+ * separates list items with "、" and closes with "和", so a hard-coded ", " is a
+ * typographic error in the translation rather than a style choice.
  */
+@Composable
 private fun joinedList(names: List<String>): String = when (names.size) {
     0 -> ""
     1 -> names[0]
-    2 -> "${names[0]} and ${names[1]}"
-    else -> names.dropLast(1).joinToString(", ") + ", and " + names.last()
+    2 -> stringResource(R.string.timeline_list_pair, names[0], names[1])
+    else -> names.dropLast(1).joinToString(stringResource(R.string.timeline_list_separator)) +
+        stringResource(R.string.timeline_list_last_separator) + names.last()
 }

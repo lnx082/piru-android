@@ -19,11 +19,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.model.Substance
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.labels.CoreLabels
+import glass.kagerou.piru.ui.labels.appLocale
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.nav.PushRoute
 import glass.kagerou.piru.ui.theme.PiruTheme
@@ -52,6 +56,10 @@ fun SearchScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val app = context.applicationContext as PiruApplication
     val zone = remember { ZoneId.systemDefault() }
+    // The language these rows resolved to — not the device's. This is the one
+    // date site that passed no locale at all, so it took the device default by
+    // accident; it names a month, so it needs the app's language.
+    val dateLocale = appLocale()
 
     var query by remember { mutableStateOf("") }
     var substances by remember { mutableStateOf<List<Substance>>(emptyList()) }
@@ -63,7 +71,7 @@ fun SearchScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         ready = true
     }
 
-    LaunchedEffect(query, ready) {
+    LaunchedEffect(query, ready, dateLocale) {
         if (!ready) return@LaunchedEffect
         if (query.isBlank()) {
             substances = emptyList()
@@ -78,13 +86,20 @@ fun SearchScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         // case-insensitively. The catalog's ranked cascade is for finding a
         // *substance* in it; what was logged is searched as logged.
         val needle = query.lowercase()
+        // The pattern is read here, before the background hop: reading a resource
+        // off the main thread is not what it is for, and the format itself is the
+        // one thing about this row a translation changes. The locale travels with
+        // it, because a pattern carries the field order and the locale the names.
+        val pattern = DateTimeFormatter.ofPattern(
+            context.getString(R.string.shell_search_log_date_pattern),
+            dateLocale,
+        )
         doses = withContext(Dispatchers.Default) {
             app.database.doseEntryDao().all()
                 .filter { it.substance.lowercase().contains(needle) }
                 .take(20)
                 .map {
-                    it.substance to it.timestamp.toInstant().atZone(zone)
-                        .format(DateTimeFormatter.ofPattern("d MMM HH:mm"))
+                    it.substance to it.timestamp.toInstant().atZone(zone).format(pattern)
                 }
         }
     }
@@ -96,11 +111,11 @@ fun SearchScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     ) {
         item {
             Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Search", style = MaterialTheme.typography.headlineSmall)
+                Text(stringResource(R.string.shell_search_title), style = MaterialTheme.typography.headlineSmall)
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    label = { Text("Substances and your log") },
+                    label = { Text(stringResource(R.string.shell_search_field_label)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     enabled = ready,
@@ -111,8 +126,7 @@ fun SearchScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         if (query.isBlank()) {
             item {
                 Text(
-                    "Search by name, by an alias, or by a brand. The same field finds what " +
-                        "the library holds and what you have logged.",
+                    stringResource(R.string.shell_search_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                     modifier = Modifier.padding(top = 8.dp),
@@ -121,7 +135,7 @@ fun SearchScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         } else {
             if (doses.isNotEmpty()) {
                 item {
-                    SectionLabel("In your log")
+                    SectionLabel(stringResource(R.string.shell_search_in_log))
                 }
                 items(doses, key = { it.first + it.second }) { (name, when_) ->
                     PiruCard(
@@ -145,7 +159,7 @@ fun SearchScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
 
             if (substances.isNotEmpty()) {
                 item {
-                    SectionLabel("In the library")
+                    SectionLabel(stringResource(R.string.shell_search_in_library))
                 }
                 items(substances, key = { it.id.toString() }) { substance ->
                     PiruCard(
@@ -158,7 +172,7 @@ fun SearchScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                         ) {
                             Text(substance.displayTitle, style = MaterialTheme.typography.titleSmall)
                             Text(
-                                substance.category.wireValue,
+                                CoreLabels.category(substance.category),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = PiruTheme.colors.secondaryLabel,
                             )
@@ -170,7 +184,7 @@ fun SearchScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
             if (doses.isEmpty() && substances.isEmpty()) {
                 item {
                     Text(
-                        "Nothing matches “$query”.",
+                        stringResource(R.string.shell_search_no_matches, query),
                         style = MaterialTheme.typography.bodyMedium,
                         color = PiruTheme.colors.secondaryLabel,
                     )
@@ -189,3 +203,4 @@ private fun SectionLabel(text: String) {
         modifier = Modifier.padding(top = 8.dp),
     )
 }
+

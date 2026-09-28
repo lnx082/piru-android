@@ -1,0 +1,516 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The shell's copy: onboarding, settings, search, the library, quick log.
+
+  One file per area so two people can work at once; this is the "shell" area —
+  everything a user reads on the way in or on the way to a setting. See
+  docs/localization.md for the pipeline and docs/porting-conventions.md for the
+  copy rules.
+
+  What is deliberately *not* here, and stays a literal in Kotlin:
+    - substance names, aliases, brand names, route identifiers and every
+      `.wireValue` / `.name` read — those are data, and the catalog has its own
+      localized names;
+    - the tour mocks' substance lists and their fixed "9:41" status bar, which
+      are a picture of a screenshot rather than copy;
+    - "Not medical advice." — English in the Chinese build too, on purpose: it is
+      the sentence that has to be legible to someone who cannot read the rest.
+
+  Placeholders are positional (%1$s / %1$d) because Chinese reorders arguments.
+-->
+<resources>
+
+    <!-- ==================== Shared ==================== -->
+
+    <string name="shell_back">Back</string>
+    <string name="shell_skip">Skip</string>
+    <string name="shell_continue">Continue</string>
+    <string name="shell_cancel">Cancel</string>
+    <string name="shell_ok">OK</string>
+    <string name="shell_save">Save</string>
+    <string name="shell_delete">Delete</string>
+    <string name="shell_restore">Restore</string>
+    <string name="shell_start_fresh">Start Fresh</string>
+    <string name="shell_not_now">Not Now</string>
+    <string name="shell_progress">Progress</string>
+    <string name="shell_progress_step">Step %1$d of %2$d</string>
+
+    <!--
+      English in the Chinese build too. It is the sentence that has to be legible
+      to someone who cannot read the rest, and both screens that carry it are
+      reached by people who are not looking for a disclaimer.
+    -->
+    <string name="shell_not_medical_advice">Not medical advice.</string>
+
+    <!-- ==================== Onboarding: welcome ==================== -->
+
+    <string name="shell_onboarding_welcome_title">Welcome to Piru</string>
+    <string name="shell_onboarding_welcome_body">Log medications and substances, record how you feel, and explore referenced information. Piru is a record and a reference, not medical advice.</string>
+    <!--
+      The iCloud branch's subtitle. The branch is permanently false on Android
+      and the string is kept because the screen's design has it; see
+      OnboardingWelcomeStep.
+    -->
+    <string name="shell_onboarding_welcome_body_backup">We found an existing backup in your iCloud. Pick up where you left off, or start fresh.</string>
+    <string name="shell_onboarding_restore_backup">Restore from Backup</string>
+    <string name="shell_onboarding_get_started">Get Started</string>
+
+    <!-- ==================== Onboarding: privacy ==================== -->
+
+    <string name="shell_onboarding_privacy_title">Where your journal lives</string>
+    <string name="shell_onboarding_privacy_subtitle">Your journal is stored in the app on this device.</string>
+    <string name="shell_onboarding_privacy_no_account_title">No account</string>
+    <string name="shell_onboarding_privacy_no_account_detail">No sign-up, and no Piru server that receives your journal.</string>
+    <string name="shell_onboarding_privacy_copies_title">Copies only when you ask</string>
+    <string name="shell_onboarding_privacy_copies_detail">An export or backup is made when you ask and saved where you choose.</string>
+    <string name="shell_onboarding_privacy_no_ads_title">No ads or trackers</string>
+    <string name="shell_onboarding_privacy_no_ads_detail">Details are in Settings under About Piru.</string>
+
+    <!-- ==================== Onboarding: depth ==================== -->
+
+    <string name="shell_onboarding_depth_title">How much detail?</string>
+    <string name="shell_onboarding_depth_subtitle">Piru can keep it simple or go deep into the pharmacology. Change this anytime in Settings.</string>
+    <!-- The wire value behind this label is "casual"; the label is what may change. -->
+    <string name="shell_onboarding_tier_casual">Casual</string>
+    <string name="shell_onboarding_tier_casual_summary">Plain names, pharmacology folded away until you open it.</string>
+    <!-- The wire value behind this label is "harm-reduction"; see OnboardingPrefs. -->
+    <string name="shell_onboarding_tier_curious">Curious</string>
+    <string name="shell_onboarding_tier_curious_summary">Mechanism and pharmacokinetics open on the page, receptor names in the Tolerance tool.</string>
+
+    <!-- ==================== Onboarding: health ==================== -->
+
+    <string name="shell_onboarding_health_title">Turn on Health Connect</string>
+    <string name="shell_onboarding_health_subtitle">Show your body weight and heart rate from Health Connect alongside your journal entries, on the session timeline.</string>
+    <string name="shell_onboarding_health_weight_label">Your body weight</string>
+    <string name="shell_onboarding_connecting">Connecting…</string>
+    <string name="shell_onboarding_set_later">I\'ll Set This Later</string>
+    <string name="shell_onboarding_health_note_no_health_connect">This device does not have Health Connect. Set your weight above instead.</string>
+    <string name="shell_onboarding_health_note_needs_update">Health Connect is on this device but needs an update before Piru can read it.</string>
+    <string name="shell_onboarding_health_note_synced">Synced from Health Connect — check the number looks right.</string>
+    <string name="shell_onboarding_health_note_no_read">Couldn\'t read a weight from Health Connect. Set it above instead.</string>
+    <string name="shell_onboarding_health_note_settings">Change what Piru can see anytime in Health Connect\'s own settings.</string>
+    <string name="shell_onboarding_decrease">Decrease</string>
+    <string name="shell_onboarding_increase">Increase</string>
+    <string name="shell_chart_alcohol">Alcohol</string>
+    <string name="shell_chart_heart_rate">Heart rate</string>
+    <string name="shell_onboarding_health_chart_caption">A couple of drinks, with the heart rate a watch recorded alongside.</string>
+
+    <!-- ==================== Onboarding: reminders ==================== -->
+
+    <string name="shell_onboarding_reminders_title">Notifications, your pick</string>
+    <string name="shell_onboarding_reminders_subtitle">Choose what Piru may send. Everything stays adjustable in Settings, switch by switch.</string>
+    <string name="shell_onboarding_reminders_doses_title">Never miss a dose</string>
+    <string name="shell_onboarding_reminders_doses_detail">Reminders at each routine\'s time — and, if you want, a gentle re-ask a little later, like snooze.</string>
+    <string name="shell_onboarding_reminders_session_title">During a session</string>
+    <string name="shell_onboarding_reminders_session_detail">Hydration and wind-down nudges, wearing-off alerts, and onset/peak timing cues while something is active.</string>
+    <string name="shell_onboarding_reminders_safety_title">A safety net</string>
+    <string name="shell_onboarding_reminders_safety_detail">A heads-up if one substance\'s daily total climbs into a heavy range, or tracked stock runs low.</string>
+    <string name="shell_onboarding_turning_on">Turning On…</string>
+    <string name="shell_onboarding_enable_selected">Enable Selected</string>
+
+    <!-- ==================== Onboarding: import ==================== -->
+
+    <string name="shell_onboarding_import_title">Bring your history</string>
+    <string name="shell_onboarding_import_subtitle">Already keep a journal? Import a Piru backup or a PsyLog-format export — or start with a clean slate.</string>
+    <string name="shell_onboarding_import_piru_title">Piru backup</string>
+    <string name="shell_onboarding_import_piru_detail">Restore a full journal you exported from Piru.</string>
+    <string name="shell_onboarding_import_psylog_title">PsyLog format</string>
+    <string name="shell_onboarding_import_psylog_detail">Import from PsyLog or any app that shares its format — both old and new versions.</string>
+    <string name="shell_onboarding_import_not_ported">This build can read a file but not yet turn one into entries — the import layer is not ported.</string>
+    <string name="shell_onboarding_reading">Reading…</string>
+    <string name="shell_onboarding_import_action">Import Data</string>
+    <string name="shell_onboarding_import_read_failed">Could not read that file.</string>
+    <string name="shell_onboarding_import_not_json">That file is not JSON, so it is not an export Piru reads.</string>
+    <string name="shell_onboarding_import_encrypted">That is an encrypted Piru backup. This build cannot decrypt or restore one yet.</string>
+    <string name="shell_onboarding_import_piru_export">That is a Piru export. The import layer that would read it is not ported.</string>
+    <string name="shell_onboarding_import_psylog_export">That is a PsyLog export. The import layer that would read it is not ported.</string>
+    <string name="shell_onboarding_import_legacy_export">That is an early Piru export. The import layer that would read it is not ported.</string>
+    <string name="shell_onboarding_import_unrecognised">That JSON has neither a Piru nor a PsyLog export at its top level.</string>
+
+    <!-- ==================== Onboarding: skins ==================== -->
+
+    <string name="shell_onboarding_skins_title">Make it yours</string>
+    <string name="shell_onboarding_skins_subtitle">This build ships one skin. The journal, the library, and every tool are free.</string>
+    <string name="shell_onboarding_skins_one_look_title">One look, for now</string>
+    <string name="shell_onboarding_skins_one_look_detail">The alternate skins arrive with the appearance screen, which is not in this build yet.</string>
+    <string name="shell_onboarding_skins_nothing_to_buy_title">Nothing to buy</string>
+    <string name="shell_onboarding_skins_nothing_to_buy_detail">There is no payment code here, and no feature behind one.</string>
+
+    <!-- ==================== Onboarding: done ==================== -->
+
+    <string name="shell_onboarding_done_title">You\'re all set</string>
+    <string name="shell_onboarding_done_subtitle">Tap the + button to record your first entry. Everything else is a tab away.</string>
+    <string name="shell_onboarding_done_timeline_title">Watch a session take shape</string>
+    <string name="shell_onboarding_done_timeline_detail">Log a dose and it becomes a curve on the timeline, with the overlaps and the fade-out drawn in.</string>
+    <string name="shell_onboarding_done_lookup_title">Look anything up</string>
+    <string name="shell_onboarding_done_lookup_detail">Dosing, duration, effects and interactions for 1,500+ substances, each with its sources named.</string>
+    <string name="shell_onboarding_done_private_title">Yours alone</string>
+    <string name="shell_onboarding_done_private_detail">The journal lives on this device. No account, no server, no ads.</string>
+    <string name="shell_onboarding_start_using">Start Using Piru</string>
+
+    <!-- ==================== Onboarding: feature tour ==================== -->
+
+    <string name="shell_tour_journal_title">Log it in seconds</string>
+    <string name="shell_tour_journal_caption">Each entry appears on the timeline, showing overlaps and when the model estimates the effects will fade.</string>
+    <string name="shell_tour_library_title">1,500+ substances</string>
+    <string name="shell_tour_library_caption">Browse by family — dosing, duration, effects, and interactions, sourced and cited.</string>
+    <string name="shell_tour_tools_title">Tools for the details</string>
+    <string name="shell_tour_tools_caption">Look up interactions, explore a tolerance model, track your stock, and work out a solution\'s concentration.</string>
+    <string name="shell_tour_insights_title">See your patterns</string>
+    <string name="shell_tour_insights_caption">Your recorded amounts, timing, and self-reported effects — at a glance.</string>
+
+    <!-- The drawn mocks' own labels. They are what the real screens will say. -->
+    <string name="shell_mock_journal">Journal</string>
+    <string name="shell_mock_library">Library</string>
+    <string name="shell_mock_tools">Tools</string>
+    <string name="shell_mock_insights">Insights</string>
+    <string name="shell_mock_today">Today</string>
+    <string name="shell_mock_time_of_day">Time of Day</string>
+    <string name="shell_mock_morning">Morning</string>
+    <string name="shell_mock_afternoon">Afternoon</string>
+    <string name="shell_mock_evening">Evening</string>
+    <string name="shell_mock_night">Night</string>
+    <string name="shell_mock_insights_summary">440 entries · 4.9/day</string>
+    <string name="shell_tool_interactions">Interactions</string>
+    <string name="shell_tool_tolerance">Tolerance</string>
+    <string name="shell_tool_inventory">Inventory</string>
+    <string name="shell_tool_half_life">Half-Life</string>
+    <string name="shell_tool_solutions">Solutions</string>
+    <string name="shell_tool_recovery">Recovery</string>
+    <string name="shell_family_common">Common</string>
+    <string name="shell_family_stimulants">Stimulants</string>
+    <string name="shell_family_empathogens">Empathogens</string>
+    <string name="shell_family_cannabinoids">Cannabinoids</string>
+
+    <!-- ==================== Search ==================== -->
+
+    <string name="shell_search_title">Search</string>
+    <string name="shell_search_field_label">Substances and your log</string>
+    <string name="shell_search_hint">Search by name, by an alias, or by a brand. The same field finds what the library holds and what you have logged.</string>
+    <string name="shell_search_in_log">In your log</string>
+    <string name="shell_search_in_library">In the library</string>
+    <string name="shell_search_no_matches">Nothing matches “%1$s”.</string>
+    <!--
+      The pattern a logged dose's timestamp is shown in, as a
+      java.time DateTimeFormatter pattern. A pattern rather than a formatted
+      date because the field is built off the main thread.
+    -->
+    <string name="shell_search_log_date_pattern">d MMM HH:mm</string>
+
+    <!-- ==================== Library ==================== -->
+
+    <string name="shell_library_title">Library</string>
+    <string name="shell_library_field_label">Search substances</string>
+    <string name="shell_library_opening">Opening the catalog…</string>
+    <string name="shell_library_hint">Search by name or by any of the names a substance is known under. The catalog carries 1,689 substances and every alias they ship with.</string>
+    <string name="shell_library_no_matches">Nothing in the catalog matches “%1$s”.</string>
+
+    <!-- ==================== Substance detail ==================== -->
+
+    <string name="shell_substance_not_found">No entry for \"%1$s\".</string>
+    <string name="shell_substance_loading">Loading…</string>
+    <string name="shell_substance_formula">Formula %1$s</string>
+    <string name="shell_substance_molar_mass">%1$.2f g/mol</string>
+    <string name="shell_substance_cas">CAS %1$s</string>
+    <string name="shell_substance_quote">“%1$s”</string>
+    <string name="shell_substance_sources">Sources: %1$s</string>
+    <string name="shell_section_dosage">Dosage</string>
+    <string name="shell_section_duration">Duration</string>
+    <string name="shell_section_mechanism">Mechanism</string>
+    <string name="shell_section_effects">Effects</string>
+    <string name="shell_section_combinations">Combinations</string>
+    <string name="shell_section_water_heat">Water &amp; heat</string>
+    <string name="shell_dose_tier_threshold">Threshold</string>
+    <string name="shell_dose_tier_light">Light</string>
+    <string name="shell_dose_tier_common">Common</string>
+    <string name="shell_dose_tier_strong">Strong</string>
+    <string name="shell_dose_tier_heavy">Heavy</string>
+    <string name="shell_dose_withheld_rx">This is a prescription medicine. Piru shows what it does and what to watch for, and leaves the numbers to the label your prescriber gave you.</string>
+    <string name="shell_dose_withheld_other">The catalog carries no recreational dosing frame for this compound, so none is shown.</string>
+    <string name="shell_duration_line">Onset %1$s · Come-up to %2$s · Peak to %3$s · Total %4$s</string>
+    <string name="shell_duration_hours_minutes">%1$d h %2$d m</string>
+    <string name="shell_duration_hours">%1$d h</string>
+    <string name="shell_duration_minutes">%1$d m</string>
+
+    <!-- ==================== Settings: the index ==================== -->
+
+    <string name="shell_settings_title">Settings</string>
+    <string name="shell_settings_appearance">Appearance</string>
+    <string name="shell_settings_appearance_note">Piru ships one skin in this build. The alternate skins and the light/dark override arrive with the appearance screen.</string>
+    <string name="shell_settings_substance_colours">Substance colours</string>
+    <string name="shell_settings_substance_colours_detail">Every substance has a colour from its class. Set your own for the ones you log.</string>
+    <string name="shell_settings_notifications">Notifications</string>
+    <string name="shell_settings_notifications_detail">Which reminders and alerts Piru may send, switch by switch, and the hours it stays quiet.</string>
+    <string name="shell_settings_health_data">Health data</string>
+    <string name="shell_settings_health_data_detail">Show your heart rate, blood pressure and weight next to your doses. Read-only, and it never leaves the phone.</string>
+    <string name="shell_settings_data_backup">Data &amp; Backup</string>
+    <string name="shell_settings_data_backup_detail">What is stored here, export and import, encrypted backups, and the copies kept before anything destructive.</string>
+    <string name="shell_settings_about">About</string>
+    <string name="shell_settings_about_body">Piru is a dose log and a reference. It does not diagnose, it does not recommend a dose, and it cannot know what you took.</string>
+    <string name="shell_settings_version">Version %1$s (%2$d)</string>
+    <string name="shell_settings_tagline">A dose is not a confession — the app records what you tell it and assumes you know what you are doing.</string>
+    <string name="shell_settings_sources">Sources</string>
+    <string name="shell_settings_sources_body">Substance data is assembled from substance.wiki (LGPL-2.1), PsychonautWiki and FreeOD (CC BY-SA 4.0), dose.wiki (CC0), TripSit, DailyMed, PubChem and Wikidata. Each substance names its own contributing sources on its detail screen.</string>
+    <string name="shell_settings_license_body">Piru is free software under the GPLv3, from the work of pharmacykitty and @kageroumado.</string>
+
+    <!-- ==================== Settings: substance colours ==================== -->
+
+    <string name="shell_substance_colours_intro">Every substance has a colour from its class before you choose one. Setting your own overrides it here and everywhere it is drawn.</string>
+    <string name="shell_substance_colours_empty">Nothing logged yet, so there is nothing to colour.</string>
+    <string name="shell_substance_colour_class">Class colour</string>
+    <string name="shell_substance_colour_custom">Your colour</string>
+
+    <!-- ==================== Settings: the colour picker ==================== -->
+
+    <string name="shell_colour">Colour</string>
+    <string name="shell_colour_class_default">Class default</string>
+    <string name="shell_colour_custom">Custom</string>
+    <string name="shell_colour_plane_description">Lightness and chroma</string>
+    <string name="shell_colour_hue_description">Hue</string>
+    <string name="shell_colour_readout">L %1$.2f · C %2$.3f · H %3$.0f°</string>
+    <string name="shell_colour_use_class">Use the class colour</string>
+
+    <!-- ==================== Settings: health data ==================== -->
+
+    <string name="shell_health_intro">Piru can show your heart rate, blood pressure and weight next to the doses you logged. It only reads — it never writes a health record, and nothing here leaves the phone.</string>
+    <string name="shell_health_not_installed_title">Health Connect is not on this device</string>
+    <string name="shell_health_not_installed_body">On this version of Android it is a separate app. Installing it from the Play Store turns this on; until then the rest of Piru works exactly as it does now.</string>
+    <string name="shell_health_update_title">Health Connect needs an update</string>
+    <string name="shell_health_update_body">The version installed here is older than the one Piru talks to. Updating it from the Play Store turns this on.</string>
+    <string name="shell_health_connected">Connected</string>
+    <string name="shell_health_partly_connected">Partly connected</string>
+    <string name="shell_health_not_connected">Not connected</string>
+    <string name="shell_health_allowed_count">%1$d of %2$d data types allowed. You can change any of them in Health Connect.</string>
+    <string name="shell_health_nothing_read">Piru reads nothing from your health data until you allow it.</string>
+    <string name="shell_health_allow">Allow access</string>
+    <string name="shell_health_change_access">Change access</string>
+    <string name="shell_health_open_settings">Open Health Connect</string>
+    <string name="shell_health_what_is_read">What is read</string>
+    <string name="shell_health_type_heart_rate">Heart rate</string>
+    <string name="shell_health_type_heart_rate_detail">Plotted against your doses, so the curve shows what your body did around each one.</string>
+    <string name="shell_health_type_resting_heart_rate">Resting heart rate</string>
+    <string name="shell_health_type_resting_heart_rate_detail">The slow baseline, for comparison against a session.</string>
+    <string name="shell_health_type_blood_pressure">Blood pressure</string>
+    <string name="shell_health_type_blood_pressure_detail">Shown on the session timeline where a reading exists.</string>
+    <string name="shell_health_type_workouts">Workouts</string>
+    <string name="shell_health_type_workouts_detail">Marks the heart rate during exercise, so a rise from a run is not read as a rise from a dose.</string>
+    <string name="shell_health_type_weight">Weight</string>
+    <string name="shell_health_type_weight_detail">Scales the dose models. The newest reading is used.</string>
+    <string name="shell_health_body_weight">Body weight</string>
+    <string name="shell_health_body_weight_detail">Piru scales every dose model by this — how fast a dose is cleared, and how concentrated it is while it is there. A closer number is a closer curve, not a different one.</string>
+    <string name="shell_health_weight_source_manual">You entered this. A reading from Health Connect will not replace it.</string>
+    <string name="shell_health_weight_source_synced">Read from Health Connect. A number you type replaces it.</string>
+    <string name="shell_health_weight_source_estimated">Not set. The model uses a 60 kg reference until you give it one.</string>
+    <string name="shell_health_use_reading">Use the reading from Health Connect (%1$.1f kg)</string>
+    <string name="shell_health_weight_value">%1$.1f kg</string>
+    <string name="shell_health_no_reading_title">If a reading never appears</string>
+    <string name="shell_health_no_reading_body">Piru sees only what other apps have written into Health Connect. If your watch syncs to an app that does not write there, nothing Piru does will make those numbers show up.</string>
+    <string name="shell_health_disclaimer">Readings are shown as the other app recorded them. Piru does not verify them. Not medical advice.</string>
+
+    <!-- ==================== Settings: notifications ==================== -->
+
+    <string name="shell_notif_permission">Permission</string>
+    <string name="shell_notif_authorized">Piru may send notifications.</string>
+    <string name="shell_notif_not_determined">Piru has not asked yet. Nothing below will arrive until it may.</string>
+    <string name="shell_notif_denied">Notifications are off for Piru. Nothing below will arrive.</string>
+    <string name="shell_notif_allow">Allow notifications</string>
+    <string name="shell_notif_all">All notifications</string>
+    <string name="shell_notif_pause_all">Pause all</string>
+    <string name="shell_notif_pause_all_detail">Stops everything without losing the choices below.</string>
+    <string name="shell_notif_group_session">Session Alerts</string>
+    <string name="shell_notif_group_session_detail">Hydration and wind-down nudges, onset and peak cues, and check-ins while something you logged is still active.</string>
+    <string name="shell_notif_group_meds">Med Reminders</string>
+    <string name="shell_notif_group_meds_detail">Reminders at each routine\'s time, and a re-ask a little later if it has not been logged.</string>
+    <string name="shell_notif_ask_again">Ask again</string>
+    <string name="shell_notif_ask_again_off">Off — a reminder that has not been logged is not asked about again.</string>
+    <string name="shell_notif_ask_again_schedule">A re-ask at %1$s after each reminder.</string>
+    <!-- One entry of the cadence list that goes into the string above: "+10m". -->
+    <string name="shell_notif_reask_minutes">+%1$dm</string>
+    <string name="shell_notif_add_reask">Add re-ask</string>
+    <string name="shell_notif_remove_last">Remove last</string>
+    <string name="shell_notif_turn_off">Turn off</string>
+    <string name="shell_notif_group_safety">Safety &amp; Supplies</string>
+    <string name="shell_notif_group_safety_detail">A heads-up when one substance\'s daily total climbs into a heavy range, or when tracked stock runs low.</string>
+    <string name="shell_notif_quiet_hours">Quiet hours</string>
+    <string name="shell_notif_quiet_hours_detail">Reminders whose time falls inside the window are not sent. The cumulative dose warning is never silenced — it is the one that has to arrive.</string>
+    <string name="shell_notif_quiet_start">Start</string>
+    <string name="shell_notif_quiet_end">End</string>
+    <string name="shell_notif_time_sensitive">Time Sensitive</string>
+    <string name="shell_notif_time_sensitive_body">iOS lets a notification break through Focus. Android has no equivalent: overriding Do Not Disturb needs a system-wide permission that also lets an app read and rewrite your DND rules, and Piru does not ask for that. Reminders about doses you logged still arrive at their time, as ordinary notifications.</string>
+    <string name="shell_notif_type_hydration">Hydration Reminders</string>
+    <string name="shell_notif_type_hydration_detail">A water reminder about an hour in, and one when the effect starts to fade.</string>
+    <string name="shell_notif_type_sleep">Sleep Reminders</string>
+    <string name="shell_notif_type_sleep_detail">A wind-down nudge after a long session on something that keeps you up.</string>
+    <string name="shell_notif_type_phase">Phase Alerts</string>
+    <string name="shell_notif_type_phase_detail">Onset, come-up and peak, timed from the dose\'s own modelled curve.</string>
+    <string name="shell_notif_type_cumulative">Cumulative Dose Warnings</string>
+    <string name="shell_notif_type_cumulative_detail">When one substance\'s total over twelve hours reaches the heavy range.</string>
+    <string name="shell_notif_type_routine_detail">At the times you set for each medication.</string>
+    <string name="shell_notif_type_follow_up">Ask Again</string>
+    <string name="shell_notif_type_follow_up_detail">A question a little later if a reminder has not been logged.</string>
+    <string name="shell_notif_type_inventory">Low Stock Alerts</string>
+    <string name="shell_notif_type_inventory_detail">When a tracked supply crosses its low-stock threshold.</string>
+    <string name="shell_notif_type_check_in">Check-ins</string>
+    <string name="shell_notif_type_check_in_detail">A prompt to note how a session is going, on sessions you turn it on for.</string>
+
+    <!-- ==================== Settings: data and backup ==================== -->
+
+    <string name="shell_data_export_failed">Export Failed</string>
+    <string name="shell_data_export_write_failed">The file could not be written to the location you chose.</string>
+    <string name="shell_data_export_build_failed">The export could not be built.</string>
+    <string name="shell_data_export_encrypted_build_failed">The encrypted backup could not be built.</string>
+    <string name="shell_data_import_failed">Import Failed</string>
+    <string name="shell_data_file_unreadable">The file could not be read.</string>
+    <string name="shell_data_device_key_title">Can\'t Open This Backup</string>
+    <string name="shell_data_device_key_body">This is a device-key backup, made by the iOS app with a key kept in your iCloud Keychain. The key is not in the file, and Android has no equivalent store for it, so this build can\'t open it. Its passphrase backups open normally.</string>
+    <string name="shell_data_restore_failed">Restore Failed</string>
+    <string name="shell_data_snapshot_failed">A recovery copy of your current data could not be written, so nothing was replaced.</string>
+    <string name="shell_data_restore_complete">Restore Complete</string>
+    <string name="shell_data_import_complete">Import Complete</string>
+    <string name="shell_data_copy_unreadable">That copy could not be read.</string>
+    <string name="shell_data_export_title">Export</string>
+    <string name="shell_data_export_piru">Piru Backup</string>
+    <string name="shell_data_export_piru_detail">A complete backup you can restore into Piru</string>
+    <string name="shell_data_export_psywiki">PsychonautWiki Format</string>
+    <string name="shell_data_export_psywiki_detail">For importing into the PsychonautWiki app. Plain JSON, and it does not carry inventory, favorites or sessions\' notes.</string>
+    <string name="shell_data_export_encrypted">Encrypted Backup</string>
+    <string name="shell_data_export_encrypted_detail">Passphrase-protected — save or send it anywhere</string>
+    <string name="shell_data_passphrase_wrong">That passphrase did not open this backup.</string>
+    <string name="shell_data_device_key_unsupported">This build can\'t open a device-key backup.</string>
+    <string name="shell_data_not_a_backup">This file is not a readable Piru backup.</string>
+    <string name="shell_data_restore_title">Restore Backup</string>
+    <string name="shell_data_restore_replace_prefix">This replaces your current data with the copy taken %1$s.</string>
+    <string name="shell_data_restore_strategy">Merge keeps your current entries and adds the backup\'s. Replace deletes your current data first (a recovery copy is taken automatically) and restores only the backup.</string>
+    <string name="shell_data_merge">Merge With Current Data</string>
+    <string name="shell_data_replace">Replace Everything</string>
+    <string name="shell_data_delete_title">Delete Everything</string>
+    <string name="shell_data_delete_body">This deletes your journal, profile, schedules, inventory, custom presets and local recovery copies. Exported files and device backups are not affected.</string>
+    <string name="shell_data_delete_failed">Delete Failed</string>
+    <string name="shell_data_delete_failed_body">The data could not be deleted.</string>
+    <string name="shell_data_on_device">On This Device</string>
+    <string name="shell_data_on_device_footer">Everything Piru stores in the app on this device. Device backups made by your phone\'s own settings include it.</string>
+    <string name="shell_data_count_entries">Entries</string>
+    <string name="shell_data_count_sessions">Sessions</string>
+    <string name="shell_data_count_meds">Daily Medications</string>
+    <string name="shell_data_count_quicklog">Quick-Log Shortcuts</string>
+    <string name="shell_data_count_favorites">Favorites</string>
+    <string name="shell_data_count_inventory">Inventory</string>
+    <string name="shell_data_count_custom_colours">Custom Colours</string>
+    <string name="shell_data_count_store_size">Store Size</string>
+    <string name="shell_data_bytes">%1$d bytes</string>
+    <string name="shell_data_export_import">Export &amp; Import</string>
+    <string name="shell_data_export_import_footer">Piru and PsychonautWiki files are plain, unencrypted JSON. Imports add to your journal and skip duplicates. Encrypted restores can merge or replace. Inventory is included in Piru and encrypted backups, but not in PsychonautWiki files.\n\nAutomatic backup is not available here. On iOS it writes an encrypted copy to your private iCloud Drive whenever you leave the app; Android has no equivalent, so backups are made here when you make them.</string>
+    <string name="shell_data_export_row">Export…</string>
+    <string name="shell_data_export_row_detail">Piru, PsychonautWiki, or an encrypted backup</string>
+    <string name="shell_data_import_row">Import…</string>
+    <string name="shell_data_import_row_detail">A Piru or PsychonautWiki file, or an encrypted backup</string>
+    <string name="shell_data_substance_db">Substance Database</string>
+    <string name="shell_data_substance_db_footer">Which source wins when they disagree. The source-priority editor is not in this build; the bundled catalog supplies each substance\'s own sources, listed on its detail screen.</string>
+    <string name="shell_data_substances_in_catalog">Substances in the bundled catalog</string>
+    <string name="shell_data_browse_library">Browse it from the Library tab.</string>
+    <string name="shell_data_how_encryption">How Encryption Works</string>
+    <string name="shell_data_enc_strong">Strong encryption</string>
+    <string name="shell_data_enc_strong_detail">Sealed with AES-256-GCM. Tampering is detected and refused.</string>
+    <string name="shell_data_enc_passphrase">Passphrase backups</string>
+    <string name="shell_data_enc_passphrase_detail">Encrypted exports turn your passphrase into a key with 600,000 rounds of PBKDF2. Piru keeps no copy of the passphrase and cannot recover it. Plain exports are unencrypted.</string>
+    <string name="shell_data_enc_snapshot">Restores keep a snapshot</string>
+    <string name="shell_data_enc_snapshot_detail">Replacing your data on restore takes a recoverable copy first.</string>
+    <string name="shell_data_enc_device_key">Device-key backups don\'t open here</string>
+    <string name="shell_data_enc_device_key_detail">The iOS app can also seal a backup with a key it keeps in your iCloud Keychain. That key never enters the file, and Android has no equivalent key store, so this build recognises those backups and refuses them rather than failing with what looks like a wrong passphrase.</string>
+    <string name="shell_data_recoverable">Recoverable Copies</string>
+    <string name="shell_data_recoverable_footer">Copies taken before a restore, or before Delete Everything, appear here ready to restore. Piru never restores one by itself: a copy you asked for exists so that a delete stays deleted.</string>
+    <string name="shell_data_checking_copies">Checking for recoverable copies…</string>
+    <string name="shell_data_no_copies">No recoverable copies on this device.</string>
+    <string name="shell_data_automatic_suffix"> (automatic)</string>
+    <string name="shell_data_records">%1$d records</string>
+    <string name="shell_data_unreadable">unreadable</string>
+    <string name="shell_data_unknown_date">unknown date</string>
+    <string name="shell_data_danger_zone">Danger Zone</string>
+    <string name="shell_data_danger_zone_footer">Deletes journal records, profile, schedules, inventory, custom presets and local recovery copies.</string>
+
+    <!-- What an import did. A count of zero is a normal answer, not a failure. -->
+    <string name="shell_data_import_nothing_new">Nothing new was added — everything in the file was already here.</string>
+    <string name="shell_data_import_added">Added %1$s.</string>
+    <string name="shell_data_import_entry_one">%1$d entry</string>
+    <string name="shell_data_import_entry_many">%1$d entries</string>
+    <string name="shell_data_import_sessions">%1$d sessions</string>
+    <string name="shell_data_import_medications">%1$d medications</string>
+    <string name="shell_data_import_favorites">%1$d favorites</string>
+    <string name="shell_data_import_unsupported_rows">The file also carries %1$d %2$s, which this build has nowhere to keep.</string>
+    <string name="shell_data_import_unsupported">The file also carries %1$s, which this build has nowhere to keep.</string>
+    <string name="shell_data_section_lab">lab measurements</string>
+    <string name="shell_data_section_units">custom units</string>
+    <string name="shell_data_section_drinks">drink presets</string>
+    <string name="shell_data_section_settings">app settings</string>
+
+    <!-- ==================== Settings: passphrases ==================== -->
+
+    <string name="shell_data_set_passphrase">Set a Passphrase</string>
+    <string name="shell_passphrase">Passphrase</string>
+    <string name="shell_passphrase_confirm">Confirm Passphrase</string>
+    <string name="shell_data_passphrase_warning">If you lose this passphrase, the backup can\'t be recovered. There is no reset.</string>
+    <string name="shell_data_encrypt">Encrypt</string>
+    <string name="shell_passphrase_hint">Use at least %1$d characters. A phrase of several words is stronger and easier to remember than a short password.</string>
+    <string name="shell_passphrase_too_short">Too short — use at least %1$d characters.</string>
+    <string name="shell_passphrase_mismatch">Passphrases don\'t match yet.</string>
+    <string name="shell_passphrase_match">Passphrases match.</string>
+    <string name="shell_data_open_backup_title">Encrypted Backup</string>
+    <string name="shell_data_open_backup_body">This backup is passphrase-protected. Enter the passphrase it was made with.</string>
+    <string name="shell_data_open">Open</string>
+
+    <!-- ==================== Quick log ==================== -->
+
+    <string name="shell_quicklog_title">Quick log</string>
+    <string name="shell_quicklog_substance_label">Substance</string>
+    <string name="shell_quicklog_no_match">Nothing matches “%1$s”. You can still log it — a substance the catalog does not carry is written down as you typed it.</string>
+    <string name="shell_quicklog_stage_anyway">Stage “%1$s” anyway</string>
+    <string name="shell_quicklog_staged">Staged (%1$d)</string>
+    <string name="shell_quicklog_staged_empty">Search for what you took. Emptying the amount logs it as unknown — a record with no number is still a record.</string>
+    <string name="shell_quicklog_amount">Amount</string>
+    <string name="shell_quicklog_unit">Unit</string>
+    <string name="shell_quicklog_remove">Remove</string>
+    <string name="shell_quicklog_now">now</string>
+    <string name="shell_quicklog_minutes_ago">-%1$dm</string>
+    <string name="shell_quicklog_hours_ago">-%1$dh</string>
+    <string name="shell_quicklog_saving">Saving…</string>
+    <string name="shell_quicklog_log_count">Log %1$d</string>
+
+    <!--
+      ==================== Substance detail: binding vocabulary ====================
+
+      `BindingAction` and `BindingAffinity` live in `:core:model`, which is a plain
+      JVM module and cannot hold a resource id — so the detail screen was printing
+      `.wireValue` and `.name.lowercase()` straight onto the page ("reuptakeInhibitor
+      · significant"). These are the reader-facing labels for those two.
+
+      Route, category, and the combination row's three tiers are **not** here:
+      `glass.kagerou.piru.ui.labels.CoreLabels` owns those, and every screen that
+      prints one goes through it — the detail screen and quick log included.
+
+      These stayed in this file rather than moving to `strings_core_vocabulary.xml`
+      on purpose. `zh_from_xcstrings.py` regenerates a whole file by looking each
+      English value up in upstream's catalogue, and of these fourteen four have no
+      upstream entry at all — upstream abbreviates two of them ("PAM"/"NAM"), and
+      the three affinity tiers it never labels, because it draws them as dots — so
+      a move would blank reviewed translations. A fifth, "significant", would come
+      back re-translated: upstream has an unrelated "significant" and the script's
+      last-resort case-insensitive probe finds it. `CoreLabels.bindingAction` and
+      `CoreLabels.bindingAffinity` are the only readers.
+    -->
+
+    <string name="shell_binding_action_agonist">Agonist</string>
+    <string name="shell_binding_action_partial_agonist">Partial agonist</string>
+    <string name="shell_binding_action_antagonist">Antagonist</string>
+    <string name="shell_binding_action_inverse_agonist">Inverse agonist</string>
+    <string name="shell_binding_action_positive_allosteric_modulator">Positive allosteric modulator</string>
+    <string name="shell_binding_action_negative_allosteric_modulator">Negative allosteric modulator</string>
+    <string name="shell_binding_action_reuptake_inhibitor">Reuptake inhibitor</string>
+    <string name="shell_binding_action_releasing_agent">Releasing agent</string>
+    <string name="shell_binding_action_enzyme_inhibitor">Enzyme inhibitor</string>
+    <string name="shell_binding_action_channel_blocker">Channel blocker</string>
+    <string name="shell_binding_action_modulator">Modulator</string>
+    <string name="shell_binding_affinity_weak">weak</string>
+    <string name="shell_binding_affinity_significant">significant</string>
+    <string name="shell_binding_affinity_primary">primary</string>
+
+</resources>

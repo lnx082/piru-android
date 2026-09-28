@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      User-facing copy for the journal and the meds screens.
+
+      One sentence is one resource. The Kotlin these replace assembled sentences
+      by concatenation (`"first half " + "second half"`), which a translator
+      cannot reassemble: Chinese word order is not English word order. The
+      fragments are joined here instead.
+
+      Format specifiers carry their index (`%1$s`, not `%s`) because a
+      translation may reorder the arguments.
+
+      Three things are deliberately absent. Substance names, aliases and brand
+      names are data and live in the catalog's own `localized_names` table. Route
+      wire values (`oral`, `insufflation`) are identifiers. And the route and
+      severity *labels* shown for them are `:core:` vocabulary, so they live in
+      `strings_core_vocabulary.xml` and are read through `ui.labels.CoreLabels` —
+      not here, where each meds screen once kept its own copy of them.
+
+      The `common_` names are the ones shared between the two screens: the cadence
+      ladder and the small set of field labels both screens print. Everything else
+      is prefixed with the area that owns it, because Android's resource namespace
+      is flat and the file split only works if the names cannot collide.
+    -->
+
+    <!-- Shared vocabulary. `frequencyShortLabel` (ui/meds/MedsChrome.kt) and
+         `frequencyLongLabel` (ui/meds/MedsFormControls.kt) resolve these. -->
+    <string name="common_frequency_daily">Daily</string>
+    <string name="common_frequency_weekly">Weekly</string>
+    <string name="common_frequency_monthly">Monthly</string>
+
+    <string name="common_shulgin_scale">Shulgin scale</string>
+
+    <!-- The joiners behind `andList`, which Swift gets from
+         `formatted(.list(type: .and))` and Kotlin has no equivalent for. Two
+         resources rather than one because the separator and the final
+         conjunction are different words in both languages. -->
+    <string name="common_list_and_pair">%1$s and %2$s</string>
+    <string name="common_list_separator">", "</string>
+
+    <string name="common_amount">Amount</string>
+    <string name="common_unit">Unit</string>
+    <string name="common_substance">Substance</string>
+    <string name="common_route">Route</string>
+    <string name="common_note">Note</string>
+    <string name="common_save">Save</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_delete">Delete</string>
+    <string name="common_edit">Edit</string>
+    <string name="common_done">Done</string>
+    <string name="common_unknown">Unknown</string>
+    <string name="common_check_in">Check-in</string>
+    <string name="common_summary">Summary</string>
+
+    <!-- Journal: the root list and the day header. -->
+    <string name="journal_logged_today">%1$d logged today</string>
+    <string name="journal_loading">Loading…</string>
+    <string name="journal_nothing_logged_yet">Nothing logged yet</string>
+    <string name="journal_nothing_logged_blurb">A dose is not a confession. Log one when you want the record, and the curves will follow it.</string>
+    <string name="journal_today">Today</string>
+    <string name="journal_yesterday">Yesterday</string>
+    <string name="journal_no_doses_to_draw">No doses to draw yet.</string>
+
+    <!-- Journal: one entry, read and edited. -->
+    <string name="journal_entry_edit">Edit dose</string>
+    <string name="journal_entry_part_of_session">Part of a session</string>
+    <string name="journal_entry_amount_unknown">Amount unknown</string>
+    <string name="journal_entry_unquantified_note">This dose was logged without a number. That is a real answer rather than a gap — it is left out of the curves and the body-load estimate, and kept in the record.</string>
+    <string name="journal_entry_saved">Saved.</string>
+    <string name="journal_entry_gone">That dose is gone.</string>
+    <string name="journal_label_salt">Salt</string>
+    <string name="journal_label_isomer">Isomer</string>
+    <string name="journal_label_release">Release</string>
+    <string name="journal_label_product">Product</string>
+
+    <!-- Journal: a session. -->
+    <string name="journal_session_gone">That session is gone.</string>
+    <string name="journal_doses_heading">Doses</string>
+    <string name="journal_session_duration">%1$d h %2$d m</string>
+    <plurals name="journal_session_dose_count">
+        <item quantity="one">%1$d dose</item>
+        <item quantity="other">%1$d doses</item>
+    </plurals>
+
+    <!-- Journal: notes and check-ins. A check-in is a note that says why it
+         exists, which is what the timeline colours and an export states. -->
+    <string name="journal_session_notes_heading">Notes &amp; check-ins</string>
+    <string name="journal_session_scheduled_check_ins">Scheduled check-ins</string>
+    <string name="journal_scale_mood">Mood</string>
+    <string name="journal_scale_energy">Energy</string>
+    <string name="journal_scale_social">Social</string>
+    <string name="journal_note_mood">mood %1$s</string>
+    <string name="journal_note_energy">energy %1$s</string>
+    <string name="journal_note_social">social %1$s</string>
+    <string name="journal_note_worked">worked</string>
+    <string name="journal_note_didnt_work">didn\'t work</string>
+    <string name="journal_note_prompt">What\'s happening</string>
+    <string name="journal_note_save">Save note</string>
+    <string name="journal_note_check_in">Check in</string>
+    <string name="journal_note_add">Add a note</string>
+    <string name="journal_note_did_its_job">Did its job</string>
+    <string name="journal_note_didnt">Didn\'t</string>
+
+    <!-- A scheduled check-in's offset from the session start, as a compact
+         "+1h30m". Three shapes because the two zero cases would otherwise
+         print a zero that means nothing. -->
+    <string name="journal_offset_hours">+%1$dh</string>
+    <string name="journal_offset_minutes">+%1$dm</string>
+    <string name="journal_offset_hours_minutes">+%1$dh%2$dm</string>
+
+    <!-- Meds: the hub and the card. -->
+    <string name="meds_my_meds">My Meds</string>
+    <string name="meds_add_a_med">Add a Med</string>
+    <string name="meds_edit_med">Edit Med</string>
+    <string name="meds_delete_med">Delete Med</string>
+    <string name="meds_delete_med_question">Delete this med?</string>
+    <string name="meds_delete_med_consequence">Reminders and adherence tracking stop. Existing entries stay in your journal.</string>
+    <string name="meds_no_meds_yet">No Meds Yet</string>
+    <string name="meds_no_meds_blurb">Keep track of what you take and when — one tap to set up gentle reminders. Prescriptions, supplements, vitamins: anything on a schedule.</string>
+    <string name="meds_card_empty_blurb">Add a medication to schedule it, get a reminder at the times you set, and see how consistently you have been taking it.</string>
+    <string name="meds_notification_settings">Notification Settings</string>
+    <string name="meds_quiet_chip">quiet</string>
+    <string name="meds_supplements">Supplements</string>
+    <string name="meds_take_all">Take All</string>
+    <string name="meds_skipped">Skipped</string>
+    <string name="meds_due_chip">due</string>
+    <string name="meds_days_logged">%1$d days logged</string>
+    <string name="meds_taken_of_total">%1$d of %2$d taken</string>
+
+    <!-- Meds: the time-of-day groups. The heading and the clock bounds the
+         group means, which is a reading of a clock the user already set. -->
+    <string name="meds_time_group_morning">Morning</string>
+    <string name="meds_time_group_afternoon">Afternoon</string>
+    <string name="meds_time_group_evening">Evening</string>
+    <string name="meds_time_group_night">Night</string>
+    <string name="meds_time_group_anytime">Anytime</string>
+    <string name="meds_time_group_as_needed">As needed</string>
+    <string name="meds_time_range_morning">before 12:00</string>
+    <string name="meds_time_range_afternoon">12:00 – 17:00</string>
+    <string name="meds_time_range_evening">17:00 – 21:00</string>
+    <string name="meds_time_range_night">after 21:00</string>
+    <string name="meds_time_range_anytime">no set time</string>
+    <string name="meds_time_range_as_needed">no schedule</string>
+
+    <!-- Meds: a row's one-line summary. Each is one resource because the
+         clause order differs by language — the "also …" tail in particular
+         cannot be appended to a translated prefix. -->
+    <string name="meds_row_subtitle_times">%1$s · %2$s</string>
+    <string name="meds_row_subtitle_also">%1$s · also %2$s</string>
+    <string name="meds_row_subtitle_as_needed">%1$s · as needed</string>
+    <string name="meds_row_subtitle_up_to_daily">%1$s · up to %2$d× daily</string>
+    <string name="meds_row_subtitle_anytime">%1$s · anytime</string>
+    <string name="meds_row_subtitle_daily_count">%1$s · %2$d× daily</string>
+    <string name="meds_schedule_summary_dose_route">%1$s · %2$s</string>
+    <string name="meds_dose_route_dash">%1$s — %2$s</string>
+
+    <!-- Meds: the cadence ladder. The short form is a row subtitle; the long
+         form is the schedule picker, which asks the question in full. -->
+    <string name="meds_frequency_short_every_2_days">Every 2 days</string>
+    <string name="meds_frequency_short_biweekly">Biweekly</string>
+    <string name="meds_frequency_short_custom_days">Custom days</string>
+    <string name="meds_frequency_long_every_other_day">Every other day</string>
+    <string name="meds_frequency_long_every_two_weeks">Every two weeks</string>
+    <string name="meds_frequency_long_specific_days">Specific days</string>
+
+    <!-- Meds: the info lines under the card's rows. -->
+    <string name="meds_restock_line">%1$s · %2$d days left</string>
+    <string name="meds_next_due_line">Next: %1$s at %2$s</string>
+    <string name="meds_missed_multi">Yesterday\'s %1$s weren\'t logged</string>
+    <string name="meds_missed_single">Yesterday\'s %1$s wasn\'t logged</string>
+    <string name="meds_missed_morning">Yesterday\'s morning dose of %1$s wasn\'t logged</string>
+    <string name="meds_missed_afternoon">Yesterday\'s afternoon dose of %1$s wasn\'t logged</string>
+    <string name="meds_missed_evening">Yesterday\'s evening dose of %1$s wasn\'t logged</string>
+    <string name="meds_missed_night">Yesterday\'s night dose of %1$s wasn\'t logged</string>
+
+    <!-- Meds: the form and the detail screen. -->
+    <string name="meds_section_med">Med</string>
+    <string name="meds_section_dosage">Dosage</string>
+    <string name="meds_section_schedule">Schedule</string>
+    <string name="meds_section_times">Times</string>
+    <string name="meds_section_reminders">Reminders</string>
+    <string name="meds_days_label">Days</string>
+    <string name="meds_remind_me">Remind Me</string>
+    <string name="meds_quiet_med">Quiet med</string>
+    <string name="meds_quiet_med_footer">Grouped under Supplements, off the timeline graphs. Reminders are silent.</string>
+    <string name="meds_starting_from">Starting from</string>
+    <string name="meds_up_to_daily_limit">Up to %1$d× daily</string>
+    <string name="meds_no_daily_limit">No daily limit entered</string>
+    <string name="meds_add_a_time">+ Add a Time</string>
+    <string name="meds_add_another_time">+ Add Another Time</string>
+    <string name="meds_minutes_short">%1$d min</string>
+    <string name="meds_matched_alias">matched \"%1$s\"</string>
+    <string name="meds_use_as_typed">Use \"%1$s\" as typed</string>
+
+    <string name="meds_footer_checked_off">Checked off by an entry for the same substance and route.</string>
+    <string name="meds_footer_never_missed">Never marked missed. A daily limit feeds the cumulative dose warnings.</string>
+    <string name="meds_footer_select_a_day">Select at least one day.</string>
+    <string name="meds_footer_no_set_time">No set time — this med still counts toward adherence once per due day.</string>
+    <string name="meds_footer_ask_again">A reminder at each time. If you don\'t log it, Piru asks again %1$s later.</string>
+    <string name="meds_footer_kick_in">Kick-in and wear-off come from this med\'s own duration data — the same model the timeline draws. An estimate.</string>
+    <string name="meds_ask_again_label">Ask Again</string>
+    <string name="meds_ask_again_footer">Ask Again sends another reminder if a dose isn\'t logged — \"Default\" uses the intervals in Notification Settings.</string>
+    <string name="meds_ask_again_default">Default</string>
+    <string name="meds_ask_again_off">Off</string>
+    <string name="meds_ask_again_ten">10 min later</string>
+    <string name="meds_ask_again_ten_thirty">10 and 30 min later</string>
+
+    <!-- Meds: what a chosen time does, from the same duration model the
+         timeline draws. Reference, never instruction. -->
+    <string name="meds_consequence_onset">Estimated onset ~%1$s</string>
+    <string name="meds_consequence_onset_and_wear_off">Estimated onset ~%1$s · easing off ~%2$s</string>
+    <string name="meds_consequence_effects_end">Modeled effects end ~%1$s</string>
+    <string name="meds_consequence_after_bedtime">Modeled effects end ~%1$s — after most bedtimes.</string>
+
+    <!-- Meds: logging a whole category at once. -->
+    <string name="meds_log_meds">Log Meds</string>
+    <string name="meds_log_category">Log %1$s</string>
+    <string name="meds_log_toggle_off_hint">Toggle off any you don\'t want to log today</string>
+    <string name="meds_saving">Saving…</string>
+    <plurals name="meds_log_items">
+        <item quantity="one">Log %1$d Item</item>
+        <item quantity="other">Log %1$d Items</item>
+    </plurals>
+    <string name="meds_interaction_warning">Interaction Warning</string>
+    <plurals name="meds_interactions_detected">
+        <item quantity="one">%1$d interaction detected</item>
+        <item quantity="other">%1$d interactions detected</item>
+    </plurals>
+    <string name="meds_log_anyway">Log Anyway</string>
+
+    <!-- Meds: the location field. What this build can do, and what the full
+         picker would cost — said plainly rather than left to be discovered. -->
+    <string name="meds_location">Location</string>
+    <string name="meds_no_map_title">No map, no place search</string>
+    <string name="meds_no_map_blurb">This build has no map and cannot look up an address or find your current location. A map picker needs the Google Maps SDK, a Places API key on a billing account, and the location permission — none of which this build carries. You can still name the place below, and the dose already records the time from the device clock.</string>
+    <string name="meds_name_the_place">Name the place</string>
+    <string name="meds_place_label">Place</string>
+    <string name="meds_use_this_name">Use This Name</string>
+    <string name="meds_recents">Recents</string>
+</resources>

@@ -50,6 +50,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
@@ -57,14 +58,19 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.engine.SessionDay
 import glass.kagerou.piru.model.P3Color
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.labels.CoreLabels
+import glass.kagerou.piru.ui.labels.appLocale
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.theme.PiruTheme
+import java.time.DayOfWeek
 import java.time.Instant
+import java.time.Month
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -190,10 +196,9 @@ fun UsageScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     ) {
         item {
             Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Usage", style = MaterialTheme.typography.headlineSmall)
+                Text(stringResource(R.string.toolsb_usage_title), style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    "How often, how much, and when. Counted from your own entries — " +
-                        "nothing here compares you to anyone else.",
+                    stringResource(R.string.toolsb_usage_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -216,7 +221,7 @@ fun UsageScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
             item {
                 PiruCard(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("The log could not be read", style = MaterialTheme.typography.titleSmall)
+                        Text(stringResource(R.string.toolsb_usage_error_title), style = MaterialTheme.typography.titleSmall)
                         Text(message, style = MaterialTheme.typography.bodySmall, color = PiruTheme.colors.dangerText)
                     }
                 }
@@ -224,24 +229,28 @@ fun UsageScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         }
 
         if (failure == null && !loaded) {
-            item { LoadingLine("Reading your log…") }
+            item { LoadingLine(stringResource(R.string.toolsb_usage_loading_entries)) }
         }
         if (failure == null && loaded && entries.isEmpty()) {
             item {
                 InsightsEmptyPanel(
-                    "No logged entries",
-                    "Log some entries to see usage stats. Every card here is a reading of " +
-                        "what you have already written down.",
+                    stringResource(R.string.toolsb_no_logged_entries),
+                    stringResource(R.string.toolsb_usage_empty_detail),
                 )
             }
         }
 
         val shown = result
         if (failure == null && loaded && entries.isNotEmpty() && shown == null) {
-            item { LoadingLine("Working out the shape of your log…") }
+            item { LoadingLine(stringResource(R.string.toolsb_usage_loading_analysis)) }
         }
         if (shown != null && shown.isEmpty) {
-            item { InsightsEmptyPanel("Nothing in this range", "Pick a longer time range to see your history.") }
+            item {
+                InsightsEmptyPanel(
+                    stringResource(R.string.toolsb_usage_empty_range_title),
+                    stringResource(R.string.toolsb_usage_empty_range_detail),
+                )
+            }
         }
 
         if (shown != null && !shown.isEmpty) {
@@ -285,7 +294,7 @@ private fun UsageSections(
         RegularitySection(result.regularity, style)
         RouteSection(result.routes, style, metric)
         Text(
-            "Counts and sums over your own log. Not medical advice.",
+            stringResource(R.string.toolsb_usage_footnote),
             style = MaterialTheme.typography.bodySmall,
             color = PiruTheme.colors.secondaryLabel,
             modifier = Modifier.padding(bottom = 8.dp),
@@ -364,7 +373,7 @@ private fun UsageFilterBar(
         items(UsageTimeRange.entries.size) { index ->
             val option = UsageTimeRange.entries[index]
             InsightsFilterPill(
-                label = option.displayName,
+                label = stringResource(option.displayNameRes),
                 color = accent,
                 isSelected = option == range,
                 showDot = false,
@@ -374,7 +383,11 @@ private fun UsageFilterBar(
         items(2) { index ->
             val option = if (index == 0) UsageRankMetric.COMMON_DOSES else UsageRankMetric.ENTRIES
             InsightsFilterPill(
-                label = if (option == UsageRankMetric.COMMON_DOSES) "Common doses" else "Entries",
+                label = if (option == UsageRankMetric.COMMON_DOSES) {
+                    stringResource(R.string.toolsb_usage_metric_common_doses)
+                } else {
+                    stringResource(R.string.toolsb_usage_metric_entries)
+                },
                 color = accent,
                 isSelected = option == metric,
                 showDot = false,
@@ -384,7 +397,11 @@ private fun UsageFilterBar(
         if (offersSubstances) {
             item {
                 InsightsFilterPill(
-                    label = if (substanceCount > 0) "Substances ($substanceCount)" else "All substances",
+                    label = if (substanceCount > 0) {
+                        stringResource(R.string.toolsb_usage_filter_substances_count, substanceCount)
+                    } else {
+                        stringResource(R.string.toolsb_usage_filter_all_substances)
+                    },
                     color = accent,
                     isSelected = substanceCount > 0,
                     showDot = false,
@@ -435,15 +452,25 @@ private fun SubstanceFilterSheetContent(
 
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Substances", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(
+                stringResource(R.string.toolsb_substances),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.weight(1f),
+            )
             TextButton(onClick = { apply(if (allSelected) emptySet() else allNames) }) {
-                Text(if (allSelected) "Deselect all" else "Select all")
+                Text(
+                    if (allSelected) {
+                        stringResource(R.string.toolsb_deselect_all)
+                    } else {
+                        stringResource(R.string.toolsb_select_all)
+                    },
+                )
             }
         }
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
-            label = { Text("Search substances") },
+            label = { Text(stringResource(R.string.toolsb_usage_filter_search)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -455,7 +482,7 @@ private fun SubstanceFilterSheetContent(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            UsageAxes.category(categoryIndex).displayLabel,
+                            CoreLabels.category(UsageAxes.category(categoryIndex)),
                             style = MaterialTheme.typography.labelLarge,
                             modifier = Modifier.weight(1f),
                         )
@@ -464,7 +491,13 @@ private fun SubstanceFilterSheetContent(
                         val names = items.map { it.name }
                         val allOn = names.all { shown.contains(it) }
                         TextButton(onClick = { apply(if (allOn) shown - names.toSet() else shown + names.toSet()) }) {
-                            Text(if (allOn) "None" else "All")
+                            Text(
+                                if (allOn) {
+                                    stringResource(R.string.toolsb_usage_filter_none)
+                                } else {
+                                    stringResource(R.string.toolsb_usage_filter_all)
+                                },
+                            )
                         }
                     }
                 }
@@ -484,7 +517,7 @@ private fun SubstanceFilterSheetContent(
                             modifier = Modifier.weight(1f),
                         )
                         Text(
-                            if (isOn) "Included" else "",
+                            if (isOn) stringResource(R.string.toolsb_usage_filter_included) else "",
                             style = MaterialTheme.typography.labelSmall,
                             color = PiruTheme.colors.accent,
                         )
@@ -511,17 +544,17 @@ private fun OverviewSection(overview: UsageOverview, range: UsageTimeRange) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OverviewCard(
-                title = "This period",
+                title = stringResource(R.string.toolsb_usage_overview_this_period),
                 value = overview.entryCount.toString(),
                 caption = changeText(overview, range),
                 modifier = Modifier.weight(1f),
                 art = { Sparkline(overview.sparkline) },
             )
             OverviewCard(
-                title = "Substances",
+                title = stringResource(R.string.toolsb_substances),
                 value = overview.uniqueSubstances.toString(),
                 caption = if (overview.newSubstances > 0) {
-                    "${overview.newSubstances} first recorded this period"
+                    stringResource(R.string.toolsb_usage_overview_new_substances, overview.newSubstances)
                 } else {
                     null
                 },
@@ -530,18 +563,21 @@ private fun OverviewSection(overview: UsageOverview, range: UsageTimeRange) {
         }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OverviewCard(
-                title = "Per day",
+                title = stringResource(R.string.toolsb_usage_overview_per_day),
                 value = InsightsFormat.oneDecimal(overview.averagePerDay),
-                caption = overview.busiestWeekday?.let { "Most entries: ${weekdayName(it)}" },
+                caption = overview.busiestWeekday?.let {
+                    stringResource(R.string.toolsb_usage_overview_most_entries, weekdayName(it))
+                },
                 modifier = Modifier.weight(1f),
             )
             OverviewCard(
-                title = "Dose level",
+                title = stringResource(R.string.toolsb_usage_overview_dose_level),
                 value = overview.doseIntensity?.let { InsightsFormat.percent(it) } ?: "—",
                 caption = when {
-                    overview.doseIntensity == null -> "No dose ladders matched"
-                    overview.heavyCount > 0 -> "at common or above · ${overview.heavyCount} heavy"
-                    else -> "at common or above"
+                    overview.doseIntensity == null -> stringResource(R.string.toolsb_usage_overview_no_ladders)
+                    overview.heavyCount > 0 ->
+                        stringResource(R.string.toolsb_usage_overview_common_or_above_heavy, overview.heavyCount)
+                    else -> stringResource(R.string.toolsb_usage_overview_common_or_above)
                 },
                 badge = overview.doseIntensity?.let { intensityAccent(it) },
                 modifier = Modifier.weight(1f),
@@ -557,14 +593,22 @@ private fun OverviewSection(overview: UsageOverview, range: UsageTimeRange) {
  * "good" or "bad" here — this screen is a record, not a scoreboard — so only the
  * arrow carries the direction.
  */
+@Composable
 private fun changeText(overview: UsageOverview, range: UsageTimeRange): String? {
     val change = overview.percentChange
     if (change == null) {
-        return if (overview.previousEntryCount != null) "No entries in the previous period" else null
+        return if (overview.previousEntryCount != null) {
+            stringResource(R.string.toolsb_usage_overview_no_previous)
+        } else {
+            null
+        }
     }
     val percent = Math.round(abs(change) * 100)
     val arrow = if (change >= 0) "↑" else "↓"
-    return "$arrow $percent% vs previous ${range.displayName}"
+    // The window's own label, resolved rather than `UsageTimeRange.displayName`,
+    // which is the English spelling.
+    val rangeLabel = stringResource(range.displayNameRes)
+    return stringResource(R.string.toolsb_usage_overview_change, arrow, percent, rangeLabel)
 }
 
 @Composable
@@ -653,7 +697,7 @@ private fun HeatmapSection(
 
     LaunchedEffect(heatmap.weekStarts.firstOrNull()) { selectedDay = null }
 
-    InsightsSectionCard(title = "Activity") {
+    InsightsSectionCard(title = stringResource(R.string.toolsb_usage_section_activity)) {
         if (categories.size > 1) {
             InsightsCategoryFilterBar(categories, categoryFilter) { categoryFilter = it }
         }
@@ -884,14 +928,14 @@ private fun HourHistogram(
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
-                "Hour of day",
+                stringResource(R.string.toolsb_usage_hour_of_day),
                 style = MaterialTheme.typography.labelMedium,
                 color = PiruTheme.colors.secondaryLabel,
                 modifier = Modifier.weight(1f),
             )
             if (selectedDay != null) {
                 Text(
-                    "${shortDate(selectedDay)}  ✕",
+                    "${shortDate(selectedDay, LocalContext.current.getString(R.string.datefmt_day_month), appLocale())}  ✕",
                     style = MaterialTheme.typography.labelSmall,
                     color = PiruTheme.colors.secondaryLabel,
                     modifier = Modifier.clickable(onClick = onClearDay),
@@ -968,11 +1012,14 @@ private fun TrendsSection(
     // legend can never zero the chart out.
     val shown = visible.ifEmpty { legendTrends }
 
-    InsightsSectionCard(title = "Substance trends", subtitle = trendsSubtitle(metric, range)) {
+    InsightsSectionCard(
+        title = stringResource(R.string.toolsb_usage_section_trends),
+        subtitle = trendsSubtitle(metric, range),
+    ) {
         if (trends.isEmpty()) {
-            CenteredNote("Not enough history yet")
+            CenteredNote(stringResource(R.string.toolsb_usage_trends_no_history))
         } else if (metricTrends.isEmpty()) {
-            CenteredNote("No common dose defined for these substances")
+            CenteredNote(stringResource(R.string.toolsb_usage_trends_no_common_dose))
         } else {
             TrendsChart(
                 series = shown,
@@ -988,7 +1035,7 @@ private fun TrendsSection(
                     val isHidden = hidden.contains(item.substanceIndex)
                     val name = style.name(item.substanceIndex)
                     InsightsFilterPill(
-                        label = if (isHidden) "$name (hidden)" else name,
+                        label = if (isHidden) stringResource(R.string.toolsb_usage_trends_hidden_suffix, name) else name,
                         color = style.color(item.substanceIndex),
                         isSelected = !isHidden,
                         onClick = {
@@ -999,7 +1046,11 @@ private fun TrendsSection(
             }
             if (metricTrends.size > UsageAnalytics.DEFAULT_TREND_SUBSTANCES) {
                 Text(
-                    if (showsAll) "Show fewer" else "Show all ${metricTrends.size}",
+                    if (showsAll) {
+                        stringResource(R.string.toolsb_usage_trends_show_fewer)
+                    } else {
+                        stringResource(R.string.toolsb_usage_trends_show_all, metricTrends.size)
+                    },
                     style = MaterialTheme.typography.labelMedium,
                     color = PiruTheme.colors.accent,
                     modifier = Modifier.clickable { showsAll = !showsAll },
@@ -1009,14 +1060,20 @@ private fun TrendsSection(
     }
 }
 
+@Composable
 private fun trendsSubtitle(metric: UsageRankMetric, range: UsageTimeRange): String = when {
-    metric == UsageRankMetric.ENTRIES && range == UsageTimeRange.SEVEN_DAYS -> "Entries per day"
-    metric == UsageRankMetric.COMMON_DOSES && range == UsageTimeRange.SEVEN_DAYS -> "Common doses per day"
-    metric == UsageRankMetric.ENTRIES && range == UsageTimeRange.THIRTY_DAYS -> "Entries per week, 7-day rolling average"
+    metric == UsageRankMetric.ENTRIES && range == UsageTimeRange.SEVEN_DAYS ->
+        stringResource(R.string.toolsb_usage_trend_subtitle_entries_per_day)
+    metric == UsageRankMetric.COMMON_DOSES && range == UsageTimeRange.SEVEN_DAYS ->
+        stringResource(R.string.toolsb_usage_trend_subtitle_common_doses_per_day)
+    metric == UsageRankMetric.ENTRIES && range == UsageTimeRange.THIRTY_DAYS ->
+        stringResource(R.string.toolsb_usage_trend_subtitle_entries_per_week_7)
     metric == UsageRankMetric.COMMON_DOSES && range == UsageTimeRange.THIRTY_DAYS ->
-        "Common doses per week, 7-day rolling average"
-    metric == UsageRankMetric.ENTRIES -> "Entries per week, 4-week rolling average"
-    else -> "Common doses per week, 4-week rolling average"
+        stringResource(R.string.toolsb_usage_trend_subtitle_common_doses_per_week_7)
+    metric == UsageRankMetric.ENTRIES ->
+        stringResource(R.string.toolsb_usage_trend_subtitle_entries_per_week_4)
+    else ->
+        stringResource(R.string.toolsb_usage_trend_subtitle_common_doses_per_week_4)
 }
 
 /**
@@ -1121,23 +1178,27 @@ private fun TrendsChart(
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(
-                visibleFrom?.let { shortDate(it) } ?: "",
+                visibleFrom?.let { shortDate(it, LocalContext.current.getString(R.string.datefmt_day_month), appLocale()) } ?: "",
                 style = MaterialTheme.typography.labelSmall,
                 color = PiruTheme.colors.secondaryLabel,
             )
             Text(
-                if (perWeek) "per week" else "per day",
+                if (perWeek) {
+                    stringResource(R.string.toolsb_usage_trends_axis_per_week)
+                } else {
+                    stringResource(R.string.toolsb_usage_trends_axis_per_day)
+                },
                 style = MaterialTheme.typography.labelSmall,
                 color = PiruTheme.colors.secondaryLabel,
             )
             Text(
-                visibleTo?.let { shortDate(it) } ?: "",
+                visibleTo?.let { shortDate(it, LocalContext.current.getString(R.string.datefmt_day_month), appLocale()) } ?: "",
                 style = MaterialTheme.typography.labelSmall,
                 color = PiruTheme.colors.secondaryLabel,
             )
         }
         Text(
-            "Tap for the figure at a date; drag to pan.",
+            stringResource(R.string.toolsb_usage_trends_hint),
             style = MaterialTheme.typography.labelSmall,
             color = PiruTheme.colors.secondaryLabel,
         )
@@ -1165,7 +1226,11 @@ private fun TrendsReadout(
 
     PiruCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(shortDate(date), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+            Text(
+                shortDate(date, stringResource(R.string.datefmt_day_month), appLocale()),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
             for ((index, amount) in rows) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -1174,7 +1239,11 @@ private fun TrendsReadout(
                     InsightsLegendDot(style.color(index), size = 7.dp)
                     Text(style.name(index), style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
                     Text(
-                        "${InsightsFormat.oneDecimal(amount)}${if (perWeek) "/wk" else "/day"}",
+                        if (perWeek) {
+                            stringResource(R.string.toolsb_usage_trends_readout_per_week, InsightsFormat.oneDecimal(amount))
+                        } else {
+                            stringResource(R.string.toolsb_usage_trends_readout_per_day, InsightsFormat.oneDecimal(amount))
+                        },
                         style = MaterialTheme.typography.labelSmall,
                         color = PiruTheme.colors.secondaryLabel,
                     )
@@ -1182,7 +1251,7 @@ private fun TrendsReadout(
             }
             if (rows.isEmpty()) {
                 Text(
-                    "Nothing logged in this window",
+                    stringResource(R.string.toolsb_usage_trends_readout_empty),
                     style = MaterialTheme.typography.labelSmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -1212,7 +1281,7 @@ private fun WeekdaySection(buckets: List<UsageWeekdayBucket>, metric: UsageRankM
     fun average(bucket: UsageWeekdayBucket): Double =
         if (metric == UsageRankMetric.COMMON_DOSES) (bucket.commonAverage ?: 0.0) else bucket.average
 
-    InsightsSectionCard(title = "Day of week") {
+    InsightsSectionCard(title = stringResource(R.string.toolsb_usage_section_weekday)) {
         Box(modifier = Modifier.fillMaxWidth().height(170.dp)) {
             Canvas(Modifier.fillMaxSize()) {
                 val peak = max(buckets.maxOfOrNull { value(it) } ?: 0.0, 0.0001)
@@ -1273,19 +1342,38 @@ private fun DoseLevelSection(
 
     if (breakdown.isLowCoverage) {
         InsightsCollapsibleCard(
-            title = "Dose levels",
-            subtitle = "Under 30% of entries could be placed on a ladder, so this is folded away",
+            title = stringResource(R.string.toolsb_usage_section_dose_levels),
+            subtitle = stringResource(R.string.toolsb_usage_dose_levels_low_coverage),
             storageKey = "usageSection.doseLevels",
             defaultExpanded = false,
         ) {
             DoseLevelContent(breakdown, style, weekly)
         }
     } else {
-        InsightsSectionCard(title = "Dose levels") {
+        InsightsSectionCard(title = stringResource(R.string.toolsb_usage_section_dose_levels)) {
             DoseLevelContent(breakdown, style, weekly)
         }
     }
 }
+
+/**
+ * The ladder's own name for a level.
+ *
+ * `DoseLevel` carries only `wireValue` — "Sub-threshold", "Heavy" — and that
+ * spelling is the only name the model has, so the labels are resources here.
+ * Upstream translates the same six words, so these are not left in English.
+ */
+@Composable
+private fun doseLevelLabel(level: Int): String = stringResource(
+    when (level) {
+        0 -> R.string.toolsb_usage_dose_level_sub
+        1 -> R.string.toolsb_usage_dose_level_threshold
+        2 -> R.string.toolsb_usage_dose_level_light
+        3 -> R.string.toolsb_usage_dose_level_common
+        4 -> R.string.toolsb_usage_dose_level_strong
+        else -> R.string.toolsb_usage_dose_level_heavy
+    },
+)
 
 @Composable
 private fun DoseLevelContent(
@@ -1311,7 +1399,7 @@ private fun DoseLevelContent(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             InsightsFilterPill(
-                label = "All",
+                label = stringResource(R.string.toolsb_usage_filter_all),
                 color = PiruTheme.colors.accent,
                 isSelected = selectedSubstance == null,
                 showDot = false,
@@ -1348,7 +1436,7 @@ private fun DoseLevelContent(
                             .clip(RoundedCornerShape(2.dp))
                             .background(doseLevelAccent(level).copy(alpha = if (dimmed) 0.4f else 1f)),
                     )
-                    Text(UsageAxes.doseLevel(level).wireValue, style = MaterialTheme.typography.labelSmall)
+                    Text(doseLevelLabel(level), style = MaterialTheme.typography.labelSmall)
                     Text(
                         count.toString(),
                         style = MaterialTheme.typography.labelSmall,
@@ -1360,7 +1448,11 @@ private fun DoseLevelContent(
         }
 
         Text(
-            "Based on ${breakdown.resolvedEntries} of ${breakdown.totalEntries} entries with dose data",
+            stringResource(
+                R.string.toolsb_usage_dose_levels_coverage,
+                breakdown.resolvedEntries,
+                breakdown.totalEntries,
+            ),
             style = MaterialTheme.typography.labelSmall,
             color = PiruTheme.colors.secondaryLabel,
         )
@@ -1382,6 +1474,9 @@ private fun DoseLevelChart(
     val labelInk = PiruTheme.colors.secondaryLabel
     val colors = UsageAxes.doseLevelOrder.associateWith { doseLevelAccent(it) }
     val measurer = rememberTextMeasurer()
+    // Resolved here, not inside the draw scope: a string read is a composable
+    // call and `Canvas { }` is a plain lambda.
+    val weeklyLabel = stringResource(R.string.toolsb_usage_dose_levels_axis_weekly)
 
     val first = buckets.minOfOrNull { it.date }
     val last = buckets.maxOfOrNull { it.date }
@@ -1444,7 +1539,7 @@ private fun DoseLevelChart(
             )
             if (weekly) {
                 drawText(
-                    measurer.measure("weekly", TextStyle(fontSize = 10.sp, color = labelInk)),
+                    measurer.measure(weeklyLabel, TextStyle(fontSize = 10.sp, color = labelInk)),
                     topLeft = Offset(2f, 16f),
                 )
             }
@@ -1477,14 +1572,14 @@ private fun CoUseSection(
         style.category(pair.firstIndex) == filter || style.category(pair.secondIndex) == filter
     }
 
-    InsightsCollapsibleCard(title = "Used together", storageKey = "usageSection.coUse") {
+    InsightsCollapsibleCard(title = stringResource(R.string.toolsb_usage_section_co_use), storageKey = "usageSection.coUse") {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             if (categories.size > 1) {
                 InsightsCategoryFilterBar(categories, categoryFilter) { categoryFilter = it }
             }
             if (filtered.isEmpty()) {
                 Text(
-                    "No pairs in this class",
+                    stringResource(R.string.toolsb_usage_co_use_empty),
                     style = MaterialTheme.typography.labelSmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -1510,7 +1605,7 @@ private fun CoUseRow(pair: UsageCoUsePair, style: SubstanceStyle) {
                 modifier = Modifier.weight(1f),
             )
             Text(
-                "${pair.days} days",
+                stringResource(R.string.toolsb_usage_co_use_days, pair.days),
                 style = MaterialTheme.typography.labelSmall,
                 color = PiruTheme.colors.secondaryLabel,
             )
@@ -1540,7 +1635,7 @@ private fun CoUseRow(pair: UsageCoUsePair, style: SubstanceStyle) {
 @Composable
 private fun RegularitySection(rows: List<UsageRegularity>, style: SubstanceStyle) {
     if (rows.isEmpty()) return
-    InsightsCollapsibleCard(title = "Regularity", storageKey = "usageSection.regularity") {
+    InsightsCollapsibleCard(title = stringResource(R.string.toolsb_usage_section_regularity), storageKey = "usageSection.regularity") {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
             for (row in rows) RegularityRow(row, style)
         }
@@ -1563,13 +1658,18 @@ private fun RegularityRow(row: UsageRegularity, style: SubstanceStyle) {
                 Text(
                     // Always one decimal: "every 1.0 days" is upstream's own
                     // wording, and it keeps the phrase grammatical without
-                    // inflecting a fractional noun.
-                    "every ${String.format(Locale.ROOT, "%.1f", row.meanIntervalDays)} days",
+                    // inflecting a fractional noun. The figure is still
+                    // formatted at `Locale.ROOT` and passed as a string, so the
+                    // decimal point does not follow the device's locale.
+                    stringResource(
+                        R.string.toolsb_usage_regularity_every_days,
+                        String.format(Locale.ROOT, "%.1f", row.meanIntervalDays),
+                    ),
                     style = MaterialTheme.typography.labelSmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
                 Text(
-                    row.tier.displayName,
+                    stringResource(row.tier.displayNameRes),
                     style = MaterialTheme.typography.labelSmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -1632,7 +1732,7 @@ private fun RouteSection(
 
     val maxValue = max(ranked.maxOfOrNull { routeValue(it, metric) } ?: 1.0, 0.0001)
 
-    InsightsCollapsibleCard(title = "Most logged", storageKey = "usageSection.routes") {
+    InsightsCollapsibleCard(title = stringResource(R.string.toolsb_usage_section_routes), storageKey = "usageSection.routes") {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             for (row in ranked) RouteRow(row, metric, maxValue, breakdown.routesAreMeaningful, style)
             if (breakdown.routesAreMeaningful) {
@@ -1649,15 +1749,18 @@ private fun RouteSection(
                                     .clip(RoundedCornerShape(2.dp))
                                     .background(routeAccent(route)),
                             )
-                            Text(route.displayName, style = MaterialTheme.typography.labelSmall)
+                            Text(CoreLabels.route(route), style = MaterialTheme.typography.labelSmall)
                         }
                     }
                 }
             }
             if (metric == UsageRankMetric.COMMON_DOSES) {
                 Text(
-                    "Common-dose units count each dose as a multiple of its common dose. " +
-                        "${breakdown.commonDoseSubstances} of ${breakdown.rows.size} substances have one.",
+                    stringResource(
+                        R.string.toolsb_usage_routes_common_dose_note,
+                        breakdown.commonDoseSubstances,
+                        breakdown.rows.size,
+                    ),
                     style = MaterialTheme.typography.labelSmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -1802,26 +1905,44 @@ internal fun rememberViewportState(spanMillis: Double, windowMillis: Double): Ch
 
 // MARK: - Dates
 
-private val SHORT_DATE: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.ROOT)
+/**
+ * A chart label's day. `Locale.ROOT` was wrong here — it pins the month *name* to
+ * English, so a Chinese device read "28 Sep" beside Chinese axis text. The names
+ * come from the app's own resolved locale, which the caller passes in, and the
+ * field order from the resource the caller resolves, because Chinese reads M月d日.
+ */
+private fun shortDate(instant: Instant, pattern: String, locale: Locale): String =
+    DateTimeFormatter.ofPattern(pattern, locale).format(instant.atZone(ZoneId.systemDefault()))
 
-private val WEEKDAY_SHORT = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
-
-private val WEEKDAY_LONG = listOf("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
-
-private val MONTH_SHORT = listOf(
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+/**
+ * Foundation's weekday ladder, `1` = Sunday.
+ *
+ * The names come from the platform rather than a table in this file: a column
+ * header is a word the reader reads, and hardcoding "Mon" would print it on a
+ * Chinese device. `MedsFormControls` reads its weekday ladder the same way.
+ */
+private val WEEKDAYS: List<DayOfWeek> = listOf(
+    DayOfWeek.SUNDAY,
+    DayOfWeek.MONDAY,
+    DayOfWeek.TUESDAY,
+    DayOfWeek.WEDNESDAY,
+    DayOfWeek.THURSDAY,
+    DayOfWeek.FRIDAY,
+    DayOfWeek.SATURDAY,
 )
-
-private fun shortDate(instant: Instant): String = SHORT_DATE.format(instant.atZone(ZoneId.systemDefault()))
 
 private fun monthOf(instant: Instant): Int = instant.atZone(ZoneId.systemDefault()).monthValue
 
-private fun monthLabel(instant: Instant): String = MONTH_SHORT[monthOf(instant) - 1]
+private fun monthLabel(instant: Instant): String =
+    Month.of(monthOf(instant)).getDisplayName(java.time.format.TextStyle.SHORT, Locale.getDefault())
 
 private fun hourLabel(hour: Int): String = String.format(Locale.ROOT, "%02d:00", hour)
 
 /** `1` = Sunday, the Foundation numbering the aggregate works in. */
-private fun shortWeekday(weekday: Int): String = WEEKDAY_SHORT.getOrElse(weekday - 1) { "?" }
+private fun shortWeekday(weekday: Int): String =
+    WEEKDAYS.getOrNull(weekday - 1)
+        ?.getDisplayName(java.time.format.TextStyle.SHORT, Locale.getDefault()) ?: "?"
 
-private fun weekdayName(weekday: Int): String = WEEKDAY_LONG.getOrElse(weekday - 1) { "?" }
+private fun weekdayName(weekday: Int): String =
+    WEEKDAYS.getOrNull(weekday - 1)
+        ?.getDisplayName(java.time.format.TextStyle.FULL, Locale.getDefault()) ?: "?"

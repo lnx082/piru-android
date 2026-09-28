@@ -1,5 +1,6 @@
 package glass.kagerou.piru.ui.insights
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -27,9 +28,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.data.entity.SessionEntity
 import glass.kagerou.piru.data.entity.SessionNoteEntity
@@ -112,24 +115,22 @@ fun FeltPatternsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     ) {
         item {
             Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Felt patterns", style = MaterialTheme.typography.headlineSmall)
+                Text(stringResource(R.string.toolsb_felt_title), style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    "What your own \"did it work?\" answers line up with.",
+                    stringResource(R.string.toolsb_felt_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
             }
         }
 
-        failure?.let { item { InsightsEmptyPanel("The log could not be read", it) } }
+        failure?.let { item { InsightsEmptyPanel(stringResource(R.string.toolsb_felt_error_log_unreadable), it) } }
 
         if (failure == null && loaded && ratedDayCount == 0) {
             item {
                 InsightsEmptyPanel(
-                    "Nothing rated yet",
-                    "A check-in asks whether a dose worked the way it usually does. " +
-                        "After rating a few days, you can compare your answers by dose, " +
-                        "time of day, weekday, and prior caffeine use.",
+                    stringResource(R.string.toolsb_felt_empty_title),
+                    stringResource(R.string.toolsb_felt_empty_detail),
                 )
             }
         }
@@ -140,8 +141,8 @@ fun FeltPatternsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
             item {
                 PiruCard(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        LabelledCount("Days rated", ratedDayCount)
-                        LabelledCount("Substances", substanceCount)
+                        LabelledCount(stringResource(R.string.toolsb_felt_days_rated), ratedDayCount)
+                        LabelledCount(stringResource(R.string.toolsb_substances), substanceCount)
                     }
                 }
             }
@@ -149,9 +150,11 @@ fun FeltPatternsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
             if (notable.isEmpty() && flat.isEmpty()) {
                 item {
                     InsightsEmptyPanel(
-                        "Not enough rated days yet",
-                        "A comparison needs at least ${FeltPatterns.MINIMUM_PER_SIDE} rated days " +
-                            "in each group. With fewer days, one bad week can skew the results.",
+                        stringResource(R.string.toolsb_felt_not_enough_title),
+                        stringResource(
+                            R.string.toolsb_felt_not_enough_detail,
+                            FeltPatterns.MINIMUM_PER_SIDE,
+                        ),
                     )
                 }
             }
@@ -165,8 +168,7 @@ fun FeltPatternsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
 
             item {
                 Text(
-                    "These comparisons use only your own recorded days, with no control " +
-                        "group. A difference does not establish a cause.",
+                    stringResource(R.string.toolsb_felt_footer_note),
                     style = MaterialTheme.typography.labelSmall,
                     color = PiruTheme.colors.secondaryLabel,
                     modifier = Modifier.padding(bottom = 8.dp),
@@ -191,18 +193,15 @@ private fun HeaderRow() {
             verticalAlignment = Alignment.Top,
         ) {
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Compare your rated days", style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(R.string.toolsb_felt_header_title), style = MaterialTheme.typography.labelLarge)
                 Text(
-                    "Each comparison groups your rated days by one factor at a time and " +
-                        "counts how often you rated the dose \"about right\" or more. These " +
-                        "describe your entries; they don't show that a substance, dose, or " +
-                        "timing caused a difference.",
+                    stringResource(R.string.toolsb_felt_header_detail),
                     style = MaterialTheme.typography.bodySmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
             }
             Text(
-                "Experimental",
+                stringResource(R.string.toolsb_felt_badge_experimental),
                 style = MaterialTheme.typography.labelSmall,
                 color = PiruTheme.colors.secondaryLabel,
                 modifier = Modifier
@@ -230,18 +229,22 @@ private fun SplitSection(split: FeltPatterns.Split, isNotable: Boolean) {
     PiruCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(split.variable.title, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
+                Text(
+                    stringResource(split.variable.title),
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.weight(1f),
+                )
                 Text(
                     split.substance,
                     style = MaterialTheme.typography.labelSmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
             }
-            SplitSideRow(split.lowLabel, split.low, isNotable)
-            SplitSideRow(split.highLabel, split.high, isNotable)
+            SplitSideRow(split.lowLabel, split.lowLabelArg, split.low, isNotable)
+            SplitSideRow(split.highLabel, split.highLabelArg, split.high, isNotable)
             if (!isNotable) {
                 Text(
-                    "Both groups have similar ratings.",
+                    stringResource(R.string.toolsb_felt_both_groups_similar),
                     style = MaterialTheme.typography.labelSmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -251,14 +254,19 @@ private fun SplitSection(split: FeltPatterns.Split, isNotable: Boolean) {
 }
 
 @Composable
-private fun SplitSideRow(label: String, tally: FeltPatterns.Tally, isNotable: Boolean) {
+private fun SplitSideRow(
+    @StringRes label: Int,
+    labelArg: String?,
+    tally: FeltPatterns.Tally,
+    isNotable: Boolean,
+) {
     val track = PiruTheme.colors.accent.copy(alpha = 0.18f)
     val fill = if (isNotable) PiruTheme.colors.accent else PiruTheme.colors.secondaryLabel
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+            Text(splitLabel(label, labelArg), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
             Text(
-                "${tally.asExpected} of ${tally.days}",
+                stringResource(R.string.toolsb_felt_tally_of_days, tally.asExpected, tally.days),
                 style = MaterialTheme.typography.labelSmall,
                 color = PiruTheme.colors.secondaryLabel,
             )
@@ -275,6 +283,17 @@ private fun SplitSideRow(label: String, tally: FeltPatterns.Tally, isNotable: Bo
         }
     }
 }
+
+/**
+ * A split's side label with its cut point substituted, where the split has one.
+ *
+ * The cut is a clock time or an amount, so it is data the model carries rather
+ * than copy: [FeltPatterns.Split] holds the format and the value apart, and the
+ * two are joined here, in composition.
+ */
+@Composable
+private fun splitLabel(@StringRes label: Int, labelArg: String?): String =
+    if (labelArg == null) stringResource(label) else stringResource(label, labelArg)
 
 // MARK: - The model
 
@@ -294,11 +313,11 @@ internal object FeltPatterns {
     const val NOTABLE_GAP = 0.20
 
     /** What a split is cut on. One variable at a time. */
-    enum class Variable(val title: String) {
-        DOSE_HOUR("Time of day"),
-        AMOUNT("Amount"),
-        WEEKDAY("Day of week"),
-        CAFFEINE("Caffeine before it"),
+    enum class Variable(@StringRes val title: Int) {
+        DOSE_HOUR(R.string.toolsb_felt_variable_dose_hour),
+        AMOUNT(R.string.toolsb_felt_variable_amount),
+        WEEKDAY(R.string.toolsb_felt_variable_weekday),
+        CAFFEINE(R.string.toolsb_felt_variable_caffeine),
     }
 
     /** One day's answer for one substance: the mean of that day's ratings. */
@@ -321,8 +340,11 @@ internal object FeltPatterns {
     data class Split(
         val substance: String,
         val variable: Variable,
-        val lowLabel: String,
-        val highLabel: String,
+        /** The side's label, and the cut point substituted into it where it takes one. */
+        @StringRes val lowLabel: Int,
+        val lowLabelArg: String?,
+        @StringRes val highLabel: Int,
+        val highLabelArg: String?,
         val low: Tally,
         val high: Tally,
     ) {
@@ -421,14 +443,25 @@ internal object FeltPatterns {
     private fun tallied(
         substance: String,
         variable: Variable,
-        lowLabel: String,
-        highLabel: String,
+        @StringRes lowLabel: Int,
+        @StringRes highLabel: Int,
         low: List<RatedDay>,
         high: List<RatedDay>,
+        lowLabelArg: String? = null,
+        highLabelArg: String? = null,
     ): Split? {
         if (low.size < MINIMUM_PER_SIDE || high.size < MINIMUM_PER_SIDE) return null
         fun tally(rows: List<RatedDay>) = Tally(rows.size, rows.count { it.wasAsExpected })
-        return Split(substance, variable, lowLabel, highLabel, tally(low), tally(high))
+        return Split(
+            substance = substance,
+            variable = variable,
+            lowLabel = lowLabel,
+            lowLabelArg = lowLabelArg,
+            highLabel = highLabel,
+            highLabelArg = highLabelArg,
+            low = tally(low),
+            high = tally(high),
+        )
     }
 
     /**
@@ -448,10 +481,12 @@ internal object FeltPatterns {
         return tallied(
             substance = substance,
             variable = Variable.DOSE_HOUR,
-            lowLabel = "Before $clock",
-            highLabel = "$clock or later",
+            lowLabel = R.string.toolsb_felt_split_before_clock,
+            highLabel = R.string.toolsb_felt_split_clock_or_later,
             low = rows.filter { it.doseHour < cut },
             high = rows.filter { it.doseHour >= cut },
+            lowLabelArg = clock,
+            highLabelArg = clock,
         )
     }
 
@@ -481,18 +516,20 @@ internal object FeltPatterns {
         return tallied(
             substance = substance,
             variable = Variable.AMOUNT,
-            lowLabel = "Under $cutText",
-            highLabel = "$cutText or more",
+            lowLabel = R.string.toolsb_felt_split_under_amount,
+            highLabel = R.string.toolsb_felt_split_amount_or_more,
             low = rows.filter { it.amount < cut },
             high = rows.filter { it.amount >= cut },
+            lowLabelArg = cutText,
+            highLabelArg = cutText,
         )
     }
 
     private fun weekdaySplit(substance: String, rows: List<RatedDay>): Split? = tallied(
         substance = substance,
         variable = Variable.WEEKDAY,
-        lowLabel = "Weekdays",
-        highLabel = "Weekends",
+        lowLabel = R.string.toolsb_felt_split_weekdays,
+        highLabel = R.string.toolsb_felt_split_weekends,
         low = rows.filter { !it.isWeekend },
         high = rows.filter { it.isWeekend },
     )
@@ -500,8 +537,8 @@ internal object FeltPatterns {
     private fun caffeineSplit(substance: String, rows: List<RatedDay>): Split? = tallied(
         substance = substance,
         variable = Variable.CAFFEINE,
-        lowLabel = "No caffeine first",
-        highLabel = "Caffeine within the hour",
+        lowLabel = R.string.toolsb_felt_split_no_caffeine,
+        highLabel = R.string.toolsb_felt_split_caffeine_within_hour,
         low = rows.filter { !it.hadCaffeineBefore },
         high = rows.filter { it.hadCaffeineBefore },
     )

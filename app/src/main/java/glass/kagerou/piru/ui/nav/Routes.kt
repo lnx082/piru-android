@@ -1,5 +1,6 @@
 package glass.kagerou.piru.ui.nav
 
+import glass.kagerou.piru.R
 import glass.kagerou.piru.model.SubstanceCategory
 import java.time.Instant
 import java.util.UUID
@@ -14,12 +15,28 @@ import kotlinx.serialization.Serializable
  * a set of instruments and the other is a reading of the user's own log.
  */
 @Serializable
-enum class AppTab(val wireValue: String, val label: String) {
-    JOURNAL("journal", "Journal"),
-    LIBRARY("library", "Library"),
-    TOOLS("tools", "Tools"),
-    INSIGHTS("insights", "Insights"),
-    SEARCH("search", "Search"),
+enum class AppTab(
+    val wireValue: String,
+    /**
+     * The tab's label, as a resource rather than a string.
+     *
+     * A resource id rather than the text itself because a tab bar is built once
+     * per composition: resolving here would freeze whichever language the process
+     * started in, and a language change would leave the bar in the old one until
+     * the app was killed. The id is resolved at the point of drawing, which is
+     * what makes [androidx.compose.runtime.CompositionLocalProvider] for a locale
+     * take effect on recomposition.
+     *
+     * Not part of the wire format — an enum serializes by name, so this field is
+     * invisible to a saved route.
+     */
+    @androidx.annotation.StringRes val labelRes: Int,
+) {
+    JOURNAL("journal", R.string.tab_journal),
+    LIBRARY("library", R.string.tab_library),
+    TOOLS("tools", R.string.tab_tools),
+    INSIGHTS("insights", R.string.tab_insights),
+    SEARCH("search", R.string.tab_search),
     ;
 
     companion object {

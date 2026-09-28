@@ -25,11 +25,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.JsonLists
 import glass.kagerou.piru.data.entity.DailyDoseItemEntity
 import glass.kagerou.piru.model.DoseFrequency
@@ -125,7 +127,7 @@ fun MedFormScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        if (isEditing) "Edit Med" else "Add a Med",
+                        stringResource(if (isEditing) R.string.meds_edit_med else R.string.meds_add_a_med),
                         style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier.weight(1f),
                     )
@@ -161,7 +163,7 @@ fun MedFormScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     // 1. What.
-                    FormSection("Med") {
+                    FormSection(stringResource(R.string.meds_section_med)) {
                         SubstanceSearchField(
                             text = draft.substance,
                             catalog = catalog,
@@ -172,7 +174,7 @@ fun MedFormScreen(
                     }
 
                     // 2. How much, and by which route.
-                    FormSection("Dosage") {
+                    FormSection(stringResource(R.string.meds_section_dosage)) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -180,7 +182,7 @@ fun MedFormScreen(
                             OutlinedTextField(
                                 value = draft.amountText,
                                 onValueChange = { draft.amountText = it },
-                                label = { Text("Amount") },
+                                label = { Text(stringResource(R.string.common_amount)) },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                 modifier = Modifier.weight(1f),
@@ -199,18 +201,19 @@ fun MedFormScreen(
                                 draft.onRouteChanged()
                             },
                         )
-                        FormFooter("Checked off by an entry for the same substance and route.")
+                        FormFooter(stringResource(R.string.meds_footer_checked_off))
                     }
 
                     // 3. When.
-                    FormSection("Schedule") {
+                    FormSection(stringResource(R.string.meds_section_schedule)) {
                         SchedulePicker(schedule = draft.schedule, onSelect = draft::chooseSchedule)
                         if (draft.isAsNeeded) {
                             IntegerStepper(
                                 value = draft.maxPerDay ?: 0,
                                 range = 0..12,
-                                label = draft.maxPerDay?.let { "Up to ${it}× daily" }
-                                    ?: "No daily limit entered",
+                                label = draft.maxPerDay?.let {
+                                    stringResource(R.string.meds_up_to_daily_limit, it)
+                                } ?: stringResource(R.string.meds_no_daily_limit),
                                 onChange = { draft.maxPerDay = if (it == 0) null else it },
                             )
                         }
@@ -232,13 +235,12 @@ fun MedFormScreen(
                         }
                         when {
                             draft.isAsNeeded -> FormFooter(
-                                "Never marked missed. A daily limit feeds the cumulative " +
-                                    "dose warnings.",
+                                stringResource(R.string.meds_footer_never_missed),
                             )
 
                             draft.frequency == DoseFrequency.SPECIFIC_DAYS &&
                                 draft.selectedWeekdays.isEmpty() ->
-                                FormFooter("Select at least one day.")
+                                FormFooter(stringResource(R.string.meds_footer_select_a_day))
 
                             else -> Unit
                         }
@@ -246,7 +248,7 @@ fun MedFormScreen(
 
                     // 4. When, and remind me.
                     if (!draft.isAsNeeded) {
-                        FormSection("Times") {
+                        FormSection(stringResource(R.string.meds_section_times)) {
                             for (time in draft.times) {
                                 ReminderTimeRow(
                                     time = time,
@@ -270,20 +272,23 @@ fun MedFormScreen(
                             }
                             when {
                                 draft.times.isEmpty() -> FormFooter(
-                                    "No set time — this med still counts toward adherence " +
-                                        "once per due day.",
+                                    stringResource(R.string.meds_footer_no_set_time),
                                 )
 
+                                // The labels are resolved before the join: `map` is inline and
+                                // can hold a composable read, `joinToString`'s transform
+                                // cannot, and a `stringResource` in it does not compile.
                                 draft.remind -> FormFooter(
-                                    "A reminder at each time. If you don't log it, Piru asks " +
-                                        "again ${askAgainCadence.joinToString(", ") { "$it min" }} later.",
+                                    stringResource(
+                                        R.string.meds_footer_ask_again,
+                                        askAgainCadence
+                                            .map { stringResource(R.string.meds_minutes_short, it) }
+                                            .joinToString(stringResource(R.string.common_list_separator)),
+                                    ),
                                 )
                             }
                             if (draft.times.isNotEmpty() && draft.consequence != null) {
-                                FormFooter(
-                                    "Kick-in and wear-off come from this med's own duration " +
-                                        "data — the same model the timeline draws. An estimate.",
-                                )
+                                FormFooter(stringResource(R.string.meds_footer_kick_in))
                             }
                         }
                     }
@@ -588,7 +593,7 @@ private fun SubstanceSearchField(
         OutlinedTextField(
             value = text,
             onValueChange = onTextChange,
-            label = { Text("Substance") },
+            label = { Text(stringResource(R.string.common_substance)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -605,7 +610,7 @@ private fun SubstanceSearchField(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(match.substance.displayTitle, style = MaterialTheme.typography.bodyMedium)
                     match.matchedAlias?.let {
-                        Text("matched \"$it\"", style = captionSecondaryStyle)
+                        Text(stringResource(R.string.meds_matched_alias, it), style = captionSecondaryStyle)
                     }
                 }
             }
@@ -619,7 +624,7 @@ private fun SubstanceSearchField(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    "Use \"${text.trim()}\" as typed",
+                    stringResource(R.string.meds_use_as_typed, text.trim()),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.accent,
                 )

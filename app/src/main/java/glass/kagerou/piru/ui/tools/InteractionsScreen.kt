@@ -1,6 +1,7 @@
 package glass.kagerou.piru.ui.tools
 
 import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -43,10 +44,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.colorspace.ColorSpaces
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.engine.InteractionChecker
 import glass.kagerou.piru.engine.InteractionPolicy
 import glass.kagerou.piru.engine.InteractionResult
@@ -56,6 +60,7 @@ import glass.kagerou.piru.model.P3Color
 import glass.kagerou.piru.model.Substance
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.labels.CoreLabels
 import glass.kagerou.piru.ui.theme.toComposeColor
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.theme.PiruTheme
@@ -227,10 +232,9 @@ fun InteractionsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     ) {
         item {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Interactions", style = MaterialTheme.typography.headlineSmall)
+                Text(stringResource(R.string.interactions_title), style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    "Pick the substances you are asking about. This reads the rules, not " +
-                        "your log — nothing you enter here is stored.",
+                    stringResource(R.string.interactions_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -294,7 +298,7 @@ fun InteractionsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         if (mostUsed.isNotEmpty()) {
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    SectionHeader("Frequently used")
+                    SectionHeader(stringResource(R.string.interactions_frequently_used))
                     ChipFlow {
                         for (item in mostUsed) {
                             Chip(
@@ -316,7 +320,7 @@ fun InteractionsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        "Choose at least 2 substances",
+                        stringResource(R.string.interactions_choose_two),
                         style = MaterialTheme.typography.bodyMedium,
                         color = PiruTheme.colors.secondaryLabel,
                     )
@@ -364,7 +368,7 @@ private fun SearchField(
                 modifier = Modifier.size(18.dp),
             )
         },
-        placeholder = { Text("Search substances…") },
+        placeholder = { Text(stringResource(R.string.interactions_search_hint)) },
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = { onSubmit() }),
     )
@@ -420,7 +424,7 @@ private fun SearchDropdown(
                         }
                     }
                     Spacer(Modifier.width(8.dp))
-                    Chip(text = substance.category.wireValue, tint = null)
+                    Chip(text = CoreLabels.category(substance.category), tint = null)
                 }
             }
 
@@ -443,11 +447,11 @@ private fun SearchDropdown(
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        "Use “$query”",
+                        stringResource(R.string.interactions_use_query, query),
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.weight(1f),
                     )
-                    Chip(text = "Custom", tint = PiruTheme.colors.accent)
+                    Chip(text = stringResource(R.string.interactions_custom), tint = PiruTheme.colors.accent)
                 }
             }
         }
@@ -471,7 +475,7 @@ private fun NoResultsCard() {
                 modifier = Modifier.size(22.dp),
             )
             Text(
-                "No interactions found in Piru's database.",
+                stringResource(R.string.interactions_none_title),
                 style = MaterialTheme.typography.bodyMedium,
                 color = PiruTheme.colors.secondaryLabel,
             )
@@ -479,8 +483,7 @@ private fun NoResultsCard() {
             // the catalog covers a minority of what people take together, so
             // silence here is absence of a listed rule, not absence of a risk.
             Text(
-                "Coverage is incomplete — absence of a listed interaction does not mean " +
-                    "absence of risk.",
+                stringResource(R.string.interactions_none_body),
                 style = MaterialTheme.typography.bodySmall,
                 color = PiruTheme.colors.tertiaryLabel,
             )
@@ -498,7 +501,11 @@ private fun ResultsCard(results: List<InteractionResult>, onOpen: (Pair<String, 
     PiruCard(modifier = Modifier.fillMaxWidth()) {
         Column {
             Text(
-                if (results.size == 1) "1 Interaction Found" else "${results.size} Interactions Found",
+                pluralStringResource(
+                    R.plurals.interactions_found_count,
+                    results.size,
+                    results.size,
+                ),
                 style = MaterialTheme.typography.labelLarge,
                 color = headerColour,
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 8.dp),
@@ -520,7 +527,7 @@ private fun ResultsCard(results: List<InteractionResult>, onOpen: (Pair<String, 
                     }
                     Icon(
                         Icons.Filled.KeyboardArrowRight,
-                        contentDescription = "Open the timeline for this pair",
+                        contentDescription = stringResource(R.string.interactions_open_timeline),
                         tint = PiruTheme.colors.secondaryLabel,
                         modifier = Modifier.size(16.dp),
                     )
@@ -547,7 +554,7 @@ private fun InteractionWarningRow(warning: InteractionResult) {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                "${warning.substanceA} + ${warning.substanceB}",
+                stringResource(R.string.interactions_pair, warning.substanceA, warning.substanceB),
                 style = MaterialTheme.typography.labelLarge,
                 color = colour,
                 modifier = Modifier.weight(1f),
@@ -599,13 +606,8 @@ private val COMBINATION_CATALOG: List<CombinationFormation> = listOf(
             ),
             listOf("ethanol", "alcohol", "ethyl alcohol"),
         ),
-        formationNote = "Cocaine and alcohol together form cocaethylene — an active stimulant " +
-            "your body makes only while both are present. It lasts noticeably longer than " +
-            "cocaine, so the stimulant effect (and its strain) is drawn out.",
-        cautionNote = "Cocaethylene adds extra strain on the heart and liver beyond cocaine " +
-            "alone, so this combination is harder on your body. (The widely-repeated " +
-            "“18–25× sudden death” figure is not supported by the evidence — but the " +
-            "added cardiac and liver strain is real.)",
+        formationNote = R.string.interactions_cocaethylene_formation,
+        cautionNote = R.string.interactions_cocaethylene_caution,
     ),
     CombinationFormation(
         id = "ethylphenidate",
@@ -618,13 +620,8 @@ private val COMBINATION_CATALOG: List<CombinationFormation> = listOf(
             ),
             listOf("ethanol", "alcohol", "ethyl alcohol"),
         ),
-        formationNote = "Methylphenidate and alcohol together form ethylphenidate — an active " +
-            "stimulant your body makes only while both are present. It leans more on dopamine " +
-            "and lingers a little longer than methylphenidate, so the stimulant effect is " +
-            "drawn out.",
-        cautionNote = "The mix adds cardiovascular strain beyond either alone, and the " +
-            "ethylphenidate it forms outlasts the methylphenidate itself, so the load on your " +
-            "heart is stretched out rather than added up.",
+        formationNote = R.string.interactions_ethylphenidate_formation,
+        cautionNote = R.string.interactions_ethylphenidate_caution,
     ),
 )
 
@@ -635,8 +632,12 @@ internal data class CombinationFormation(
     val confidence: ConfidenceTier,
     /** One matcher list per precursor; every slot must be onboard for the species to form. */
     val precursors: List<List<String>>,
-    val formationNote: String,
-    val cautionNote: String,
+    /**
+     * The two sentences are resource ids rather than text: the note is copy this
+     * build owns and has to translate, and `displayName` beside it is not.
+     */
+    @StringRes val formationNote: Int,
+    @StringRes val cautionNote: Int,
 )
 
 /** Detection — pure, and gated only on co-presence, because the explorer has no windows to gate on. */
@@ -655,7 +656,7 @@ private fun CombinationCard(formations: List<CombinationFormation>) {
     PiruCard(modifier = Modifier.fillMaxWidth()) {
         Column {
             Text(
-                "Combination Products",
+                stringResource(R.string.interactions_combination_heading),
                 style = MaterialTheme.typography.labelLarge,
                 color = PiruTheme.colors.secondaryLabel,
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 8.dp),
@@ -695,7 +696,7 @@ private fun CombinationMetaboliteBanner(formation: CombinationFormation, modifie
         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Text(formation.displayName, style = MaterialTheme.typography.labelLarge)
             Text(
-                formation.formationNote,
+                stringResource(formation.formationNote),
                 style = MaterialTheme.typography.bodySmall,
                 color = PiruTheme.colors.secondaryLabel,
             )
@@ -703,7 +704,11 @@ private fun CombinationMetaboliteBanner(formation: CombinationFormation, modifie
             // the two sentences around it are the app's reading of the evidence,
             // and the confidence tier travels with them.
             Text(
-                "${formation.cautionNote} · modeled (${confidenceLabel(formation.confidence)}).",
+                stringResource(
+                    R.string.interactions_modeled_suffix,
+                    stringResource(formation.cautionNote),
+                    confidenceLabel(formation.confidence),
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = PiruTheme.colors.secondaryLabel,
             )
@@ -754,7 +759,7 @@ private fun RemovableCapsule(name: String, tint: P3Color, onRemove: () -> Unit) 
     ) {
         Icon(
             Icons.Filled.Close,
-            contentDescription = "Remove $name",
+            contentDescription = stringResource(R.string.interactions_remove, name),
             tint = colour,
             modifier = Modifier.size(12.dp),
         )
@@ -833,12 +838,17 @@ internal object InteractionSeverityPalette {
 private fun p3(red: Double, green: Double, blue: Double): Color =
     Color(red.toFloat(), green.toFloat(), blue.toFloat(), 1f, ColorSpaces.DisplayP3)
 
-/** `ConfidenceTier.label` upstream, kept here because the engine carries the wire value only. */
+/**
+ * `ConfidenceTier.label` upstream, kept here because the engine carries the wire
+ * value only. `@Composable` because the label is a resource rather than a
+ * derivation — the tier order is the engine's, the wording is the app's.
+ */
+@Composable
 internal fun confidenceLabel(tier: ConfidenceTier): String = when (tier) {
-    ConfidenceTier.HIGH -> "High confidence"
-    ConfidenceTier.MEDIUM -> "Medium confidence"
-    ConfidenceTier.LOW -> "Low confidence"
-    ConfidenceTier.UNVERIFIED -> "Unverified"
+    ConfidenceTier.HIGH -> stringResource(R.string.interactions_confidence_high)
+    ConfidenceTier.MEDIUM -> stringResource(R.string.interactions_confidence_medium)
+    ConfidenceTier.LOW -> stringResource(R.string.interactions_confidence_low)
+    ConfidenceTier.UNVERIFIED -> stringResource(R.string.interactions_confidence_unverified)
 }
 
 // MARK: - Selection

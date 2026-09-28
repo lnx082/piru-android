@@ -27,10 +27,12 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.DailyDoseItemEntity
 import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.data.entity.RoutineOccurrenceEntity
@@ -145,10 +147,9 @@ fun MyMedsCard(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                Text("My Meds", style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.meds_my_meds), style = MaterialTheme.typography.titleSmall)
                 Text(
-                    "Add a medication to schedule it, get a reminder at the times you " +
-                        "set, and see how consistently you have been taking it.",
+                    stringResource(R.string.meds_card_empty_blurb),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -390,10 +391,14 @@ private fun MyMedsHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("My Meds", style = MaterialTheme.typography.titleSmall)
+        Text(stringResource(R.string.meds_my_meds), style = MaterialTheme.typography.titleSmall)
         if (isComplete) {
             MedsCapsuleChip(
-                text = if (streak != null && streak > 1) "$streak days logged" else "Done",
+                text = if (streak != null && streak > 1) {
+                    stringResource(R.string.meds_days_logged, streak)
+                } else {
+                    stringResource(R.string.common_done)
+                },
                 tint = PiruTheme.colors.accent,
                 filled = true,
             )
@@ -469,12 +474,12 @@ private fun SlotRow(
             )
             if (skipped) {
                 Text(
-                    "Skipped",
+                    stringResource(R.string.meds_skipped),
                     style = MaterialTheme.typography.labelSmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
             } else if (due && slot.time != null) {
-                MedsCapsuleChip(text = "due", tint = PiruTheme.colors.accent)
+                MedsCapsuleChip(text = stringResource(R.string.meds_due_chip), tint = PiruTheme.colors.accent)
             }
             Text(
                 "${doseFormatted(slot.item.amount)} ${slot.item.unit}",
@@ -537,13 +542,16 @@ private fun SupplementsRow(
                 }
             }
             Column {
-                Text("Supplements", style = MaterialTheme.typography.bodyMedium)
-                Text("$takenCount of $total taken", style = captionSecondaryStyle)
+                Text(stringResource(R.string.meds_supplements), style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    stringResource(R.string.meds_taken_of_total, takenCount, total),
+                    style = captionSecondaryStyle,
+                )
             }
         }
         if (takenCount < total) {
             MedsCapsuleChip(
-                text = "Take All",
+                text = stringResource(R.string.meds_take_all),
                 tint = accent,
                 filled = true,
                 modifier = Modifier.clickable(onClick = onTakeAll),

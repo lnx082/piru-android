@@ -19,7 +19,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import glass.kagerou.piru.R
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
 import glass.kagerou.piru.ui.theme.PiruTheme
@@ -93,7 +95,11 @@ fun LocationPickerScreen(
             modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Location", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+            Text(
+                stringResource(R.string.meds_location),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.weight(1f),
+            )
             MedsGlyph(
                 kind = MedsGlyphKind.CLOSE,
                 tint = PiruTheme.colors.secondaryLabel,
@@ -109,14 +115,12 @@ fun LocationPickerScreen(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text("No map, no place search", style = MaterialTheme.typography.titleSmall)
                 Text(
-                    "This build has no map and cannot look up an address or find your " +
-                        "current location. A map picker needs the Google Maps SDK, a " +
-                        "Places API key on a billing account, and the location " +
-                        "permission — none of which this build carries. You can still " +
-                        "name the place below, and the dose already records the time " +
-                        "from the device clock.",
+                    stringResource(R.string.meds_no_map_title),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                Text(
+                    stringResource(R.string.meds_no_map_blurb),
                     style = captionSecondaryStyle,
                 )
             }
@@ -127,11 +131,14 @@ fun LocationPickerScreen(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text("Name the place", style = MaterialTheme.typography.labelLarge)
+                Text(
+                    stringResource(R.string.meds_name_the_place),
+                    style = MaterialTheme.typography.labelLarge,
+                )
                 OutlinedTextField(
                     value = query,
                     onValueChange = { query = it },
-                    label = { Text("Place") },
+                    label = { Text(stringResource(R.string.meds_place_label)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -143,7 +150,7 @@ fun LocationPickerScreen(
                     onClick = { onPick(PickedLocation(name = query.trim())) },
                 ) {
                     Text(
-                        "Use This Name",
+                        stringResource(R.string.meds_use_this_name),
                         color = if (query.isNotBlank()) {
                             PiruTheme.colors.accent
                         } else {
@@ -160,7 +167,11 @@ fun LocationPickerScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Text("Recents", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(bottom = 4.dp))
+                    Text(
+                        stringResource(R.string.meds_recents),
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(bottom = 4.dp),
+                    )
                     // Deduped by name before rendering, which is what upstream's
                     // `uniqued(by: \.name)` does — a `ForEach` keyed on a value
                     // cannot see a duplicate id, and this list is keyed on the

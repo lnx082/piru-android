@@ -1,5 +1,6 @@
 package glass.kagerou.piru.ui.tools
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -51,10 +52,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.InventoryMath
 import glass.kagerou.piru.data.ManualEvent
 import glass.kagerou.piru.data.PiruDatabase
@@ -68,12 +71,14 @@ import glass.kagerou.piru.substance.DbSubstanceCatalog
 import glass.kagerou.piru.substance.SubstanceMatch
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.labels.appLocale
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.nav.PushRoute
 import glass.kagerou.piru.ui.theme.PiruTheme
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import java.util.UUID
 import kotlin.math.abs
 import kotlin.math.floor
@@ -651,7 +656,10 @@ fun InventoryItemDetailScreen(
 
     val resolved = catalog
     if (item == null || resolved == null) {
-        CenteredMessage(if (items != null) "That item is gone." else "Loading…", modifier)
+        CenteredMessage(
+            stringResource(if (items != null) R.string.toolsb_inventory_item_gone else R.string.toolsb_loading),
+            modifier,
+        )
         return
     }
 
@@ -684,7 +692,7 @@ fun InventoryItemDetailScreen(
 
         item(key = "history-header") {
             Text(
-                "History",
+                stringResource(R.string.toolsb_inventory_history),
                 modifier = Modifier.padding(top = 16.dp, bottom = 6.dp),
                 style = MaterialTheme.typography.labelLarge,
                 color = PiruTheme.colors.secondaryLabel,
@@ -695,7 +703,7 @@ fun InventoryItemDetailScreen(
         if (rows.isEmpty()) {
             item(key = "history-empty") {
                 Text(
-                    "No restocks or entries yet.",
+                    stringResource(R.string.toolsb_inventory_history_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -712,14 +720,11 @@ fun InventoryItemDetailScreen(
     if (showBasisInfo) {
         AlertDialog(
             onDismissRequest = { showBasisInfo = false },
-            confirmButton = { TextButton(onClick = { showBasisInfo = false }) { Text("OK") } },
-            title = { Text("Run-out estimate") },
-            text = {
-                Text(
-                    "Estimated from your average daily use over the last 7 days. Shown only " +
-                        "when you have dosed on most days, so a one-off does not skew it.",
-                )
+            confirmButton = {
+                TextButton(onClick = { showBasisInfo = false }) { Text(stringResource(R.string.toolsb_inventory_ok)) }
             },
+            title = { Text(stringResource(R.string.toolsb_inventory_runout_title)) },
+            text = { Text(stringResource(R.string.toolsb_inventory_runout_basis)) },
         )
     }
 }
@@ -734,11 +739,14 @@ private fun DetailHeader(
     onEdit: () -> Unit,
     onBack: () -> Unit,
 ) {
+    val context = LocalContext.current
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onBack) { Text("Back") }
+            TextButton(onClick = onBack) { Text(stringResource(R.string.toolsb_inventory_back)) }
             Spacer(Modifier.weight(1f))
-            IconButton(onClick = onEdit) { Text("Edit", style = MaterialTheme.typography.labelLarge) }
+            IconButton(onClick = onEdit) {
+                Text(stringResource(R.string.common_edit), style = MaterialTheme.typography.labelLarge)
+            }
         }
 
         PiruCard(modifier = Modifier.fillMaxWidth()) {
@@ -755,7 +763,11 @@ private fun DetailHeader(
 
                 val status = item.stockStatus
                 if (status == StockStatus.OUT) {
-                    Text("Out", style = MaterialTheme.typography.displaySmall, color = status.numberColor)
+                    Text(
+                        stringResource(R.string.toolsb_inventory_status_out),
+                        style = MaterialTheme.typography.displaySmall,
+                        color = status.numberColor,
+                    )
                 } else {
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(
@@ -772,7 +784,7 @@ private fun DetailHeader(
                     }
                 }
 
-                inventorySupplyLine(dosesLeft, runOut)?.let { line ->
+                inventorySupplyLine(context, dosesLeft, runOut)?.let { line ->
                     Text(line, style = MaterialTheme.typography.bodyMedium, color = PiruTheme.colors.secondaryLabel)
                 }
 
@@ -783,13 +795,13 @@ private fun DetailHeader(
                     ) {
                         Icon(
                             Icons.Filled.Info,
-                            contentDescription = "How this is calculated",
+                            contentDescription = stringResource(R.string.toolsb_inventory_how_calculated),
                             modifier = Modifier.size(14.dp),
                             tint = PiruTheme.colors.secondaryLabel,
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
-                            basisLine(item, runOut),
+                            basisLine(context, item, runOut),
                             style = MaterialTheme.typography.bodySmall,
                             color = PiruTheme.colors.secondaryLabel,
                         )
@@ -806,7 +818,9 @@ private fun DetailHeader(
                     )
                 }
 
-                Button(onClick = onRestock, modifier = Modifier.fillMaxWidth()) { Text("Restock") }
+                Button(onClick = onRestock, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.toolsb_inventory_restock))
+                }
             }
         }
     }
@@ -817,24 +831,31 @@ private fun SubstanceInfoRow(onOpen: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClickLabel = "Substance info", onClick = onOpen)
+            .clickable(
+                onClickLabel = stringResource(R.string.toolsb_inventory_substance_info),
+                onClick = onOpen,
+            )
             .padding(vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(Icons.Filled.Info, contentDescription = null, tint = PiruTheme.colors.accent)
         Spacer(Modifier.width(12.dp))
-        Text("Substance info", style = MaterialTheme.typography.bodyLarge)
+        Text(stringResource(R.string.toolsb_inventory_substance_info), style = MaterialTheme.typography.bodyLarge)
     }
 }
 
 /** The run-out's basis, in one line: what a dose is, and what the week averaged. */
-private fun basisLine(item: InventoryItemEntity, runOut: InventoryMath.RunOut): String {
+private fun basisLine(context: Context, item: InventoryItemEntity, runOut: InventoryMath.RunOut): String {
     val avg = "${inventoryFormatted(runOut.dailyAvg)} ${item.unit}"
     val size = item.doseSize
     return if (size != null && size > 0) {
-        "Single dose ${inventoryFormatted(size)} ${item.unit} · daily avg $avg"
+        context.getString(
+            R.string.toolsb_inventory_basis_single_dose,
+            "${inventoryFormatted(size)} ${item.unit}",
+            avg,
+        )
     } else {
-        "Daily avg $avg"
+        context.getString(R.string.toolsb_inventory_basis_daily_avg, avg)
     }
 }
 
@@ -907,6 +928,8 @@ private fun deleteHistoryRow(
  */
 @Composable
 private fun HistoryRowLabel(row: HistoryRow, unit: String) {
+    val historyDatePattern = stringResource(R.string.datefmt_day_month_time)
+    val dateLocale = appLocale()
     val glyph: String
     val tint: Color
     val title: String
@@ -917,18 +940,20 @@ private fun HistoryRowLabel(row: HistoryRow, unit: String) {
         is HistoryRow.Dose -> {
             glyph = "−"
             tint = PiruTheme.colors.secondaryLabel
-            title = "Dose"
+            title = stringResource(R.string.toolsb_inventory_row_dose)
             amount = "−${inventoryFormatted(row.dose.amount)} ${row.dose.unit}"
             amountColor = PiruTheme.colors.secondaryLabel
         }
 
         is HistoryRow.Manual -> {
             val event = row.event
-            title = when (event.kind) {
-                ManualEvent.Kind.INITIAL -> "Initial"
-                ManualEvent.Kind.RESTOCK -> "Restock"
-                ManualEvent.Kind.ADJUSTMENT -> "Adjustment"
-            }
+            title = stringResource(
+                when (event.kind) {
+                    ManualEvent.Kind.INITIAL -> R.string.toolsb_inventory_row_initial
+                    ManualEvent.Kind.RESTOCK -> R.string.toolsb_inventory_restock
+                    ManualEvent.Kind.ADJUSTMENT -> R.string.toolsb_inventory_row_adjustment
+                },
+            )
             tint = when (event.kind) {
                 ManualEvent.Kind.INITIAL -> PiruTheme.colors.accent
                 ManualEvent.Kind.RESTOCK -> PiruTheme.colors.successText
@@ -966,7 +991,7 @@ private fun HistoryRowLabel(row: HistoryRow, unit: String) {
                 )
             }
             Text(
-                historyDateFormatter.format(row.date.atZone(ZoneId.systemDefault())),
+                historyDateFormat(historyDatePattern, dateLocale).format(row.date.atZone(ZoneId.systemDefault())),
                 style = MaterialTheme.typography.labelSmall,
                 color = PiruTheme.colors.secondaryLabel,
             )
@@ -981,7 +1006,14 @@ private fun HistoryRowLabel(row: HistoryRow, unit: String) {
     }
 }
 
-private val historyDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM, HH:mm")
+/**
+ * The stock-history row's date. The pattern is a parameter rather than a literal:
+ * its field order is locale-specific (Chinese reads M月d日 HH:mm), and the caller
+ * is the composable that can read the resource. The locale comes the same way —
+ * the month *name* is a word, so it is the app's language, not the device's.
+ */
+private fun historyDateFormat(pattern: String, locale: Locale): DateTimeFormatter =
+    DateTimeFormatter.ofPattern(pattern, locale)
 
 /**
  * A row that can be swiped away, with a red delete panel behind it.
@@ -1009,7 +1041,7 @@ private fun SwipeToDelete(onDelete: () -> Unit, content: @Composable () -> Unit)
             ) {
                 Icon(
                     Icons.Filled.Delete,
-                    contentDescription = "Delete",
+                    contentDescription = stringResource(R.string.common_delete),
                     tint = MaterialTheme.colorScheme.onError,
                 )
             }
@@ -1075,7 +1107,7 @@ fun InventoryItemFormScreen(
     val current = draft
     val loaded = catalog
     if (!resolved || current == null || loaded == null) {
-        CenteredMessage("Loading…", modifier)
+        CenteredMessage(stringResource(R.string.toolsb_loading), modifier)
         return
     }
 
@@ -1084,9 +1116,9 @@ fun InventoryItemFormScreen(
     val itemSalt = existing?.saltForm ?: prefillSalt
     val titleName = loaded.lookup(substanceName)?.displayTitle ?: substanceName
     val navTitle = when {
-        isRestock -> "Restock · $titleName"
-        substanceFixed -> "Track · $titleName"
-        else -> "Track Substance"
+        isRestock -> stringResource(R.string.toolsb_inventory_title_restock, titleName)
+        substanceFixed -> stringResource(R.string.toolsb_inventory_title_track, titleName)
+        else -> stringResource(R.string.toolsb_inventory_track_substance)
     }
     val canCommit = if (existing != null) {
         (current.restockAmount(existing!!) ?: 0.0) > 0
@@ -1102,7 +1134,9 @@ fun InventoryItemFormScreen(
             modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = onDismiss) { Icon(Icons.Filled.Clear, contentDescription = "Cancel") }
+            IconButton(onClick = onDismiss) {
+                Icon(Icons.Filled.Clear, contentDescription = stringResource(R.string.common_cancel))
+            }
             Text(
                 navTitle,
                 modifier = Modifier.weight(1f),
@@ -1117,7 +1151,7 @@ fun InventoryItemFormScreen(
                     }
                 },
                 enabled = canCommit,
-            ) { Icon(Icons.Filled.Check, contentDescription = "Save") }
+            ) { Icon(Icons.Filled.Check, contentDescription = stringResource(R.string.common_save)) }
         }
 
         // Only the generic add-from-manager form shows a substance picker; opened
@@ -1126,7 +1160,7 @@ fun InventoryItemFormScreen(
             PiruCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        "Substance",
+                        stringResource(R.string.common_substance),
                         style = MaterialTheme.typography.labelLarge,
                         color = PiruTheme.colors.secondaryLabel,
                     )
@@ -1145,7 +1179,7 @@ fun InventoryItemFormScreen(
                     )
                     if (selectedSubstance == null && substanceName.isNotEmpty()) {
                         Text(
-                            "Custom substance — its doses count by exact name match.",
+                            stringResource(R.string.toolsb_inventory_custom_substance),
                             style = MaterialTheme.typography.bodySmall,
                             color = PiruTheme.colors.secondaryLabel,
                         )
@@ -1157,7 +1191,9 @@ fun InventoryItemFormScreen(
         PiruCard(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    if (isRestock) "Amount added" else "Starting amount",
+                    stringResource(
+                        if (isRestock) R.string.toolsb_inventory_amount_added else R.string.toolsb_inventory_starting_amount,
+                    ),
                     style = MaterialTheme.typography.labelLarge,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -1170,12 +1206,12 @@ fun InventoryItemFormScreen(
                         FilterChip(
                             selected = current.mode == InventoryAmountDraft.Mode.AMOUNT,
                             onClick = { current.mode = InventoryAmountDraft.Mode.AMOUNT },
-                            label = { Text("Amount") },
+                            label = { Text(stringResource(R.string.toolsb_inventory_mode_amount)) },
                         )
                         FilterChip(
                             selected = current.mode == InventoryAmountDraft.Mode.PIECES,
                             onClick = { current.mode = InventoryAmountDraft.Mode.PIECES },
-                            label = { Text("Count x strength") },
+                            label = { Text(stringResource(R.string.toolsb_inventory_mode_pieces)) },
                         )
                     }
                 }
@@ -1189,7 +1225,9 @@ fun InventoryItemFormScreen(
                         value = current.amount,
                         onValueChange = { current.amount = it },
                         unit = current.unit,
-                        label = if (isRestock) "Amount added" else "Starting amount",
+                        label = stringResource(
+                            if (isRestock) R.string.toolsb_inventory_amount_added else R.string.toolsb_inventory_starting_amount,
+                        ),
                         stepBasis = stepBasis(current.unit),
                         // A restock's unit is the item's, already fixed.
                         unitChoices = if (isRestock) null else unitChoicesWith(current.unit),
@@ -1202,7 +1240,7 @@ fun InventoryItemFormScreen(
                             value = current.count,
                             onValueChange = { current.count = it },
                             unit = current.countUnit,
-                            label = "Count",
+                            label = stringResource(R.string.toolsb_inventory_count_label),
                             unitChoices = InventoryAmountDraft.countUnitOptions,
                             onUnitChange = { current.countUnit = it },
                             focusOnAppear = prefill != null && current.count == 0.0,
@@ -1211,7 +1249,7 @@ fun InventoryItemFormScreen(
                             value = current.strengthMG,
                             onValueChange = { current.strengthMG = it },
                             unit = "mg",
-                            label = "Strength",
+                            label = stringResource(R.string.toolsb_inventory_strength_label),
                             stepBasis = stepBasis("mg"),
                             focusOnAppear = prefill != null && current.count > 0 && current.strengthMG == 0.0,
                         )
@@ -1220,10 +1258,10 @@ fun InventoryItemFormScreen(
 
                 val footer = when {
                     current.mode == InventoryAmountDraft.Mode.PIECES && isRestock ->
-                        "Added at this strength, in the item's unit."
+                        stringResource(R.string.toolsb_inventory_added_at_strength)
 
                     current.mode == InventoryAmountDraft.Mode.PIECES ->
-                        "Counted in ${current.countUnit}. A dose logged in mg is taken off at this strength."
+                        stringResource(R.string.toolsb_inventory_counted_in, current.countUnit)
 
                     else -> null
                 }
@@ -1237,15 +1275,20 @@ fun InventoryItemFormScreen(
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        if (existing?.hasBaseline == true) "Set as new baseline" else "Use as baseline",
+                        stringResource(
+                            if (existing?.hasBaseline == true) {
+                                R.string.toolsb_inventory_set_as_baseline
+                            } else {
+                                R.string.toolsb_inventory_use_as_baseline
+                            },
+                        ),
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.bodyLarge,
                     )
                     Switch(checked = useBaseline, onCheckedChange = { useBaseline = it })
                 }
                 Text(
-                    "Marks the amount after this as a full supply, so the bar can show how " +
-                        "full you are. Leave off if this is not a full restock.",
+                    stringResource(R.string.toolsb_inventory_baseline_toggle_footer),
                     style = MaterialTheme.typography.bodySmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -1255,14 +1298,14 @@ fun InventoryItemFormScreen(
         PiruCard(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    "Note",
+                    stringResource(R.string.toolsb_inventory_note),
                     style = MaterialTheme.typography.labelLarge,
                     color = PiruTheme.colors.secondaryLabel,
                 )
                 OutlinedTextField(
                     value = note,
                     onValueChange = { note = it },
-                    placeholder = { Text("Add note…") },
+                    placeholder = { Text(stringResource(R.string.toolsb_inventory_add_note)) },
                     minLines = 1,
                     maxLines = 4,
                     modifier = Modifier.fillMaxWidth(),
@@ -1345,7 +1388,7 @@ private fun SubstanceSearchField(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            label = { Text("Substance") },
+            label = { Text(stringResource(R.string.common_substance)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -1354,7 +1397,9 @@ private fun SubstanceSearchField(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(onClickLabel = "Use ${substance.displayTitle}") { onPick(substance) }
+                    .clickable(
+                        onClickLabel = stringResource(R.string.toolsb_inventory_use_substance, substance.displayTitle),
+                    ) { onPick(substance) }
                     .padding(vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -1431,7 +1476,10 @@ fun InventoryItemEditScreen(
         // A row deleted from somewhere else closes rather than showing a blank —
         // upstream's edit host does the same, and an empty form here would create
         // a second item on save.
-        CenteredMessage(if (missing) "That item is gone." else "Loading…", modifier)
+        CenteredMessage(
+            stringResource(if (missing) R.string.toolsb_inventory_item_gone else R.string.toolsb_loading),
+            modifier,
+        )
         return
     }
 
@@ -1446,9 +1494,11 @@ fun InventoryItemEditScreen(
             modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = onDismiss) { Icon(Icons.Filled.Clear, contentDescription = "Cancel") }
+            IconButton(onClick = onDismiss) {
+                Icon(Icons.Filled.Clear, contentDescription = stringResource(R.string.common_cancel))
+            }
             Text(
-                "Edit",
+                stringResource(R.string.common_edit),
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
@@ -1469,18 +1519,18 @@ fun InventoryItemEditScreen(
                         onDismiss()
                     }
                 },
-            ) { Icon(Icons.Filled.Check, contentDescription = "Save") }
+            ) { Icon(Icons.Filled.Check, contentDescription = stringResource(R.string.common_save)) }
         }
 
         EditSection(
-            title = "On hand",
-            footer = "The exact amount you have now. Changing it is logged as a correction.",
+            title = stringResource(R.string.toolsb_inventory_on_hand),
+            footer = stringResource(R.string.toolsb_inventory_on_hand_footer),
         ) {
             InventoryStepperRow(
                 value = onHand,
                 onValueChange = { onHand = it },
                 unit = unit,
-                label = "On hand",
+                label = stringResource(R.string.toolsb_inventory_on_hand),
                 stepBasis = stepBasis,
                 unitChoices = unitChoicesWith(unit),
                 onUnitChange = { unit = it },
@@ -1488,40 +1538,40 @@ fun InventoryItemEditScreen(
         }
 
         EditSection(
-            title = "Baseline (100%)",
-            footer = "The amount that counts as a full supply for the bar. Set to 0 to hide the bar.",
+            title = stringResource(R.string.toolsb_inventory_baseline_title),
+            footer = stringResource(R.string.toolsb_inventory_baseline_footer),
         ) {
             InventoryStepperRow(
                 value = baseline,
                 onValueChange = { baseline = it },
                 unit = unit,
-                label = "Baseline",
+                label = stringResource(R.string.toolsb_inventory_baseline),
                 stepBasis = stepBasis,
             )
         }
 
         EditSection(
-            title = "Single dose",
-            footer = "Used to show how many doses you have left. Set to 0 to disable.",
+            title = stringResource(R.string.toolsb_inventory_single_dose),
+            footer = stringResource(R.string.toolsb_inventory_single_dose_footer),
         ) {
             InventoryStepperRow(
                 value = doseSize,
                 onValueChange = { doseSize = it },
                 unit = unit,
-                label = "Single dose",
+                label = stringResource(R.string.toolsb_inventory_single_dose),
                 stepBasis = stepBasis,
             )
         }
 
         EditSection(
-            title = "Warn when below",
-            footer = "Your remaining amount stands out once it drops below this. Set to 0 to disable.",
+            title = stringResource(R.string.toolsb_inventory_warn_below),
+            footer = stringResource(R.string.toolsb_inventory_warn_below_footer),
         ) {
             InventoryStepperRow(
                 value = threshold,
                 onValueChange = { threshold = it },
                 unit = unit,
-                label = "Warn when below",
+                label = stringResource(R.string.toolsb_inventory_warn_below),
                 stepBasis = stepBasis,
             )
         }

@@ -1,5 +1,7 @@
 package glass.kagerou.piru.ui.insights
 
+import androidx.annotation.StringRes
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.engine.PKModel
 import glass.kagerou.piru.engine.PKResolver
@@ -45,19 +47,24 @@ import java.time.Instant
  *
  * Declaration order is upstream's and is not load-bearing for sorting; it is kept
  * so the two enums read the same way.
+ *
+ * The unit is a resource id rather than a string: an enum constant is not a
+ * composable scope, and the two word labels ("common doses", "mg diazepam-eq")
+ * are copy rather than unit symbols. The unit symbols themselves — `mg`, `MME` —
+ * are the same in both builds, which is what a unit is.
  */
-internal enum class ExposureCurrency(val unitLabel: String) {
+internal enum class ExposureCurrency(@StringRes val unitLabelRes: Int) {
     /** Morphine milligram equivalents (linear opioids, CDC 2022). */
-    MME("MME"),
+    MME(R.string.toolsb_summary_unit_mme),
 
     /** Diazepam-equivalent milligrams (benzodiazepines). */
-    DIAZEPAM("mg diazepam-eq"),
+    DIAZEPAM(R.string.toolsb_summary_unit_mg_diazepam_eq),
 
     /** Multiples of the substance's own common dose. */
-    COMMON_DOSE("common doses"),
+    COMMON_DOSE(R.string.toolsb_summary_unit_common_doses),
 
     /** The raw logged mass — a mass-dosed substance with no ladder and no equivalence. */
-    MILLIGRAMS("mg"),
+    MILLIGRAMS(R.string.toolsb_summary_unit_mg),
 }
 
 /** One substance in the report: identity, tint, and the currency its doses are summed in. */
@@ -67,7 +74,9 @@ internal data class SummarySubstance(
     val tint: P3Color,
     val currency: ExposureCurrency,
 ) {
-    val unit: String get() = currency.unitLabel
+    /** The unit's resource id; the call site resolves it, since a data class is not a composable. */
+    @get:StringRes
+    val unitRes: Int get() = currency.unitLabelRes
 }
 
 /**
@@ -546,7 +555,4 @@ internal object SummaryStatsResolver {
         ) ?: return null to null
         return params.ke to params.ka
     }
-
-    /** A route's label for the report copy; the port has no localized route table yet. */
-    fun routeLabel(route: RouteOfAdministration): String = route.displayName
 }

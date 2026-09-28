@@ -1,0 +1,484 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  外壳文案的简体中文：引导页、设置、搜索、物质库、快捷记录。
+
+  大部分来自上游 Piru/Localizable.xcstrings 的 zh-Hans（tools/zh_from_xcstrings.py）。
+  移植版自己写的那部分——Health Connect、通知、数据与备份、诚实降级说明——是照着
+  上游的语域从零翻的：直接、用「你」、不吓人也不夸奖。
+
+  仍然保持英文的两处，是有意为之：
+    - Not medical advice. ——它得让读不懂其余内容的人也看得懂；
+    - 物质名、别名、品牌名、路线标识符以及每一个 .wireValue，都是数据，不是文案。
+-->
+<resources>
+
+    <!-- ==================== 通用 ==================== -->
+
+    <string name="shell_back">返回</string>
+    <string name="shell_skip">跳过</string>
+    <string name="shell_continue">继续</string>
+    <string name="shell_cancel">取消</string>
+    <string name="shell_ok">好</string>
+    <string name="shell_save">保存</string>
+    <string name="shell_delete">删除</string>
+    <string name="shell_restore">恢复</string>
+    <string name="shell_start_fresh">从头开始</string>
+    <string name="shell_not_now">暂不</string>
+    <string name="shell_progress">进度</string>
+    <string name="shell_progress_step">第 %1$d 步，共 %2$d 步</string>
+
+    <string name="shell_not_medical_advice">Not medical advice.</string>
+
+    <!-- ==================== 引导页：欢迎 ==================== -->
+
+    <string name="shell_onboarding_welcome_title">欢迎使用 Piru</string>
+    <string name="shell_onboarding_welcome_body">记录药物和物质，记下你的感受，并查阅有出处的信息。Piru 是一份记录和参考资料，不是医疗建议。</string>
+    <string name="shell_onboarding_welcome_body_backup">在你的 iCloud 中发现已有备份。接着上次继续，或重新开始。</string>
+    <string name="shell_onboarding_restore_backup">从备份恢复</string>
+    <string name="shell_onboarding_get_started">开始使用</string>
+
+    <!-- ==================== 引导页：隐私 ==================== -->
+
+    <string name="shell_onboarding_privacy_title">你的日记存放在哪里</string>
+    <string name="shell_onboarding_privacy_subtitle">你的日记存储在本设备的应用内。</string>
+    <string name="shell_onboarding_privacy_no_account_title">无需账户</string>
+    <string name="shell_onboarding_privacy_no_account_detail">无需注册，也没有任何接收你日记的 Piru 服务器。</string>
+    <string name="shell_onboarding_privacy_copies_title">只在你要求时才生成副本</string>
+    <string name="shell_onboarding_privacy_copies_detail">只有在你要求时才会生成导出或备份，并保存到你选择的位置。</string>
+    <string name="shell_onboarding_privacy_no_ads_title">无广告、无追踪器</string>
+    <string name="shell_onboarding_privacy_no_ads_detail">详情见“设置”中的“关于 Piru”。</string>
+
+    <!-- ==================== 引导页：深度 ==================== -->
+
+    <string name="shell_onboarding_depth_title">想看多少细节？</string>
+    <string name="shell_onboarding_depth_subtitle">Piru 可以保持简洁，也可以深入药理。随时可在设置中更改。</string>
+    <string name="shell_onboarding_tier_casual">休闲</string>
+    <string name="shell_onboarding_tier_casual_summary">使用通俗名称，药理内容默认折叠，需要时再展开。</string>
+    <string name="shell_onboarding_tier_curious">好奇</string>
+    <string name="shell_onboarding_tier_curious_summary">机制和药代动力学默认展开，耐受工具使用受体名称。</string>
+
+    <!-- ==================== 引导页：健康 ==================== -->
+
+    <string name="shell_onboarding_health_title">开启 Health Connect</string>
+    <string name="shell_onboarding_health_subtitle">在场次时间线上，把 Health Connect 里的体重和心率与你的日记记录并排显示。</string>
+    <string name="shell_onboarding_health_weight_label">你的体重</string>
+    <string name="shell_onboarding_connecting">连接中…</string>
+    <string name="shell_onboarding_set_later">稍后再设置</string>
+    <string name="shell_onboarding_health_note_no_health_connect">此设备没有 Health Connect。请改为在上方设置你的体重。</string>
+    <string name="shell_onboarding_health_note_needs_update">此设备上有 Health Connect，但需要更新后才能让 Piru 读取。</string>
+    <string name="shell_onboarding_health_note_synced">已从 Health Connect 同步——请确认数值无误。</string>
+    <string name="shell_onboarding_health_note_no_read">无法从 Health Connect 读取体重。请改为在上方设置。</string>
+    <string name="shell_onboarding_health_note_settings">随时可在 Health Connect 自己的设置里更改 Piru 能看到什么。</string>
+    <string name="shell_onboarding_decrease">减少</string>
+    <string name="shell_onboarding_increase">增加</string>
+    <string name="shell_chart_alcohol">酒精</string>
+    <string name="shell_chart_heart_rate">心率</string>
+    <string name="shell_onboarding_health_chart_caption">两杯酒，以及手表同时记录的心率。</string>
+
+    <!-- ==================== 引导页：提醒 ==================== -->
+
+    <string name="shell_onboarding_reminders_title">通知，由你决定</string>
+    <string name="shell_onboarding_reminders_subtitle">选择 Piru 可以发送的内容。所有开关之后都能在设置中逐一调整。</string>
+    <string name="shell_onboarding_reminders_doses_title">不漏掉任何一剂</string>
+    <string name="shell_onboarding_reminders_doses_detail">在每个日常设定的时间提醒你——如果需要，稍后还会像闹钟稍后提醒一样轻轻再问一次。</string>
+    <string name="shell_onboarding_reminders_session_title">场次进行中</string>
+    <string name="shell_onboarding_reminders_session_detail">在有物质起效期间，提供补水与放松提醒、药效消退警示，以及起效/高峰期时间提示。</string>
+    <string name="shell_onboarding_reminders_safety_title">一道安全网</string>
+    <string name="shell_onboarding_reminders_safety_detail">当某一物质的当日总量攀升至大剂量范围，或追踪的库存不足时提醒你。</string>
+    <string name="shell_onboarding_turning_on">正在开启…</string>
+    <string name="shell_onboarding_enable_selected">开启所选</string>
+
+    <!-- ==================== 引导页：导入 ==================== -->
+
+    <string name="shell_onboarding_import_title">带上你的历史记录</string>
+    <string name="shell_onboarding_import_subtitle">已经在记录了？导入 Piru 备份或 PsyLog 格式的导出文件——或者从头开始。</string>
+    <string name="shell_onboarding_import_piru_title">Piru 备份</string>
+    <string name="shell_onboarding_import_piru_detail">恢复你从 Piru 导出的完整日记。</string>
+    <string name="shell_onboarding_import_psylog_title">PsyLog 格式</string>
+    <string name="shell_onboarding_import_psylog_detail">从 PsyLog 或任何使用该格式的应用导入——新旧版本均支持。</string>
+    <string name="shell_onboarding_import_not_ported">这个版本能读取文件，但还不能把它变成条目——导入层尚未移植。</string>
+    <string name="shell_onboarding_reading">读取中…</string>
+    <string name="shell_onboarding_import_action">导入数据</string>
+    <string name="shell_onboarding_import_read_failed">无法读取该文件。</string>
+    <string name="shell_onboarding_import_not_json">该文件不是 JSON，所以不是 Piru 会读取的导出文件。</string>
+    <string name="shell_onboarding_import_encrypted">这是一份加密的 Piru 备份。这个版本还不能解密或恢复它。</string>
+    <string name="shell_onboarding_import_piru_export">这是一份 Piru 导出。用来读取它的导入层尚未移植。</string>
+    <string name="shell_onboarding_import_psylog_export">这是一份 PsyLog 导出。用来读取它的导入层尚未移植。</string>
+    <string name="shell_onboarding_import_legacy_export">这是一份早期版本的 Piru 导出。用来读取它的导入层尚未移植。</string>
+    <string name="shell_onboarding_import_unrecognised">这份 JSON 的顶层既不是 Piru 导出，也不是 PsyLog 导出。</string>
+
+    <!-- ==================== 引导页：皮肤 ==================== -->
+
+    <string name="shell_onboarding_skins_title">让它成为你的样子</string>
+    <string name="shell_onboarding_skins_subtitle">这个版本只有一套皮肤。日记、物质库和所有工具都是免费的。</string>
+    <string name="shell_onboarding_skins_one_look_title">暂时只有一种外观</string>
+    <string name="shell_onboarding_skins_one_look_detail">其他皮肤会随外观界面一起到来，这个版本里还没有。</string>
+    <string name="shell_onboarding_skins_nothing_to_buy_title">没有可购买的东西</string>
+    <string name="shell_onboarding_skins_nothing_to_buy_detail">这里没有支付代码，也没有任何需要付费才能用的功能。</string>
+
+    <!-- ==================== 引导页：完成 ==================== -->
+
+    <string name="shell_onboarding_done_title">一切就绪</string>
+    <string name="shell_onboarding_done_subtitle">点 + 按钮记下你的第一条记录。其余的一切都在一个标签页之外。</string>
+    <string name="shell_onboarding_done_timeline_title">看着一次场次成形</string>
+    <string name="shell_onboarding_done_timeline_detail">记下一剂，它就会变成时间线上的一条曲线，重叠和消退都画在里面。</string>
+    <string name="shell_onboarding_done_lookup_title">什么都能查</string>
+    <string name="shell_onboarding_done_lookup_detail">1,500+ 种物质的剂量、持续时间、效果和相互作用，每一种都标明来源。</string>
+    <string name="shell_onboarding_done_private_title">只属于你</string>
+    <string name="shell_onboarding_done_private_detail">日记就在这台设备上。没有账户、没有服务器、没有广告。</string>
+    <string name="shell_onboarding_start_using">开始使用 Piru</string>
+
+    <!-- ==================== 引导页：功能巡览 ==================== -->
+
+    <string name="shell_tour_journal_title">几秒即可记录</string>
+    <string name="shell_tour_journal_caption">每条记录都会显示在时间线上，呈现重叠情况和模型估计的效应消退时间。</string>
+    <string name="shell_tour_library_title">1,500+ 种物质</string>
+    <string name="shell_tour_library_caption">按类别浏览——剂量、持续时间、效果与相互作用，皆有来源和引用。</string>
+    <string name="shell_tour_tools_title">处理细节的工具</string>
+    <string name="shell_tour_tools_caption">查询相互作用、探索耐受模型、追踪库存，并计算溶液的浓度。</string>
+    <string name="shell_tour_insights_title">看清你的规律</string>
+    <string name="shell_tour_insights_caption">你记录的用量、时间和自我报告的效果——一目了然。</string>
+
+    <string name="shell_mock_journal">日记</string>
+    <string name="shell_mock_library">物质库</string>
+    <string name="shell_mock_tools">工具</string>
+    <string name="shell_mock_insights">洞察</string>
+    <string name="shell_mock_today">今天</string>
+    <string name="shell_mock_time_of_day">时段</string>
+    <string name="shell_mock_morning">上午</string>
+    <string name="shell_mock_afternoon">下午</string>
+    <string name="shell_mock_evening">晚上</string>
+    <string name="shell_mock_night">夜间</string>
+    <string name="shell_mock_insights_summary">440 条记录 · 4.9/天</string>
+    <string name="shell_tool_interactions">相互作用</string>
+    <string name="shell_tool_tolerance">耐受性</string>
+    <string name="shell_tool_inventory">库存</string>
+    <string name="shell_tool_half_life">半衰期</string>
+    <string name="shell_tool_solutions">溶液</string>
+    <string name="shell_tool_recovery">恢复</string>
+    <string name="shell_family_common">常见</string>
+    <string name="shell_family_stimulants">兴奋剂</string>
+    <string name="shell_family_empathogens">共情剂</string>
+    <string name="shell_family_cannabinoids">大麻素</string>
+
+    <!-- ==================== 搜索 ==================== -->
+
+    <string name="shell_search_title">搜索</string>
+    <string name="shell_search_field_label">物质和你的记录</string>
+    <string name="shell_search_hint">按名称、别名或品牌搜索。同一个输入框既找物质库里的内容，也找你记录过的内容。</string>
+    <string name="shell_search_in_log">在你的记录中</string>
+    <string name="shell_search_in_library">在物质库中</string>
+    <string name="shell_search_no_matches">没有匹配“%1$s”的内容。</string>
+    <string name="shell_search_log_date_pattern">M月d日 HH:mm</string>
+
+    <!-- ==================== 物质库 ==================== -->
+
+    <string name="shell_library_title">物质库</string>
+    <string name="shell_library_field_label">搜索物质</string>
+    <string name="shell_library_opening">正在打开目录…</string>
+    <string name="shell_library_hint">按名称、或该物质任何一个已知的别名搜索。目录收录 1,689 种物质及其全部别名。</string>
+    <string name="shell_library_no_matches">目录中没有匹配“%1$s”的内容。</string>
+
+    <!-- ==================== 物质详情 ==================== -->
+
+    <string name="shell_substance_not_found">没有“%1$s”的条目。</string>
+    <string name="shell_substance_loading">加载中…</string>
+    <string name="shell_substance_formula">分子式 %1$s</string>
+    <string name="shell_substance_molar_mass">%1$.2f g/mol</string>
+    <string name="shell_substance_cas">CAS %1$s</string>
+    <string name="shell_substance_quote">“%1$s”</string>
+    <string name="shell_substance_sources">来源：%1$s</string>
+    <string name="shell_section_dosage">剂量</string>
+    <string name="shell_section_duration">持续时间</string>
+    <string name="shell_section_mechanism">作用机制</string>
+    <string name="shell_section_effects">效应</string>
+    <string name="shell_section_combinations">组合</string>
+    <string name="shell_section_water_heat">水分与温度</string>
+    <string name="shell_dose_tier_threshold">阈值</string>
+    <string name="shell_dose_tier_light">轻微</string>
+    <string name="shell_dose_tier_common">中等</string>
+    <string name="shell_dose_tier_strong">强烈</string>
+    <string name="shell_dose_tier_heavy">大剂量</string>
+    <string name="shell_dose_withheld_rx">这是处方药。Piru 展示它做什么、需要留意什么，把具体数字留给你处方上写的剂量。</string>
+    <string name="shell_dose_withheld_other">目录没有收录这个化合物的娱乐性用药剂量区间，所以这里不显示任何数字。</string>
+    <string name="shell_duration_line">起效 %1$s · 上升至 %2$s · 峰值至 %3$s · 总计 %4$s</string>
+    <string name="shell_duration_hours_minutes">%1$d 小时 %2$d 分钟</string>
+    <string name="shell_duration_hours">%1$d 小时</string>
+    <string name="shell_duration_minutes">%1$d 分钟</string>
+
+    <!-- ==================== 设置：目录 ==================== -->
+
+    <string name="shell_settings_title">设置</string>
+    <string name="shell_settings_appearance">外观</string>
+    <string name="shell_settings_appearance_note">这个版本的 Piru 只有一套皮肤。其他皮肤和明暗模式切换会随外观界面一起到来。</string>
+    <string name="shell_settings_substance_colours">物质颜色</string>
+    <string name="shell_settings_substance_colours_detail">每种物质都有一个来自其类别的颜色。你可以为自己记录的那些设置自己的颜色。</string>
+    <string name="shell_settings_notifications">通知</string>
+    <string name="shell_settings_notifications_detail">Piru 可以发送哪些提醒和警示，逐个开关，以及它保持安静的时间段。</string>
+    <string name="shell_settings_health_data">健康数据</string>
+    <string name="shell_settings_health_data_detail">在你记录的剂量旁边显示心率、血压和体重。只读，并且不会离开这台手机。</string>
+    <string name="shell_settings_data_backup">数据与备份</string>
+    <string name="shell_settings_data_backup_detail">这里存了什么、导出与导入、加密备份，以及在任何破坏性操作前留下的副本。</string>
+    <string name="shell_settings_about">关于</string>
+    <string name="shell_settings_about_body">Piru 是一份剂量记录和参考资料。它不做诊断，不建议剂量，也无法知道你用了什么。</string>
+    <string name="shell_settings_version">版本 %1$s (%2$d)</string>
+    <string name="shell_settings_tagline">一剂不是一份供词——这个应用只记录你告诉它的，并假定你知道自己在做什么。</string>
+    <string name="shell_settings_sources">数据来源</string>
+    <string name="shell_settings_sources_body">物质数据汇编自 substance.wiki（LGPL-2.1）、PsychonautWiki 和 FreeOD（CC BY-SA 4.0）、dose.wiki（CC0）、TripSit、DailyMed、PubChem 和 Wikidata。每种物质都在自己的详情页上标明各自的贡献来源。</string>
+    <string name="shell_settings_license_body">Piru 是采用 GPLv3 的自由软件，来自 pharmacykitty 和 @kageroumado 的工作。</string>
+
+    <!-- ==================== 设置：物质颜色 ==================== -->
+
+    <string name="shell_substance_colours_intro">在你选择之前，每种物质都已经有一个来自其类别的颜色。设置自己的颜色会在这里以及所有绘制它的地方覆盖原色。</string>
+    <string name="shell_substance_colours_empty">还没有记录，所以没有可设置颜色的东西。</string>
+    <string name="shell_substance_colour_class">类别颜色</string>
+    <string name="shell_substance_colour_custom">你的颜色</string>
+
+    <!-- ==================== 设置：取色器 ==================== -->
+
+    <string name="shell_colour">颜色</string>
+    <string name="shell_colour_class_default">类别默认</string>
+    <string name="shell_colour_custom">自定义</string>
+    <string name="shell_colour_plane_description">亮度与彩度</string>
+    <string name="shell_colour_hue_description">色相</string>
+    <string name="shell_colour_readout">L %1$.2f · C %2$.3f · H %3$.0f°</string>
+    <string name="shell_colour_use_class">使用类别颜色</string>
+
+    <!-- ==================== 设置：健康数据 ==================== -->
+
+    <string name="shell_health_intro">Piru 可以在你记录的剂量旁边显示心率、血压和体重。它只读取——从不写入健康记录，这里的内容也不会离开手机。</string>
+    <string name="shell_health_not_installed_title">此设备上没有 Health Connect</string>
+    <string name="shell_health_not_installed_body">在这个 Android 版本上它是一个独立的应用。从 Play 商店安装它就能开启这项功能；在那之前，Piru 的其余部分照常工作。</string>
+    <string name="shell_health_update_title">Health Connect 需要更新</string>
+    <string name="shell_health_update_body">这里安装的版本比 Piru 对接的版本旧。从 Play 商店更新它就能开启。</string>
+    <string name="shell_health_connected">已连接</string>
+    <string name="shell_health_partly_connected">部分连接</string>
+    <string name="shell_health_not_connected">未连接</string>
+    <string name="shell_health_allowed_count">已允许 %1$d 项，共 %2$d 项数据类型。其中任何一项都可以在 Health Connect 里更改。</string>
+    <string name="shell_health_nothing_read">在你允许之前，Piru 不会从你的健康数据里读取任何内容。</string>
+    <string name="shell_health_allow">允许访问</string>
+    <string name="shell_health_change_access">更改访问权限</string>
+    <string name="shell_health_open_settings">打开 Health Connect</string>
+    <string name="shell_health_what_is_read">读取的内容</string>
+    <string name="shell_health_type_heart_rate">心率</string>
+    <string name="shell_health_type_heart_rate_detail">与你的剂量一起绘制，让曲线显示每一剂前后你的身体在做什么。</string>
+    <string name="shell_health_type_resting_heart_rate">静息心率</string>
+    <string name="shell_health_type_resting_heart_rate_detail">缓慢的基线，用于与一次场次对比。</string>
+    <string name="shell_health_type_blood_pressure">血压</string>
+    <string name="shell_health_type_blood_pressure_detail">有读数的地方会显示在场次时间线上。</string>
+    <string name="shell_health_type_workouts">锻炼</string>
+    <string name="shell_health_type_workouts_detail">标出运动期间的心率，这样跑步带来的上升不会被当成剂量带来的上升。</string>
+    <string name="shell_health_type_weight">体重</string>
+    <string name="shell_health_type_weight_detail">用来缩放剂量模型。使用最新的一条读数。</string>
+    <string name="shell_health_body_weight">体重</string>
+    <string name="shell_health_body_weight_detail">Piru 用它来缩放每一个剂量模型——一剂被清除得多快，以及它在体内时浓度有多高。数字越接近，曲线就越接近，而不是变成另一条曲线。</string>
+    <string name="shell_health_weight_source_manual">这是你输入的。来自 Health Connect 的读数不会替换它。</string>
+    <string name="shell_health_weight_source_synced">读取自 Health Connect。你输入的数值会替换它。</string>
+    <string name="shell_health_weight_source_estimated">未设置。在你给出之前，模型使用 60 kg 作为参考。</string>
+    <string name="shell_health_use_reading">使用来自 Health Connect 的读数（%1$.1f kg）</string>
+    <string name="shell_health_weight_value">%1$.1f kg</string>
+    <string name="shell_health_no_reading_title">如果读数一直不出现</string>
+    <string name="shell_health_no_reading_body">Piru 只能看到其他应用写入 Health Connect 的内容。如果你的手表同步到一个不往那里写入的应用，Piru 做什么都不会让那些数字出现。</string>
+    <string name="shell_health_disclaimer">读数按其他应用记录的原样显示。Piru 不核实它们。Not medical advice.</string>
+
+    <!-- ==================== 设置：通知 ==================== -->
+
+    <string name="shell_notif_permission">权限</string>
+    <string name="shell_notif_authorized">Piru 可以发送通知。</string>
+    <string name="shell_notif_not_determined">Piru 还没有询问过。在获得许可之前，下面的内容都不会送达。</string>
+    <string name="shell_notif_denied">Piru 的通知已关闭。下面的内容都不会送达。</string>
+    <string name="shell_notif_allow">允许通知</string>
+    <string name="shell_notif_all">全部通知</string>
+    <string name="shell_notif_pause_all">全部暂停</string>
+    <string name="shell_notif_pause_all_detail">停掉所有通知，但不会丢掉下面的选择。</string>
+    <string name="shell_notif_group_session">场次提醒</string>
+    <string name="shell_notif_group_session_detail">在你有记录的东西仍然活跃期间，提供补水与收尾提醒、起效和高峰期提示，以及状态确认。</string>
+    <string name="shell_notif_group_meds">用药提醒</string>
+    <string name="shell_notif_group_meds_detail">在每个日常设定的时间提醒，如果还没有记录，稍后再问一次。</string>
+    <string name="shell_notif_ask_again">再次提醒</string>
+    <string name="shell_notif_ask_again_off">关闭——没有记录的提醒不会再次被追问。</string>
+    <string name="shell_notif_ask_again_schedule">每次提醒之后 %1$s 再问一次。</string>
+    <string name="shell_notif_reask_minutes">+%1$d 分钟</string>
+    <string name="shell_notif_add_reask">添加再次提醒</string>
+    <string name="shell_notif_remove_last">移除最后一个</string>
+    <string name="shell_notif_turn_off">关闭</string>
+    <string name="shell_notif_group_safety">安全与库存</string>
+    <string name="shell_notif_group_safety_detail">当某一物质的当日总量攀升至大剂量范围，或追踪的库存不足时提醒你。</string>
+    <string name="shell_notif_quiet_hours">勿扰时段</string>
+    <string name="shell_notif_quiet_hours_detail">时间落在该时段内的提醒不会发送。累积剂量警告永不被静音——它是必须送达的那一条。</string>
+    <string name="shell_notif_quiet_start">开始</string>
+    <string name="shell_notif_quiet_end">结束</string>
+    <string name="shell_notif_time_sensitive">时效性通知</string>
+    <string name="shell_notif_time_sensitive_body">iOS 允许通知突破专注模式。Android 没有对应机制：覆盖勿扰模式需要一个系统级权限，而那个权限还允许应用读取并改写你的勿扰规则，Piru 不会去要它。关于你记录过的剂量的提醒仍会按时送达，作为普通通知。</string>
+    <string name="shell_notif_type_hydration">补水提醒</string>
+    <string name="shell_notif_type_hydration_detail">约一小时后提醒补水，药效开始消退时再提醒一次。</string>
+    <string name="shell_notif_type_sleep">睡眠提醒</string>
+    <string name="shell_notif_type_sleep_detail">在用了让你睡不着的东西、又熬了很久之后，提醒你收尾。</string>
+    <string name="shell_notif_type_phase">阶段提醒</string>
+    <string name="shell_notif_type_phase_detail">起效、上升期和高峰期，按这一剂自己的模型曲线计时。</string>
+    <string name="shell_notif_type_cumulative">累积剂量警告</string>
+    <string name="shell_notif_type_cumulative_detail">当某一物质十二小时内的总量达到大剂量范围时。</string>
+    <string name="shell_notif_type_routine_detail">在你为每种药物设定的时间。</string>
+    <string name="shell_notif_type_follow_up">再次提醒</string>
+    <string name="shell_notif_type_follow_up_detail">如果提醒还没有被记录，稍后再问一次。</string>
+    <string name="shell_notif_type_inventory">低库存提醒</string>
+    <string name="shell_notif_type_inventory_detail">当追踪的存货低于它的低库存阈值时。</string>
+    <string name="shell_notif_type_check_in">状态确认提醒</string>
+    <string name="shell_notif_type_check_in_detail">在你开启了它的一次场次里，提醒你记下这次进行得怎么样。</string>
+
+    <!-- ==================== 设置：数据与备份 ==================== -->
+
+    <string name="shell_data_export_failed">导出失败</string>
+    <string name="shell_data_export_write_failed">无法把文件写入你选择的位置。</string>
+    <string name="shell_data_export_build_failed">无法生成导出文件。</string>
+    <string name="shell_data_export_encrypted_build_failed">无法生成加密备份。</string>
+    <string name="shell_data_import_failed">导入失败</string>
+    <string name="shell_data_file_unreadable">无法读取该文件。</string>
+    <string name="shell_data_device_key_title">无法打开此备份</string>
+    <string name="shell_data_device_key_body">这是设备密钥备份，由 iOS 应用创建，密钥保存在你的 iCloud 钥匙串里。密钥不在文件中，Android 也没有对应的存储来放它，所以这个版本打不开它。它的口令备份可以正常打开。</string>
+    <string name="shell_data_restore_failed">恢复失败</string>
+    <string name="shell_data_snapshot_failed">无法写入当前数据的恢复副本，因此没有替换任何内容。</string>
+    <string name="shell_data_restore_complete">恢复完成</string>
+    <string name="shell_data_import_complete">导入完成</string>
+    <string name="shell_data_copy_unreadable">无法读取该副本。</string>
+    <string name="shell_data_export_title">导出</string>
+    <string name="shell_data_export_piru">Piru 备份</string>
+    <string name="shell_data_export_piru_detail">可恢复到 Piru 的完整备份</string>
+    <string name="shell_data_export_psywiki">PsychonautWiki 格式</string>
+    <string name="shell_data_export_psywiki_detail">用于导入 PsychonautWiki 应用。纯 JSON，不包含库存、收藏或场次备注。</string>
+    <string name="shell_data_export_encrypted">加密备份</string>
+    <string name="shell_data_export_encrypted_detail">由口令保护——可保存或发送到任何地方</string>
+    <string name="shell_data_passphrase_wrong">该口令打不开这份备份。</string>
+    <string name="shell_data_device_key_unsupported">这个版本打不开设备密钥备份。</string>
+    <string name="shell_data_not_a_backup">这个文件不是可读取的 Piru 备份。</string>
+    <string name="shell_data_restore_title">恢复备份</string>
+    <string name="shell_data_restore_replace_prefix">这会把你的当前数据替换为 %1$s 创建的副本。</string>
+    <string name="shell_data_restore_strategy">合并会保留你当前的条目并加入备份中的。替换会先删除你当前的数据（系统会自动创建可恢复副本），然后仅恢复备份内容。</string>
+    <string name="shell_data_merge">与当前数据合并</string>
+    <string name="shell_data_replace">替换全部</string>
+    <string name="shell_data_delete_title">删除所有数据</string>
+    <string name="shell_data_delete_body">这会删除你的日记、档案、日程、库存、自定义预设和本地恢复副本。导出的文件和设备备份不受影响。</string>
+    <string name="shell_data_delete_failed">删除失败</string>
+    <string name="shell_data_delete_failed_body">无法删除数据。</string>
+    <string name="shell_data_on_device">在此设备上</string>
+    <string name="shell_data_on_device_footer">Piru 在本设备应用内存储的全部内容。按你手机自己的设置所做的设备备份也会包含它。</string>
+    <string name="shell_data_count_entries">记录</string>
+    <string name="shell_data_count_sessions">场次</string>
+    <string name="shell_data_count_meds">每日用药</string>
+    <string name="shell_data_count_quicklog">快捷记录项</string>
+    <string name="shell_data_count_favorites">收藏</string>
+    <string name="shell_data_count_inventory">库存</string>
+    <string name="shell_data_count_custom_colours">自定义颜色</string>
+    <string name="shell_data_count_store_size">存储大小</string>
+    <string name="shell_data_bytes">%1$d 字节</string>
+    <string name="shell_data_export_import">导出与导入</string>
+    <string name="shell_data_export_import_footer">Piru 和 PsychonautWiki 文件都是纯文本、未加密的 JSON。导入会添加进你的日记并跳过重复项。加密恢复可以合并或替换。库存包含在 Piru 和加密备份里，但不包含在 PsychonautWiki 文件中。\n\n这里不提供自动备份。在 iOS 上，它会在你每次离开应用时把一份加密副本写入你的私人 iCloud Drive；Android 没有对应机制，所以备份只在你亲手做的时候生成。</string>
+    <string name="shell_data_export_row">导出…</string>
+    <string name="shell_data_export_row_detail">Piru、PsychonautWiki 或加密备份</string>
+    <string name="shell_data_import_row">导入…</string>
+    <string name="shell_data_import_row_detail">Piru 或 PsychonautWiki 文件，或加密备份</string>
+    <string name="shell_data_substance_db">物质数据库</string>
+    <string name="shell_data_substance_db_footer">来源不一致时以哪一个为准。来源优先级编辑器不在这个版本里；内置目录提供每种物质自己的来源，列在它的详情页上。</string>
+    <string name="shell_data_substances_in_catalog">内置目录中的物质</string>
+    <string name="shell_data_browse_library">在物质库标签页中浏览。</string>
+    <string name="shell_data_how_encryption">加密原理</string>
+    <string name="shell_data_enc_strong">强加密</string>
+    <string name="shell_data_enc_strong_detail">以 AES-256-GCM 加密封存。篡改会被检测并拒绝。</string>
+    <string name="shell_data_enc_passphrase">口令备份</string>
+    <string name="shell_data_enc_passphrase_detail">加密导出会用 600,000 轮 PBKDF2 把你的口令转换成密钥。Piru 不保存口令的副本，也无法找回。普通导出不加密。</string>
+    <string name="shell_data_enc_snapshot">恢复会保留快照</string>
+    <string name="shell_data_enc_snapshot_detail">恢复时替换你的数据之前，会先做一份可恢复副本。</string>
+    <string name="shell_data_enc_device_key">设备密钥备份在这里打不开</string>
+    <string name="shell_data_enc_device_key_detail">iOS 应用还可以用它保存在你 iCloud 钥匙串里的密钥封装备份。那个密钥从不进入文件，而 Android 没有对应的密钥存储，所以这个版本会识别出这类备份并拒绝它们，而不是以看起来像口令错误的方式失败。</string>
+    <string name="shell_data_recoverable">可恢复的副本</string>
+    <string name="shell_data_recoverable_footer">在恢复之前、或删除所有数据之前创建的副本会出现在这里，随时可以恢复。Piru 从不自行恢复它们：你要来的副本存在的意义，就是让删除保持删除。</string>
+    <string name="shell_data_checking_copies">正在检查可恢复的副本…</string>
+    <string name="shell_data_no_copies">此设备上没有可恢复的副本。</string>
+    <string name="shell_data_automatic_suffix">（自动）</string>
+    <string name="shell_data_records">%1$d 条记录</string>
+    <string name="shell_data_unreadable">无法读取</string>
+    <string name="shell_data_unknown_date">未知日期</string>
+    <string name="shell_data_danger_zone">危险区域</string>
+    <string name="shell_data_danger_zone_footer">删除日记记录、档案、日程、库存、自定义预设和本地恢复副本。</string>
+
+    <string name="shell_data_import_nothing_new">没有新增内容——文件里的所有东西这里都已经有了。</string>
+    <string name="shell_data_import_added">已添加 %1$s。</string>
+    <string name="shell_data_import_entry_one">%1$d 条记录</string>
+    <string name="shell_data_import_entry_many">%1$d 条记录</string>
+    <string name="shell_data_import_sessions">%1$d 个场次</string>
+    <string name="shell_data_import_medications">%1$d 种药物</string>
+    <string name="shell_data_import_favorites">%1$d 个收藏</string>
+    <string name="shell_data_import_unsupported_rows">文件还包含 %1$d 项%2$s，这个版本没有地方存放。</string>
+    <string name="shell_data_import_unsupported">文件还包含%1$s，这个版本没有地方存放。</string>
+    <string name="shell_data_section_lab">化验测量</string>
+    <string name="shell_data_section_units">自定义单位</string>
+    <string name="shell_data_section_drinks">饮品预设</string>
+    <string name="shell_data_section_settings">应用设置</string>
+
+    <!-- ==================== 设置：口令 ==================== -->
+
+    <string name="shell_data_set_passphrase">设置口令</string>
+    <string name="shell_passphrase">口令</string>
+    <string name="shell_passphrase_confirm">确认口令</string>
+    <string name="shell_data_passphrase_warning">如果你丢失此口令，备份将无法恢复。无法重置。</string>
+    <string name="shell_data_encrypt">加密</string>
+    <string name="shell_passphrase_hint">请至少使用 %1$d 个字符。由多个单词组成的短语比短密码更安全，也更容易记住。</string>
+    <string name="shell_passphrase_too_short">太短了——请至少使用 %1$d 个字符。</string>
+    <string name="shell_passphrase_mismatch">两次输入的口令尚不一致。</string>
+    <string name="shell_passphrase_match">口令一致。</string>
+    <string name="shell_data_open_backup_title">加密备份</string>
+    <string name="shell_data_open_backup_body">此备份受口令保护。请输入创建它时使用的口令。</string>
+    <string name="shell_data_open">打开</string>
+
+    <!-- ==================== 快捷记录 ==================== -->
+
+    <string name="shell_quicklog_title">快捷记录</string>
+    <string name="shell_quicklog_substance_label">物质</string>
+    <string name="shell_quicklog_no_match">没有匹配“%1$s”的内容。你仍然可以记录它——目录没有收录的物质就按你输入的原文记下来。</string>
+    <string name="shell_quicklog_stage_anyway">仍然暂存“%1$s”</string>
+    <string name="shell_quicklog_staged">已暂存（%1$d）</string>
+    <string name="shell_quicklog_staged_empty">搜索你用了什么。把数量留空会记为未知——没有数字的记录仍然是一条记录。</string>
+    <string name="shell_quicklog_amount">剂量</string>
+    <string name="shell_quicklog_unit">单位</string>
+    <string name="shell_quicklog_remove">移除</string>
+    <string name="shell_quicklog_now">现在</string>
+    <string name="shell_quicklog_minutes_ago">-%1$d 分钟</string>
+    <string name="shell_quicklog_hours_ago">-%1$d 小时</string>
+    <string name="shell_quicklog_saving">保存中…</string>
+    <string name="shell_quicklog_log_count">记录 %1$d</string>
+
+    <!--
+      ==================== 物质详情：结合词汇 ====================
+
+      BindingAction 与 BindingAffinity 住在 :core:model 里——那是个纯 JVM 模块，
+      放不下资源 id——所以详情页原来直接把 .wireValue 和 .name.lowercase() 打在
+      页面上（"reuptakeInhibitor · significant"）。这里是它们面向读者的标签。
+
+      路线、类别、以及组合行的三档**都不在这里**：那些由 ui.labels.CoreLabels
+      负责，凡是要显示它们的地方都走它。
+
+      这些词条留在本文件、没有并进 strings_core_vocabulary.xml，是有意的：
+      zh_from_xcstrings.py 是按英文值从上游词表重新生成整个文件的，这十四条里
+      有四条在上游根本没有对应条目（上游把其中两条缩写成 PAM/NAM，三档亲和力
+      上游一律画成圆点、不给文字），并过去会把已经审过的译文清成待翻译占位；
+      另有一条 "significant" 会被重新译过——上游另有一个不相干的 significant，
+      脚本兜底的“忽略大小写”探测会命中它。
+      CoreLabels.bindingAction / bindingAffinity 是它们唯一的读取方。
+    -->
+
+    <string name="shell_binding_action_agonist">激动剂</string>
+    <string name="shell_binding_action_partial_agonist">部分激动剂</string>
+    <string name="shell_binding_action_antagonist">拮抗剂</string>
+    <string name="shell_binding_action_inverse_agonist">反向激动剂</string>
+    <string name="shell_binding_action_positive_allosteric_modulator">正向变构调节剂</string>
+    <string name="shell_binding_action_negative_allosteric_modulator">负向变构调节剂</string>
+    <string name="shell_binding_action_reuptake_inhibitor">再摄取抑制剂</string>
+    <string name="shell_binding_action_releasing_agent">释放剂</string>
+    <string name="shell_binding_action_enzyme_inhibitor">酶抑制剂</string>
+    <string name="shell_binding_action_channel_blocker">通道阻滞剂</string>
+    <string name="shell_binding_action_modulator">调节剂</string>
+    <string name="shell_binding_affinity_weak">弱</string>
+    <string name="shell_binding_affinity_significant">显著</string>
+    <string name="shell_binding_affinity_primary">主要</string>
+
+</resources>

@@ -29,13 +29,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.model.RouteOfAdministration
 import glass.kagerou.piru.model.Substance
 import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.labels.CoreLabels
 import glass.kagerou.piru.ui.theme.PiruTheme
 import java.time.Instant
 import java.util.Date
@@ -122,12 +125,12 @@ fun QuickLogSheet(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("Quick log", style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.shell_quicklog_title), style = MaterialTheme.typography.titleLarge)
 
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
-                label = { Text("Substance") },
+                label = { Text(stringResource(R.string.shell_quicklog_substance_label)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 enabled = catalogReady,
@@ -135,8 +138,7 @@ fun QuickLogSheet(
 
             if (query.isNotBlank() && results.isEmpty() && catalogReady) {
                 Text(
-                    "Nothing matches “$query”. You can still log it — a substance the catalog does " +
-                        "not carry is written down as you typed it.",
+                    stringResource(R.string.shell_quicklog_no_match, query),
                     style = MaterialTheme.typography.bodySmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -163,7 +165,12 @@ fun QuickLogSheet(
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(substance.displayTitle, style = MaterialTheme.typography.titleSmall)
                         Text(
-                            "${substance.category.wireValue} · ${substance.defaultRoute.displayName}",
+                            // Both halves are the reader-facing label, not the wire
+                            // value: `category.wireValue` is storage, and a search
+                            // result that reads "stimulant · oral" in the Chinese
+                            // build is a result half in the wrong language.
+                            "${CoreLabels.category(substance.category)} · " +
+                                CoreLabels.route(substance.defaultRoute),
                             style = MaterialTheme.typography.bodySmall,
                             color = PiruTheme.colors.secondaryLabel,
                         )
@@ -181,12 +188,12 @@ fun QuickLogSheet(
                         query = ""
                     },
                     modifier = Modifier.fillMaxWidth(),
-                ) { Text("Stage “${query.trim()}” anyway") }
+                ) { Text(stringResource(R.string.shell_quicklog_stage_anyway, query.trim())) }
             }
 
             if (staged.isNotEmpty()) {
                 Text(
-                    "Staged (${staged.size})",
+                    stringResource(R.string.shell_quicklog_staged, staged.size),
                     style = MaterialTheme.typography.labelLarge,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -207,7 +214,7 @@ fun QuickLogSheet(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    TextButton(onClick = onDismiss) { Text("Cancel") }
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.shell_cancel)) }
                     // The committable set is computed once and used for both the
                     // count and the write. Counting `staged` while committing the
                     // filtered list said "Log 3" and logged 2.
@@ -257,12 +264,19 @@ fun QuickLogSheet(
                             }
                         },
                         modifier = Modifier.weight(1f),
-                    ) { Text(if (committing) "Saving…" else "Log ${committable.size}") }
+                    ) {
+                        Text(
+                            if (committing) {
+                                stringResource(R.string.shell_quicklog_saving)
+                            } else {
+                                stringResource(R.string.shell_quicklog_log_count, committable.size)
+                            },
+                        )
+                    }
                 }
             } else {
                 Text(
-                    "Search for what you took. Emptying the amount logs it as unknown — " +
-                        "a record with no number is still a record.",
+                    stringResource(R.string.shell_quicklog_staged_empty),
                     style = MaterialTheme.typography.bodySmall,
                     color = PiruTheme.colors.secondaryLabel,
                     modifier = Modifier.padding(bottom = 32.dp),
@@ -286,13 +300,13 @@ private fun StagedDoseEditor(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(dose.substance, style = MaterialTheme.typography.titleSmall)
-                TextButton(onClick = onRemove) { Text("Remove") }
+                TextButton(onClick = onRemove) { Text(stringResource(R.string.shell_quicklog_remove)) }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = dose.amountText,
                     onValueChange = { onChange(dose.copy(amountText = it)) },
-                    label = { Text("Amount") },
+                    label = { Text(stringResource(R.string.shell_quicklog_amount)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.weight(1f),
@@ -300,7 +314,7 @@ private fun StagedDoseEditor(
                 OutlinedTextField(
                     value = dose.unit,
                     onValueChange = { onChange(dose.copy(unit = it)) },
-                    label = { Text("Unit") },
+                    label = { Text(stringResource(R.string.shell_quicklog_unit)) },
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                 )
@@ -314,7 +328,7 @@ private fun StagedDoseEditor(
                     FilterChip(
                         selected = dose.route == route,
                         onClick = { onChange(dose.copy(route = route)) },
-                        label = { Text(route.displayName) },
+                        label = { Text(CoreLabels.route(route)) },
                     )
                 }
             }
@@ -324,7 +338,15 @@ private fun StagedDoseEditor(
                         selected = dose.atMinutesAgo == minutes,
                         onClick = { onChange(dose.copy(atMinutesAgo = minutes)) },
                         label = {
-                            Text(if (minutes == 0) "now" else "-${if (minutes < 60) "${minutes}m" else "${minutes / 60}h"}")
+                            Text(
+                                if (minutes == 0) {
+                                    stringResource(R.string.shell_quicklog_now)
+                                } else if (minutes < 60) {
+                                    stringResource(R.string.shell_quicklog_minutes_ago, minutes)
+                                } else {
+                                    stringResource(R.string.shell_quicklog_hours_ago, minutes / 60)
+                                },
+                            )
                         },
                     )
                 }

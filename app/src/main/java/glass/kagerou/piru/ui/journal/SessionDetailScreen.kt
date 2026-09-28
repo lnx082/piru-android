@@ -20,8 +20,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.data.entity.SessionEntity
 import glass.kagerou.piru.engine.ActiveSubstanceState
@@ -31,12 +34,12 @@ import glass.kagerou.piru.engine.timeline
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.model.P3Color
 import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.labels.appLocale
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.theme.PiruTheme
 import java.time.Duration
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 import java.util.UUID
 
 /**
@@ -94,8 +97,8 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
     val loaded = session
 
     when {
-        loading -> Centered("Loading…")
-        loaded == null -> Centered("That session is gone.")
+        loading -> Centered(stringResource(R.string.journal_loading))
+        loaded == null -> Centered(stringResource(R.string.journal_session_gone))
         else -> LazyColumn(
             modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -132,7 +135,7 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
 
             item {
                 Text(
-                    "Doses",
+                    stringResource(R.string.journal_doses_heading),
                     style = MaterialTheme.typography.labelLarge,
                     color = PiruTheme.colors.secondaryLabel,
                     modifier = Modifier.padding(top = 4.dp),
@@ -171,10 +174,30 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
 private fun SessionHeader(session: SessionEntity, doseCount: Int, zone: ZoneId) {
     val start = session.startDate.toInstant()
     val last = session.lastDoseDate?.toInstant()
+    // The language this screen's strings resolved to — the app's, not the
+    // phone's, so an English screen never gets a German month name.
+    val dateLocale = appLocale()
+    // Resolved before the builder: the combined length is the only translated
+    // part of the line, and a composable read inside `append` would be a read
+    // buried in an expression that is not obviously a composition site.
+    val minutes = last?.let { Duration.between(start, it).toMinutes() }
+    val durationText = if (minutes != null && minutes >= 60) {
+        stringResource(R.string.journal_session_duration, minutes / 60, minutes % 60)
+    } else {
+        null
+    }
     Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
+            // A title the user wrote wins; the fallback is the day, and its
+            // field order comes from the resources so Chinese reads
+            // 9月28日星期一 rather than "星期一, 28 九月".
             session.title?.takeIf { it.isNotBlank() }
-                ?: start.atZone(zone).format(DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.getDefault())),
+                ?: start.atZone(zone).format(
+                    DateTimeFormatter.ofPattern(
+                        LocalContext.current.getString(R.string.datefmt_full_weekday_day_month),
+                        dateLocale,
+                    )
+                ),
             style = MaterialTheme.typography.headlineSmall,
         )
         Text(
@@ -183,15 +206,17 @@ private fun SessionHeader(session: SessionEntity, doseCount: Int, zone: ZoneId) 
                 if (last != null) {
                     append(" – ")
                     append(last.atZone(zone).format(DateTimeFormatter.ofPattern("HH:mm")))
-                    val minutes = Duration.between(start, last).toMinutes()
-                    if (minutes >= 60) append("  ·  ${minutes / 60} h ${minutes % 60} m")
+                    if (durationText != null) {
+                        append("  ·  ")
+                        append(durationText)
+                    }
                 }
             },
             style = MaterialTheme.typography.bodyMedium,
             color = PiruTheme.colors.secondaryLabel,
         )
         Text(
-            "$doseCount dose${if (doseCount == 1) "" else "s"}",
+            pluralStringResource(R.plurals.journal_session_dose_count, doseCount, doseCount),
             style = MaterialTheme.typography.bodySmall,
             color = PiruTheme.colors.secondaryLabel,
         )

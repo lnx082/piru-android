@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextMeasurer
@@ -21,6 +22,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import glass.kagerou.piru.R
 import glass.kagerou.piru.engine.ActiveSubstanceState
 import glass.kagerou.piru.engine.DoseMarker
 import glass.kagerou.piru.engine.TimelineCurveModel
@@ -225,7 +227,7 @@ fun TimelineGraph(
 private fun EmptyGraph(height: Dp, modifier: Modifier) {
     Box(modifier = modifier.fillMaxWidth().height(height), contentAlignment = Alignment.Center) {
         Text(
-            "No doses to draw yet.",
+            stringResource(R.string.journal_no_doses_to_draw),
             style = MaterialTheme.typography.bodyMedium,
             color = PiruTheme.colors.secondaryLabel,
         )

@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
@@ -41,6 +42,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.engine.LoadTrail
 import glass.kagerou.piru.engine.PKModel
@@ -59,6 +61,8 @@ import glass.kagerou.piru.ui.insights.InsightsMiddot
 import glass.kagerou.piru.ui.insights.InsightsSectionCard
 import glass.kagerou.piru.ui.insights.UsageTimeRange
 import glass.kagerou.piru.ui.insights.rememberViewportState
+import glass.kagerou.piru.ui.labels.CoreLabels
+import glass.kagerou.piru.ui.labels.appLocale
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.theme.PiruTheme
 import java.time.Instant
@@ -135,11 +139,12 @@ fun ReceptorLoadScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     ) {
         item {
             Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Receptor load", style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    "How hard each mechanism has been driven across the range, relative " +
-                        "to your own recent baseline. A modeled load from your logged doses — " +
-                        "it models receptor drive, not how you feel.",
+                    stringResource(R.string.toolsb_receptor_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                )
+                Text(
+                    stringResource(R.string.toolsb_receptor_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -151,7 +156,9 @@ fun ReceptorLoadScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                 items(UsageTimeRange.entries.size) { index ->
                     val option = UsageTimeRange.entries[index]
                     InsightsFilterPill(
-                        label = option.displayName,
+                        // The localized spelling; `displayName` is the English one
+                        // and is kept for the screens that have not moved yet.
+                        label = stringResource(option.displayNameRes),
                         color = accent,
                         isSelected = option == range,
                         showDot = false,
@@ -165,7 +172,10 @@ fun ReceptorLoadScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
             item {
                 PiruCard(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("The replay could not run", style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            stringResource(R.string.toolsb_receptor_failure_title),
+                            style = MaterialTheme.typography.titleSmall,
+                        )
                         Text(message, style = MaterialTheme.typography.bodySmall, color = PiruTheme.colors.dangerText)
                     }
                 }
@@ -175,7 +185,7 @@ fun ReceptorLoadScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         if (failure == null && !loaded) {
             item {
                 Text(
-                    "Replaying your log…",
+                    stringResource(R.string.toolsb_receptor_replaying),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -185,8 +195,8 @@ fun ReceptorLoadScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         if (failure == null && loaded && entryCount == 0) {
             item {
                 InsightsEmptyPanel(
-                    "No logged entries",
-                    "Add entries to see modeled receptor load.",
+                    stringResource(R.string.toolsb_no_logged_entries),
+                    stringResource(R.string.toolsb_receptor_empty_no_entries),
                 )
             }
         }
@@ -194,8 +204,8 @@ fun ReceptorLoadScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         if (failure == null && loaded && entryCount > 0 && series.isEmpty()) {
             item {
                 InsightsEmptyPanel(
-                    "Nothing to model",
-                    "None of your logged substances in this range drive a modeled mechanism.",
+                    stringResource(R.string.toolsb_receptor_empty_nothing_title),
+                    stringResource(R.string.toolsb_receptor_empty_nothing_detail),
                 )
             }
         }
@@ -207,14 +217,17 @@ fun ReceptorLoadScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                 // so the legend can never zero the chart out.
                 val shown = visible.ifEmpty { series }
 
-                InsightsSectionCard(title = "Receptor load over time", subtitle = "Relative to your recent baseline") {
+                InsightsSectionCard(
+                    title = stringResource(R.string.toolsb_receptor_chart_title),
+                    subtitle = stringResource(R.string.toolsb_receptor_chart_subtitle),
+                ) {
                     ReceptorLoadChart(shown, selectedDate, zoom.windowSeconds) { selectedDate = it }
                     selectedDate?.let { ReceptorLoadReadout(shown, it) }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         for (level in ZoomLevel.entries) {
                             InsightsFilterPill(
-                                label = level.label,
+                                label = stringResource(level.labelRes),
                                 color = accent,
                                 isSelected = level == zoom,
                                 showDot = false,
@@ -223,7 +236,7 @@ fun ReceptorLoadScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                         }
                     }
                     Text(
-                        "Wide shows 180 days at once, Medium 90, Close 30.",
+                        stringResource(R.string.toolsb_receptor_zoom_hint),
                         style = MaterialTheme.typography.labelSmall,
                         color = PiruTheme.colors.secondaryLabel,
                     )
@@ -235,8 +248,7 @@ fun ReceptorLoadScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
 
             item {
                 Text(
-                    "A modeled relative load from your logged doses. Predicted from a " +
-                        "model, not measured. Not medical advice.",
+                    stringResource(R.string.toolsb_receptor_disclaimer),
                     style = MaterialTheme.typography.labelSmall,
                     color = PiruTheme.colors.secondaryLabel,
                     modifier = Modifier.padding(bottom = 8.dp),
@@ -246,19 +258,26 @@ fun ReceptorLoadScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     }
 }
 
-/** How much of the trail is on screen at once. */
-private enum class ZoomLevel(val label: String, val windowSeconds: Double) {
-    WIDE("Wide", 180 * 86_400.0),
-    MEDIUM("Medium", 90 * 86_400.0),
-    CLOSE("Close", 30 * 86_400.0),
+/** How much of the trail is on screen at once, and the label for its pill. */
+private enum class ZoomLevel(val labelRes: Int, val windowSeconds: Double) {
+    WIDE(R.string.toolsb_receptor_zoom_wide, 180 * 86_400.0),
+    MEDIUM(R.string.toolsb_receptor_zoom_medium, 90 * 86_400.0),
+    CLOSE(R.string.toolsb_receptor_zoom_close, 30 * 86_400.0),
 }
 
 // MARK: - Loading
 
-/** A class's trail, ready to draw. */
+/**
+ * A class's trail, ready to draw.
+ *
+ * Carries the class rather than its label: [buildSeries] runs outside
+ * composition, and the label is a resource read, so it is resolved where the row
+ * is drawn. [id] stays the wire value — that is what the hidden-series set and
+ * the draw loop key on, and it must not move when the device language does.
+ */
 private data class ReceptorLoadSeries(
     val id: String,
-    val name: String,
+    val receptorClass: ReceptorClasses.ReceptorClass,
     val color: Color,
     val peak: Double,
     val points: List<LoadPoint>,
@@ -328,7 +347,7 @@ private suspend fun buildSeries(
         if (peak <= MINIMUM_PEAK) continue
         out += ReceptorLoadSeries(
             id = receptorClass.wireValue,
-            name = receptorClass.casualName,
+            receptorClass = receptorClass,
             color = classColor(receptorClass),
             peak = peak,
             points = trail.map { LoadPoint(it.date, it.load) },
@@ -393,6 +412,8 @@ private fun ReceptorLoadChart(
     val ruleInk = PiruTheme.colors.secondaryLabel.copy(alpha = 0.45f)
     val labelInk = PiruTheme.colors.secondaryLabel
     val measurer = rememberTextMeasurer()
+    val axisDayPattern = stringResource(R.string.datefmt_day_month)
+    val dateLocale = appLocale()
 
     val first = series.minOfOrNull { it.points.first().date }
     val last = series.maxOfOrNull { it.points.last().date }
@@ -472,17 +493,17 @@ private fun ReceptorLoadChart(
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(
-                visibleFrom?.let { shortDate(it) } ?: "",
+                visibleFrom?.let { shortDate(it, axisDayPattern, dateLocale) } ?: "",
                 style = MaterialTheme.typography.labelSmall,
                 color = PiruTheme.colors.secondaryLabel,
             )
             Text(
-                "share of your recent peak",
+                stringResource(R.string.toolsb_receptor_axis_caption),
                 style = MaterialTheme.typography.labelSmall,
                 color = PiruTheme.colors.secondaryLabel,
             )
             Text(
-                visibleTo?.let { shortDate(it) } ?: "",
+                visibleTo?.let { shortDate(it, axisDayPattern, dateLocale) } ?: "",
                 style = MaterialTheme.typography.labelSmall,
                 color = PiruTheme.colors.secondaryLabel,
             )
@@ -514,14 +535,22 @@ private fun ReceptorLoadReadout(series: List<ReceptorLoadSeries>, date: Instant)
 
     PiruCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(shortDate(date), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+            Text(
+                shortDate(date, stringResource(R.string.datefmt_day_month), appLocale()),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
             for ((item, load) in rows) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     InsightsLegendDot(item.color, size = 7.dp)
-                    Text(item.name, style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
+                    Text(
+                        CoreLabels.receptorCasualName(item.receptorClass),
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.weight(1f),
+                    )
                     Text(
                         "${Math.round(load * 100)}%",
                         style = MaterialTheme.typography.labelSmall,
@@ -531,7 +560,7 @@ private fun ReceptorLoadReadout(series: List<ReceptorLoadSeries>, date: Instant)
             }
             if (rows.isEmpty()) {
                 Text(
-                    "Nothing driven at this time",
+                    stringResource(R.string.toolsb_receptor_readout_empty),
                     style = MaterialTheme.typography.labelSmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -563,19 +592,28 @@ private fun ReceptorLoadLegend(
             ) {
                 InsightsLegendDot(if (isHidden) item.color.copy(alpha = 0.3f) else item.color, size = 9.dp)
                 Text(
-                    item.name,
+                    CoreLabels.receptorCasualName(item.receptorClass),
                     style = MaterialTheme.typography.labelSmall,
                     color = if (isHidden) ink else MaterialTheme.colorScheme.onSurface,
                 )
                 if (isHidden) {
                     InsightsMiddot()
-                    Text("hidden", style = MaterialTheme.typography.labelSmall, color = ink)
+                    Text(
+                        stringResource(R.string.toolsb_receptor_legend_hidden),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = ink,
+                    )
                 }
             }
         }
     }
 }
 
-private val SHORT_DAY: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.ROOT)
-
-private fun shortDate(instant: Instant): String = SHORT_DAY.format(instant.atZone(ZoneId.systemDefault()))
+/**
+ * The chart's day label. `Locale.ROOT` was wrong here — it pins the month *name*
+ * to English, so a Chinese device read "28 Sep". The app's own resolved locale
+ * supplies the names, which the caller passes in; the pattern supplies the field
+ * order and comes from the resources, because Chinese reads M月d日.
+ */
+private fun shortDate(instant: Instant, pattern: String, locale: Locale): String =
+    DateTimeFormatter.ofPattern(pattern, locale).format(instant.atZone(ZoneId.systemDefault()))

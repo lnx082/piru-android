@@ -19,10 +19,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.model.Substance
 import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.labels.CoreLabels
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.nav.PushRoute
 import glass.kagerou.piru.ui.theme.PiruTheme
@@ -65,14 +68,14 @@ fun LibraryScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
 
     Column(modifier = modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         Text(
-            "Library",
+            stringResource(R.string.shell_library_title),
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(top = 16.dp, bottom = 12.dp),
         )
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
-            label = { Text("Search substances") },
+            label = { Text(stringResource(R.string.shell_library_field_label)) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             enabled = ready,
@@ -80,22 +83,21 @@ fun LibraryScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
 
         if (!ready) {
             Text(
-                "Opening the catalog…",
+                stringResource(R.string.shell_library_opening),
                 style = MaterialTheme.typography.bodyMedium,
                 color = PiruTheme.colors.secondaryLabel,
                 modifier = Modifier.padding(top = 16.dp),
             )
         } else if (query.isBlank()) {
             Text(
-                "Search by name or by any of the names a substance is known under. " +
-                    "The catalog carries 1,689 substances and every alias they ship with.",
+                stringResource(R.string.shell_library_hint),
                 style = MaterialTheme.typography.bodyMedium,
                 color = PiruTheme.colors.secondaryLabel,
                 modifier = Modifier.padding(top = 16.dp),
             )
         } else if (results.isEmpty()) {
             Text(
-                "Nothing in the catalog matches “$query”.",
+                stringResource(R.string.shell_library_no_matches, query),
                 style = MaterialTheme.typography.bodyMedium,
                 color = PiruTheme.colors.secondaryLabel,
                 modifier = Modifier.padding(top = 16.dp),
@@ -126,7 +128,7 @@ fun LibraryScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                                 }
                             }
                             Text(
-                                substance.category.wireValue,
+                                CoreLabels.category(substance.category),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = PiruTheme.colors.secondaryLabel,
                             )

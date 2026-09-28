@@ -1,0 +1,89 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="route_oral">口服</string>
+    <string name="route_sublingual">舌下</string>
+    <string name="route_buccal">颊黏膜</string>
+    <string name="route_insufflation">鼻吸</string>
+    <string name="route_inhalation">吸入</string>
+    <string name="route_intravenous">静脉注射</string>
+    <string name="route_intramuscular">肌肉注射</string>
+    <string name="route_subcutaneous">皮下注射</string>
+    <string name="route_transdermal">透皮</string>
+    <string name="route_rectal">直肠给药</string>
+    <string name="route_other">其他</string>
+
+    <string name="category_stimulant">兴奋剂</string>
+    <string name="category_psychedelic">迷幻剂</string>
+    <string name="category_dissociative">解离剂</string>
+    <string name="category_dysdelic">暗幻剂</string>
+    <string name="category_deliriant">谵妄剂</string>
+    <string name="category_opioid">阿片类</string>
+    <string name="category_benzodiazepine">苯二氮䓬类</string>
+    <string name="category_gabapentinoid">GABA 类</string>
+    <string name="category_empathogen">共情剂</string>
+    <string name="category_cannabinoid">大麻素</string>
+    <string name="category_nootropic">益智药</string>
+    <string name="category_ampakine">安帕金</string>
+    <string name="category_eugeroic">促醒剂</string>
+    <string name="category_depressant">抑制剂</string>
+    <string name="category_orexin_antagonist">食欲素拮抗剂</string>
+    <string name="category_antidepressant">抗抑郁药</string>
+    <string name="category_antipsychotic">抗精神病药</string>
+    <string name="category_analgesic">镇痛药</string>
+    <string name="category_antihistamine">抗组胺药</string>
+    <string name="category_cardiovascular">心血管药</string>
+    <string name="category_antimicrobial">抗菌药</string>
+    <string name="category_gastrointestinal">胃肠药</string>
+    <string name="category_respiratory">呼吸系统药</string>
+    <string name="category_endocrine">内分泌药</string>
+    <string name="category_immunological">免疫药</string>
+    <string name="category_supplement">膳食补充剂</string>
+    <string name="category_peptide">肽类</string>
+    <string name="category_anticonvulsant">抗惊厥药</string>
+    <string name="category_other">其他</string>
+
+    <string name="severity_caution">谨慎</string>
+    <string name="severity_unsafe">不安全</string>
+    <string name="severity_dangerous">危险</string>
+
+    
+    <string name="severity_note">注意</string>
+
+    
+    <string name="receptor_class_psychedelic_5ht2a">迷幻剂（5-HT2A）</string>
+    <string name="receptor_class_mu_opioid">阿片类（μ）</string>
+    <string name="receptor_class_catecholamine_stimulant">兴奋剂（DAT/NET）</string>
+    <string name="receptor_class_serotonergic_releaser">血清素释放剂（SERT）</string>
+    <string name="receptor_class_gaba">GABA（苯二氮䓬／酒精）</string>
+    <string name="receptor_class_nmda_antagonist">解离剂（NMDA）</string>
+    <string name="receptor_class_cannabinoid_cb1">大麻素（CB1）</string>
+    <string name="receptor_class_adenosine">腺苷（咖啡因）</string>
+    <string name="receptor_class_nicotinic">烟碱型（nAChR）</string>
+    <string name="receptor_class_alpha2_agonist">α₂ 激动剂（可乐定）</string>
+    <string name="receptor_class_beta_blocker">β 受体阻滞剂（普萘洛尔）</string>
+    <string name="receptor_class_alpha2_delta">加巴喷丁类（α2δ）</string>
+    <string name="receptor_class_unknown">其他</string>
+
+    <string name="receptor_casual_psychedelic_5ht2a">迷幻剂</string>
+    <string name="receptor_casual_mu_opioid">阿片类</string>
+    <string name="receptor_casual_catecholamine_stimulant">兴奋剂</string>
+    <string name="receptor_casual_serotonergic_releaser">血清素释放剂</string>
+    <string name="receptor_casual_gaba">镇静剂</string>
+    <string name="receptor_casual_nmda_antagonist">解离剂</string>
+    <string name="receptor_casual_cannabinoid_cb1">大麻</string>
+    <string name="receptor_casual_adenosine">咖啡因</string>
+    <string name="receptor_casual_nicotinic">尼古丁</string>
+    <string name="receptor_casual_alpha2_agonist">α₂ 激动剂</string>
+    <string name="receptor_casual_beta_blocker">β 受体阻滞剂</string>
+    <string name="receptor_casual_alpha2_delta">加巴喷丁类</string>
+    <string name="receptor_casual_unknown">其他</string>
+
+    
+    <string name="effect_axis_sedation">镇静</string>
+    <string name="effect_axis_anxiolysis">抗焦虑</string>
+    <string name="effect_axis_anticonvulsant">抗惊厥药</string>
+    <string name="effect_axis_myorelaxation">肌肉松弛</string>
+    <string name="effect_axis_memory">记忆</string>
+    <string name="effect_axis_coordination">协调</string>
+    <string name="effect_axis_hypnotic">睡眠</string>
+</resources>

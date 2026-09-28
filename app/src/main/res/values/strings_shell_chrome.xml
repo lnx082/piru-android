@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The shell: the tab bar, and anything drawn by the frame around the screens.
+-->
+<resources>
+    <string name="tab_journal">Journal</string>
+    <string name="tab_library">Library</string>
+    <string name="tab_tools">Tools</string>
+    <string name="tab_insights">Insights</string>
+    <string name="tab_search">Search</string>
+</resources>

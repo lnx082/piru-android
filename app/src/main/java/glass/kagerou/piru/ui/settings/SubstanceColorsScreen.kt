@@ -25,8 +25,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.model.OklchPickerModel
 import glass.kagerou.piru.model.P3Color
 import glass.kagerou.piru.model.SubstanceColorGenerator
@@ -111,7 +113,7 @@ fun SubstanceColorsScreen(
             )
             SubstanceColorPicker(model = model, onChange = { model = it })
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                TextButton(onClick = { editing = null }) { Text("Cancel") }
+                TextButton(onClick = { editing = null }) { Text(stringResource(R.string.shell_cancel)) }
                 TextButton(onClick = {
                     scope.launch {
                         // `model.tint` is right in both branches: after
@@ -134,7 +136,7 @@ fun SubstanceColorsScreen(
                         onChanged()
                         reload++
                     }
-                }) { Text("Save") }
+                }) { Text(stringResource(R.string.shell_save)) }
             }
         }
         return
@@ -147,15 +149,14 @@ fun SubstanceColorsScreen(
     ) {
         item {
             Text(
-                "Substance colours",
+                stringResource(R.string.shell_settings_substance_colours),
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.padding(top = 16.dp),
             )
         }
         item {
             Text(
-                "Every substance has a colour from its class before you choose one. " +
-                    "Setting your own overrides it here and everywhere it is drawn.",
+                stringResource(R.string.shell_substance_colours_intro),
                 style = MaterialTheme.typography.bodyMedium,
                 color = PiruTheme.colors.secondaryLabel,
                 modifier = Modifier.padding(bottom = 8.dp),
@@ -164,7 +165,7 @@ fun SubstanceColorsScreen(
         if (rows.isEmpty()) {
             item {
                 Text(
-                    "Nothing logged yet, so there is nothing to colour.",
+                    stringResource(R.string.shell_substance_colours_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -195,7 +196,11 @@ fun SubstanceColorsScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(row.name, style = MaterialTheme.typography.titleSmall)
                         Text(
-                            if (row.usesDefault) "Class colour" else "Your colour",
+                            if (row.usesDefault) {
+                                stringResource(R.string.shell_substance_colour_class)
+                            } else {
+                                stringResource(R.string.shell_substance_colour_custom)
+                            },
                             style = MaterialTheme.typography.bodySmall,
                             color = PiruTheme.colors.secondaryLabel,
                         )

@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
@@ -25,6 +26,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import glass.kagerou.piru.R
 import glass.kagerou.piru.model.DoseFrequency
 import glass.kagerou.piru.ui.theme.PiruTheme
 import java.time.Instant
@@ -71,18 +73,25 @@ internal fun clockText(instant: Instant, zone: ZoneId = ZoneId.systemDefault()):
     instant.atZone(zone).format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
 
 /**
- * "a", "a and b", "a, b and c" — Swift's `formatted(.list(type: .and))`.
+ * "a", "a and b", "a、b and c" — Swift's `formatted(.list(type: .and))`.
  *
- * Kotlin has no list formatter, so this is the one English join the missed-dose
- * notice needs. It is English-only on purpose: the build has no localization
- * layer, and a hand-rolled joiner that pretended otherwise would be worse than
- * one that admits it.
+ * Kotlin has no list formatter, so this is the one join the missed-dose notice
+ * needs. Both halves come from resources rather than being spelled here: the
+ * separator and the final conjunction are different words in Chinese, and a
+ * hand-rolled `", " + " and "` would have shipped an English join into a
+ * Chinese sentence.
  */
+@Composable
+@ReadOnlyComposable
 internal fun andList(names: List<String>): String = when (names.size) {
     0 -> ""
     1 -> names[0]
-    2 -> "${names[0]} and ${names[1]}"
-    else -> names.dropLast(1).joinToString(", ") + " and " + names.last()
+    2 -> stringResource(R.string.common_list_and_pair, names[0], names[1])
+    else -> stringResource(
+        R.string.common_list_and_pair,
+        names.dropLast(1).joinToString(stringResource(R.string.common_list_separator)),
+        names.last(),
+    )
 }
 
 /** The caption style the meds screens share. */
@@ -99,14 +108,18 @@ internal val captionSecondaryStyle: TextStyle
  * the model gains `shortLabel` this is where it plugs in; `AdherenceScreen` keeps
  * its own copy of the same ladder for the same reason.
  */
-internal fun frequencyShortLabel(frequency: DoseFrequency): String = when (frequency) {
-    DoseFrequency.DAILY -> "Daily"
-    DoseFrequency.EVERY_OTHER_DAY -> "Every 2 days"
-    DoseFrequency.WEEKLY -> "Weekly"
-    DoseFrequency.BIWEEKLY -> "Biweekly"
-    DoseFrequency.MONTHLY -> "Monthly"
-    DoseFrequency.SPECIFIC_DAYS -> "Custom days"
-}
+@Composable
+@ReadOnlyComposable
+internal fun frequencyShortLabel(frequency: DoseFrequency): String = stringResource(
+    when (frequency) {
+        DoseFrequency.DAILY -> R.string.common_frequency_daily
+        DoseFrequency.EVERY_OTHER_DAY -> R.string.meds_frequency_short_every_2_days
+        DoseFrequency.WEEKLY -> R.string.common_frequency_weekly
+        DoseFrequency.BIWEEKLY -> R.string.meds_frequency_short_biweekly
+        DoseFrequency.MONTHLY -> R.string.common_frequency_monthly
+        DoseFrequency.SPECIFIC_DAYS -> R.string.meds_frequency_short_custom_days
+    },
+)
 
 // MARK: - Capsule chip
 

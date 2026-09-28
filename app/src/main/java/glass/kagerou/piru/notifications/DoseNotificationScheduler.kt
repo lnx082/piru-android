@@ -1,7 +1,9 @@
 package glass.kagerou.piru.notifications
 
 import android.content.Context
+import androidx.annotation.StringRes
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.engine.ActiveSubstanceState
 import glass.kagerou.piru.engine.DoseRecord
@@ -110,11 +112,17 @@ object DoseNotificationScheduler {
      *
      * Declaration order is the order they fire in and the order the identifiers
      * were minted in, so it stays as it is.
+     *
+     * [wireValue] is not the displayed name and never becomes it: the first is
+     * an identifier fragment that must not move between releases, the second is
+     * a translated word. They were a single `displayName` string while the app
+     * was English-only, which is exactly the kind of coincidence that turns into
+     * a renamed identifier later.
      */
-    enum class Phase(val wireValue: String, val displayName: String) {
-        ONSET("onset", "Onset"),
-        COMEUP("comeup", "Come-up"),
-        PEAK("peak", "Peak"),
+    enum class Phase(val wireValue: String, @StringRes val labelRes: Int) {
+        ONSET("onset", R.string.notif_phase_name_onset),
+        COMEUP("comeup", R.string.notif_phase_name_comeup),
+        PEAK("peak", R.string.notif_phase_name_peak),
     }
 
     /** The cumulative check's answer: the rolling total, its unit, and whether it warrants an alert. */
@@ -414,8 +422,8 @@ object DoseNotificationScheduler {
             scheduleSimple(
                 context = context,
                 identifier = NotificationType.HYDRATION.identifier(anchor, "1"),
-                title = "Stay hydrated",
-                body = hydrationMessage(category),
+                title = context.getString(R.string.notif_hydration_title),
+                body = hydrationMessage(context, category),
                 fireAt = hydrationFireAt,
                 threadKey = threadId,
                 zone = zone,
@@ -432,8 +440,8 @@ object DoseNotificationScheduler {
                 scheduleSimple(
                     context = context,
                     identifier = NotificationType.HYDRATION.identifier(anchor, "2"),
-                    title = "Hydration check",
-                    body = "Have some water and a snack if you haven't recently.",
+                    title = context.getString(R.string.notif_hydration_check_title),
+                    body = context.getString(R.string.notif_hydration_check_body),
                     fireAt = secondFireAt,
                     threadKey = threadId,
                     zone = zone,
@@ -451,9 +459,8 @@ object DoseNotificationScheduler {
                 scheduleSimple(
                     context = context,
                     identifier = NotificationType.SLEEP.identifier(anchor),
-                    title = "Time to rest",
-                    body = "You've been going for over ${stimHours.toInt()} hours. Try to wind down — " +
-                        "dim the lights, put the phone away, and let yourself sleep.",
+                    title = context.getString(R.string.notif_sleep_title),
+                    body = context.getString(R.string.notif_sleep_body_extended, stimHours.toInt()),
                     fireAt = fireAt,
                     threadKey = threadId,
                     zone = zone,
@@ -468,8 +475,8 @@ object DoseNotificationScheduler {
             scheduleSimple(
                 context = context,
                 identifier = NotificationType.SLEEP.identifier(anchor),
-                title = "Time to rest",
-                body = "It's been a long session. Your body and brain need sleep to recover. Try to wind down.",
+                title = context.getString(R.string.notif_sleep_title),
+                body = context.getString(R.string.notif_sleep_body),
                 fireAt = fireAt,
                 threadKey = threadId,
                 zone = zone,
@@ -504,8 +511,8 @@ object DoseNotificationScheduler {
         val anchor = entryId.toString()
 
         val onsetBody = durationOnset?.let {
-            "Reference onset for this route: ${it.min.toInt()}-${it.max.toInt()} minutes."
-        } ?: "Tracking started."
+            context.getString(R.string.notif_phase_body_onset_reference, it.min.toInt(), it.max.toInt())
+        } ?: context.getString(R.string.notif_phase_body_tracking_started)
         schedulePhaseAlert(context, Phase.ONSET, shownName, anchor, doseTime.plusSeconds(60), onsetBody, threadId, zone)
 
         if (state == null) return
@@ -516,14 +523,14 @@ object DoseNotificationScheduler {
             schedulePhaseAlert(
                 context, Phase.COMEUP, shownName, anchor,
                 doseTime.plusSeconds(onsetEndSeconds),
-                "Estimated onset from reference data. How are you feeling?", threadId, zone,
+                context.getString(R.string.notif_phase_body_comeup), threadId, zone,
             )
         }
         if (comeupEndSeconds > 0 && comeupEndSeconds > onsetEndSeconds) {
             schedulePhaseAlert(
                 context, Phase.PEAK, shownName, anchor,
                 doseTime.plusSeconds(comeupEndSeconds),
-                "Estimated peak window from reference data. How are you feeling?", threadId, zone,
+                context.getString(R.string.notif_phase_body_peak), threadId, zone,
             )
         }
     }
@@ -544,7 +551,10 @@ object DoseNotificationScheduler {
         scheduleSimple(
             context = context,
             identifier = NotificationType.PHASE.identifier(anchor, phase.wireValue),
-            title = "$substance — ${phase.displayName}",
+            // The substance name is catalog data and is never translated; the
+            // phase word is. The join between them is a resource rather than a
+            // literal so Chinese is free to punctuate it differently.
+            title = context.getString(R.string.notif_phase_title, substance, context.getString(phase.labelRes)),
             body = body,
             fireAt = fireAt,
             threadKey = threadId,
@@ -568,8 +578,16 @@ object DoseNotificationScheduler {
         scheduleSimple(
             context = context,
             identifier = NotificationType.CUMULATIVE.identifier(entryId.toString()),
-            title = "Heads up — ${doseFormatted(check.total)}${check.unit} $shownName today",
-            body = "That's a high cumulative dose. ${cumulativeTip(category)}",
+            // Indexed, not positional: Chinese puts the substance name first and
+            // the amount after it, so the three arguments land in a different
+            // order than the English sentence states them.
+            title = context.getString(
+                R.string.notif_cumulative_title,
+                doseFormatted(check.total),
+                check.unit,
+                shownName,
+            ),
+            body = context.getString(R.string.notif_cumulative_body, cumulativeTip(context, category)),
             fireAt = Instant.now().plusSeconds(5),
             threadKey = sessionIdentifier(doseTime, zone),
             zone = zone,
@@ -710,29 +728,36 @@ object DoseNotificationScheduler {
     private fun displayNameOf(entry: DoseEntryEntity): String? =
         entry.displayNameSnapshot ?: entry.productName
 
-    /** The medication-specific hydration line, by class. */
-    private fun hydrationMessage(category: SubstanceCategory?): String = when (category) {
-        SubstanceCategory.STIMULANT -> "A reminder to drink some water. Stimulants can mask thirst."
-        SubstanceCategory.EMPATHOGEN ->
-            "A reminder to sip, and to favor electrolytes. With this class more water is not safer."
-        SubstanceCategory.DISSOCIATIVE -> "A reminder to have some water if you can."
-        else -> "A reminder to drink some water."
+    /**
+     * The medication-specific hydration line, by class.
+     *
+     * One resource per class rather than a shared stem with a class-specific
+     * tail: "more water is not safer" is a different instruction, not a longer
+     * one, and a translator handed the stem and the tail separately would have
+     * to rebuild a sentence whose word order does not survive the trip.
+     */
+    private fun hydrationMessage(context: Context, category: SubstanceCategory?): String = when (category) {
+        SubstanceCategory.STIMULANT -> context.getString(R.string.notif_hydration_body_stimulant)
+        SubstanceCategory.EMPATHOGEN -> context.getString(R.string.notif_hydration_body_empathogen)
+        SubstanceCategory.DISSOCIATIVE -> context.getString(R.string.notif_hydration_body_dissociative)
+        else -> context.getString(R.string.notif_hydration_body_default)
     }
 
-    /** What to say alongside a high cumulative total, by class. */
-    private fun cumulativeTip(category: SubstanceCategory?): String = when (category) {
-        SubstanceCategory.STIMULANT ->
-            "Remember to hydrate, eat, and try to get some sleep. Your heart has been working hard."
-        SubstanceCategory.EMPATHOGEN ->
-            "That total is in the heavy range of the sources. Overheating, confusion or rigid muscles need emergency help."
-        SubstanceCategory.OPIOID ->
-            "Don't use alone and don't mix with other downers. An overdose is a sudden blackout with no warning — " +
-                "you can't naloxone yourself, so someone with you needs it and should call emergency services."
-        SubstanceCategory.BENZODIAZEPINE ->
-            "High cumulative benzo doses impair memory and coordination. Stay somewhere safe."
-        SubstanceCategory.DISSOCIATIVE ->
-            "Stay somewhere safe. Don't drive. Your coordination and judgment are affected."
-        else -> "Take it easy. Hydrate, eat, and rest."
+    /**
+     * What to say alongside a high cumulative total, by class.
+     *
+     * The opioid line is the reason these are separate resources rather than a
+     * single translated block: it is the only one in this file that is about not
+     * dying, and every clause in it — not alone, not with other downers, no
+     * warning, you cannot naloxone yourself — has to arrive intact in Chinese.
+     */
+    private fun cumulativeTip(context: Context, category: SubstanceCategory?): String = when (category) {
+        SubstanceCategory.STIMULANT -> context.getString(R.string.notif_cumulative_tip_stimulant)
+        SubstanceCategory.EMPATHOGEN -> context.getString(R.string.notif_cumulative_tip_empathogen)
+        SubstanceCategory.OPIOID -> context.getString(R.string.notif_cumulative_tip_opioid)
+        SubstanceCategory.BENZODIAZEPINE -> context.getString(R.string.notif_cumulative_tip_benzodiazepine)
+        SubstanceCategory.DISSOCIATIVE -> context.getString(R.string.notif_cumulative_tip_dissociative)
+        else -> context.getString(R.string.notif_cumulative_tip_default)
     }
 
     /**

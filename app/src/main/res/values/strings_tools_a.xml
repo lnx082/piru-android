@@ -1,0 +1,496 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copy for the tools group A screens: Identify, Equivalence, Alcohol, Drug
+  classes, Interactions, the interaction timeline, and the three static-content
+  screens (comedown guide, Get Help, education index).
+
+  Alongside values-zh-rCN/strings_tools_a.xml. See docs/localization.md.
+
+  Deliberately absent here:
+  - "Not medical advice." — it stays English in every build, so it is a Kotlin
+    constant in each file that renders it rather than a resource. A shared
+    resource name would collide with the other string tables.
+  - Substance, alias, brand, salt and ester names, category wire values, route
+    wire values, and the emergency numbers and tel:/sms: URLs. Those are data.
+  - The bare link labels `doi:` and `PMID` — identifier prefixes, not copy.
+-->
+<resources>
+
+    <!-- ==================== IdentifyScreen ==================== -->
+
+    <string name="identify_title">Identify a box</string>
+    <string name="identify_subtitle">What the scanner is for, and why this build has none.</string>
+    <string name="identify_what_title">What this screen is</string>
+    <string name="identify_intro">Point the camera at a medication box — the brand, the printed name, or the barcode — and Piru opens what it knows about the substance inside: the pharmacology, the doses on record, the interactions.</string>
+    <string name="identify_registries">Barcodes are matched offline against the US and French registries the app ships with. Anything else resolves by name.</string>
+    <string name="identify_label_disclaimer">Text detected from the label. Check the name, strength and formulation before saving — a scan can\'t verify what is inside the box.</string>
+    <string name="identify_not_built_title">Not in this build</string>
+    <string name="identify_not_built_body">There is no camera scanner here. Reading a label on the device needs on-device text recognition and barcode decoding over a camera preview, plus the packaged product-code tables to match what is read against. None of those is wired up in this build.</string>
+    <string name="identify_nothing_guessed">Nothing is guessed in its place. A reading that looked right and was not would be the one failure this feature exists to avoid.</string>
+    <string name="identify_what_works">What still works</string>
+    <string name="identify_what_works_body">The two things a scan hands off to are both here and both take a name you type.</string>
+    <string name="identify_search_by_name">Search by name</string>
+    <string name="identify_browse_library">Browse the library</string>
+
+    <!-- ==================== EquivalenceScreen ==================== -->
+
+    <string name="equivalence_title">Equivalence</string>
+    <string name="equivalence_subtitle">Published factors for reading one substance\'s amount in another\'s units. Reference figures, not a dose calculator.</string>
+    <string name="equivalence_opioid_heading">Opioid MME</string>
+    <string name="equivalence_opioid_note">Published oral morphine milligram equivalent (MME) factors compare amounts across opioids. They must not be used to choose a replacement dose when switching medications.</string>
+    <string name="equivalence_opioid_source">CDC 2022 reference factors. Individual response varies.</string>
+    <string name="equivalence_opioid_empty">No MME factors are readable from the catalog on this build.</string>
+    <string name="equivalence_benzo_heading">Diazepam equivalence</string>
+    <string name="equivalence_benzo_note">Published equivalences are approximate and vary between sources. A prescriber must assess any medication change.</string>
+    <string name="equivalence_benzo_empty">No cited diazepam equivalences are readable from the catalog on this build.</string>
+    <string name="equivalence_footer">Both tables are published references, not a model output.</string>
+    <string name="equivalence_mme_per_mg">%1$s MME per mg</string>
+    <string name="equivalence_transdermal_label">%1$s (transdermal)</string>
+    <string name="equivalence_ashton_source">Ashton Manual, Table 1</string>
+    <string name="equivalence_unconvertible_methadone">Methadone\'s half-life is long and variable, and its effect on breathing peaks later than its pain relief. CDC publishes a single population factor for it; Piru shows no figure.</string>
+    <string name="equivalence_unconvertible_fentanyl">Transdermal fentanyl is dosed in micrograms per hour, a rate rather than a mass, so it has no figure in this mg-based table.</string>
+    <string name="equivalence_unconvertible_buprenorphine">CDC excludes buprenorphine from MME.</string>
+
+    <!-- ==================== AlcoholScreen ==================== -->
+
+    <string name="alcohol_title">Alcohol</string>
+    <string name="alcohol_subtitle">Build a drink from a volume and a strength, and see how long the body takes to clear it. Ethanol is cleared at a fixed rate, so twice the drink takes about twice as long.</string>
+    <string name="alcohol_unavailable">The catalog carries no by-volume capability for alcohol in this build, so there is nothing to convert with.</string>
+    <string name="alcohol_volume">Volume</string>
+    <string name="alcohol_unit_ml">mL</string>
+    <string name="alcohol_unit_fl_oz">fl oz</string>
+    <string name="alcohol_strength">Strength</string>
+    <!-- The gap between the field and this label is added at the call site: aapt2
+         trims leading whitespace out of a resource. -->
+    <string name="alcohol_abv_suffix" formatted="false">% ABV</string>
+    <string name="alcohol_name">Name</string>
+    <string name="alcohol_optional">Optional</string>
+    <string name="alcohol_grams">%1$d g</string>
+    <string name="alcohol_standard_drinks">ethanol · ≈ %1$s standard drinks</string>
+    <string name="alcohol_preset_beer">Beer</string>
+    <string name="alcohol_preset_wine">Wine</string>
+    <string name="alcohol_preset_shot">Shot</string>
+    <string name="alcohol_preset_pint">Pint</string>
+    <string name="alcohol_modelled_title">How this is modelled</string>
+    <string name="alcohol_modelled_body">Ethanol is cleared by an enzyme that is already saturated at ordinary drinking levels, so the body removes a roughly constant mass per minute instead of a constant fraction. The curve is F·D·(1 − e^−ka·t) − Vmax·t, with the catalog\'s own Vmax and absorption rate.</string>
+    <string name="alcohol_modelled_weight">The clearance rate is scaled to a 60 kg reference body, because this build has no body-weight setting. Vmax is linear in weight, so a different weight stretches or compresses the whole curve rather than changing its shape.</string>
+    <string name="alcohol_modelled_drink">Predicted from a model, not measured. A standard drink is 14 g of ethanol by US convention — a gloss for reading a figure, not a target.</string>
+    <string name="alcohol_elimination">Elimination</string>
+    <string name="alcohol_no_peak">At this amount the model produces no peak — absorption does not out-run the clearance rate, so body content never builds up.</string>
+    <string name="alcohol_chart_peak_at">peak at %1$s</string>
+    <string name="alcohol_chart_back_to_zero">back to zero by %1$s</string>
+    <string name="alcohol_metric_peak_at">Peak at</string>
+    <string name="alcohol_metric_cleared_by">Cleared by</string>
+    <string name="alcohol_metric_clearance">Clearance</string>
+    <string name="alcohol_clearance_value">%1$s mg/min at %2$d kg</string>
+    <string name="alcohol_duration_minutes">%1$d min</string>
+    <string name="alcohol_duration_hours">%1$d h</string>
+    <string name="alcohol_duration_hours_minutes">%1$d h %2$d min</string>
+    <string name="alcohol_duration_decimal_hours">%1$s h</string>
+
+    <!-- ==================== DrugClassScreen ==================== -->
+
+    <string name="drug_class_title">Drug classes</string>
+    <string name="drug_class_subtitle">Groups of substances whose members share a mechanism, a pharmacokinetics, or a safety profile. What each group has in common, and which substances are in it.</string>
+    <string name="drug_class_empty">No class write-ups are readable from the catalog on this build.</string>
+    <string name="drug_class_footer">The shared write-ups are authored per class in the curated research data and ship in English.</string>
+    <string name="drug_class_fallback_title">Drug class</string>
+    <string name="drug_class_not_found">No class in the catalog is called \"%1$s\". The write-ups are keyed by the class slug or its display name, and both are what a class list or a substance\'s own page carries.</string>
+    <string name="drug_class_shared_mechanism">Shared mechanism</string>
+    <string name="drug_class_shared_kinetics">Shared kinetics</string>
+    <string name="drug_class_shared_safety">Shared safety profile</string>
+    <string name="drug_class_shared_sar">Structure and activity</string>
+    <string name="drug_class_references">References</string>
+    <string name="drug_class_untitled_reference">Untitled reference</string>
+    <string name="drug_class_browse_depressant">Sedative-Hypnotic</string>
+    <string name="drug_class_browse_other">Other / Miscellaneous</string>
+    <plurals name="drug_class_member_count">
+        <item quantity="one">1 substance</item>
+        <item quantity="other">%1$d substances</item>
+    </plurals>
+
+    <!-- ==================== InteractionsScreen ==================== -->
+
+    <string name="interactions_title">Interactions</string>
+    <string name="interactions_subtitle">Pick the substances you are asking about. This reads the rules, not your log — nothing you enter here is stored.</string>
+    <string name="interactions_search_hint">Search substances…</string>
+    <string name="interactions_use_query">Use “%1$s”</string>
+    <string name="interactions_custom">Custom</string>
+    <string name="interactions_none_title">No interactions found in Piru\'s database.</string>
+    <string name="interactions_none_body">Coverage is incomplete — absence of a listed interaction does not mean absence of risk.</string>
+    <plurals name="interactions_found_count">
+        <item quantity="one">1 Interaction Found</item>
+        <item quantity="other">%1$d Interactions Found</item>
+    </plurals>
+    <string name="interactions_open_timeline">Open the timeline for this pair</string>
+    <string name="interactions_pair">%1$s + %2$s</string>
+    <string name="interactions_remove">Remove %1$s</string>
+    <string name="interactions_frequently_used">Frequently used</string>
+    <string name="interactions_choose_two">Choose at least 2 substances</string>
+    <string name="interactions_combination_heading">Combination Products</string>
+    <string name="interactions_modeled_suffix">%1$s · modeled (%2$s).</string>
+    <string name="interactions_confidence_high">High confidence</string>
+    <string name="interactions_confidence_medium">Medium confidence</string>
+    <string name="interactions_confidence_low">Low confidence</string>
+    <string name="interactions_confidence_unverified">Unverified</string>
+
+    <string name="interactions_cocaethylene_formation">Cocaine and alcohol together form cocaethylene — an active stimulant your body makes only while both are present. It lasts noticeably longer than cocaine, so the stimulant effect (and its strain) is drawn out.</string>
+    <string name="interactions_cocaethylene_caution">Cocaethylene adds extra strain on the heart and liver beyond cocaine alone, so this combination is harder on your body. (The widely-repeated “18–25× sudden death” figure is not supported by the evidence — but the added cardiac and liver strain is real.)</string>
+    <string name="interactions_ethylphenidate_formation">Methylphenidate and alcohol together form ethylphenidate — an active stimulant your body makes only while both are present. It leans more on dopamine and lingers a little longer than methylphenidate, so the stimulant effect is drawn out.</string>
+    <string name="interactions_ethylphenidate_caution">The mix adds cardiovascular strain beyond either alone, and the ethylphenidate it forms outlasts the methylphenidate itself, so the load on your heart is stretched out rather than added up.</string>
+
+    <!-- ==================== InteractionTimelineScreen ==================== -->
+
+    <string name="timeline_back">Back</string>
+    <string name="timeline_title">Interaction Timeline</string>
+    <string name="timeline_half_life_unavailable">Half-life data unavailable for %1$s</string>
+    <string name="timeline_no_curve_note">Without it there is no curve to draw for that substance. The warning below still applies.</string>
+    <string name="timeline_model_note">A one-compartment model with population-average half-lives. Real overlap depends on your metabolism, dose, route, and tolerance.</string>
+    <string name="timeline_predicted_note">Predicted from a model, not measured.</string>
+    <string name="timeline_both_active">Both active %1$s–%2$s (%3$s overlap)</string>
+    <string name="timeline_no_overlap">No overlap shown by this model. The interaction may still apply.</string>
+    <string name="timeline_half_life_value">t½ %1$s</string>
+    <string name="timeline_peak_value">Peak %1$s</string>
+    <string name="timeline_no_half_life_row">No half-life in the catalog, so no curve is drawn for this one.</string>
+    <string name="timeline_dialog_title">When was it taken?</string>
+    <string name="timeline_dialog_minus_day">−1 d</string>
+    <string name="timeline_dialog_plus_day">+1 d</string>
+    <string name="timeline_dialog_minus_quarter">−15 m</string>
+    <string name="timeline_dialog_plus_quarter">+15 m</string>
+    <string name="timeline_dialog_now">Now</string>
+    <string name="timeline_dialog_note">The model uses this as the dose time. It does not write anything to your log.</string>
+    <string name="timeline_dialog_done">Done</string>
+    <string name="timeline_dialog_cancel">Cancel</string>
+    <string name="timeline_severity_pair">%1$s: %2$s + %3$s</string>
+    <string name="timeline_pair">%1$s + %2$s</string>
+    <string name="timeline_no_rule">No rule in Piru\'s database covers this pair. The curve above is the pharmacokinetics alone — absence of a listed interaction does not mean absence of risk.</string>
+    <string name="timeline_depression_peaks">Combined depression peaks around %1$s</string>
+    <string name="timeline_depression_caveat_modeled">Modeled from receptor occupancy · %1$s.</string>
+    <string name="timeline_depression_caveat_estimated">Estimated from effect curves · %1$s.</string>
+    <string name="timeline_depression_caveat_mixed">%1$d of %2$d substances from receptor occupancy, the rest estimated from effect curves · %3$s.</string>
+    <string name="timeline_level_severe">Severe</string>
+    <string name="timeline_level_high">High</string>
+    <string name="timeline_level_moderate">Moderate</string>
+    <string name="timeline_reduced_effect">Reduced effect (~%1$s)</string>
+    <string name="timeline_blocks">%1$s blocks the %2$s that %3$s needs to work.</string>
+    <string name="timeline_transporter_sert">serotonin transporter</string>
+    <string name="timeline_duration_minutes">%1$d min</string>
+    <string name="timeline_duration_hours">%1$dh</string>
+    <string name="timeline_duration_decimal_hours">%1$s h</string>
+    <string name="timeline_duration_days">%1$s days</string>
+    <string name="timeline_hours_minutes">%1$dmin</string>
+    <string name="timeline_hours_short">%1$dh</string>
+    <string name="timeline_list_pair">%1$s and %2$s</string>
+    <!-- Quoted so aapt2 keeps the trailing space. -->
+    <string name="timeline_list_separator">", "</string>
+    <string name="timeline_list_last_separator">", and "</string>
+
+    <!-- ==================== ComedownGuideScreen ==================== -->
+
+    <string name="comedown_title">Recovery guide</string>
+    <string name="comedown_what_title">What is this?</string>
+    <string name="comedown_what_body">What sources report about the hours after each class wears off. It describes the class, never your condition.</string>
+    <string name="comedown_what_emergency">If someone is hard to wake, breathing slowly, overheating or having a seizure, call emergency services.</string>
+    <string name="comedown_recent_heading">From your last 48 hours</string>
+    <string name="comedown_all_heading">All categories</string>
+    <string name="comedown_basics_heading">Universal recovery basics</string>
+    <string name="comedown_footer">The recovery tips describe what sources report for a class.</string>
+
+    <string name="comedown_group_happening">What\'s happening</string>
+    <string name="comedown_group_now">Right now</string>
+    <string name="comedown_group_hours">Over the next hours</string>
+    <string name="comedown_group_avoid">What to avoid</string>
+
+    <string name="comedown_basics_1">Hydrate — water or electrolyte drinks, sip steadily</string>
+    <string name="comedown_basics_2">Eat something nutritious — protein, carbs, and fruit</string>
+    <string name="comedown_basics_3">Rest when your body asks for it</string>
+    <string name="comedown_basics_4">Fresh air and gentle light</string>
+    <string name="comedown_basics_5">Light movement or stretching — nothing intense</string>
+    <string name="comedown_basics_6">Put the phone down — screens can amplify restlessness</string>
+    <string name="comedown_basics_7">Reach out to someone you trust if you feel overwhelmed</string>
+
+    <!-- Shared between the classes that give the same advice verbatim. -->
+    <string name="comedown_not_measured">Piru doesn\'t measure any of this. It describes what sources report for the class.</string>
+    <string name="comedown_drive_warning">Do not drive. Feeling normal does not establish that you can drive safely.</string>
+    <string name="comedown_rest_with_someone">Rest with someone nearby if you can.</string>
+    <string name="comedown_sip_electrolytes">Drink water or an electrolyte drink, in sips.</string>
+
+    <!-- Stimulant -->
+    <string name="comedown_stimulant_happening_1">After a stimulant wears off, fatigue, irritability and low mood are commonly reported.</string>
+    <string name="comedown_stimulant_happening_2">You may need food and rest after several hours without them.</string>
+    <string name="comedown_stimulant_now_1">Eat something, even without hunger. Protein and complex carbs are the usual suggestion.</string>
+    <string name="comedown_stimulant_now_2">Something to chew eases a tight jaw.</string>
+    <string name="comedown_stimulant_now_3">Chest pain, a pounding heart that won\'t settle, or a severe headache needs medical help.</string>
+    <string name="comedown_stimulant_hours_1">Lie down even if sleep doesn\'t come immediately.</string>
+    <string name="comedown_stimulant_hours_2">Dark room, comfortable temperature, no screens.</string>
+    <string name="comedown_stimulant_hours_3">A warm shower or light stretching helps tight muscles.</string>
+    <string name="comedown_stimulant_hours_4">Low mood after a stimulant is commonly reported. If it turns into thoughts of harming yourself, use the numbers in Get Help.</string>
+    <string name="comedown_stimulant_avoid_1">Taking more to put off the crash delays it.</string>
+    <string name="comedown_stimulant_avoid_2">Caffeine adds to the load on the heart.</string>
+    <string name="comedown_stimulant_avoid_3">You may think differently about important decisions and emotionally charged messages tomorrow.</string>
+    <string name="comedown_stimulant_avoid_4">Alcohol disrupts the sleep you need.</string>
+
+    <!-- Empathogen -->
+    <string name="comedown_empathogen_happening_1">Low mood, fatigue and emotional sensitivity in the days after are commonly reported.</string>
+    <string name="comedown_empathogen_happening_2">How long that lasts varies between people, and the kinetics in humans aren\'t well measured.</string>
+    <string name="comedown_empathogen_now_1">This class raises body temperature. Feeling very hot, confused or rigid is an emergency — cool down and call for help.</string>
+    <string name="comedown_empathogen_now_2">Sip rather than gulp, and favor electrolytes. Over-drinking water is its own danger with this class — more is not safer.</string>
+    <string name="comedown_empathogen_now_3">Eat light foods: fruit, toast, soup.</string>
+    <string name="comedown_empathogen_now_4">Gentle massage eases a sore jaw.</string>
+    <string name="comedown_empathogen_hours_1">Rest in a comfortable, calm space. Soft music or silence both work.</string>
+    <string name="comedown_empathogen_hours_2">Be patient with yourself over the next few days.</string>
+    <string name="comedown_empathogen_hours_3">A walk outside helps when you\'re ready.</string>
+    <string name="comedown_empathogen_hours_4">Talk to someone you trust — connection helps more than isolation.</string>
+    <string name="comedown_empathogen_avoid_1">Taking more to put off the low mood delays it.</string>
+    <string name="comedown_empathogen_avoid_2">Piru doesn\'t establish a safe interval for adding medicines or supplements. MAOIs are the documented danger with this class.</string>
+    <string name="comedown_empathogen_avoid_3">Skip intense social situations — you may feel emotionally raw.</string>
+    <string name="comedown_empathogen_avoid_4">Don\'t judge your baseline mood by how you feel right now.</string>
+
+    <!-- Psychedelic -->
+    <string name="comedown_psychedelic_happening_1">Feeling emotionally open, contemplative, or just tired afterwards is commonly reported.</string>
+    <string name="comedown_psychedelic_happening_2">Lingering visual or thought patterns are reported too, and usually fade over hours.</string>
+    <string name="comedown_psychedelic_now_1">If the experience was intense: the acute effects of this class are time-limited, and company helps.</string>
+    <string name="comedown_psychedelic_now_2">Eat something grounding — warm food, fruit, or anything that sounds appealing.</string>
+    <string name="comedown_psychedelic_now_3">Drink water. Wrap up in something comfortable.</string>
+    <string name="comedown_psychedelic_now_4">Write down anything meaningful before the details fade.</string>
+    <string name="comedown_psychedelic_hours_1">Rest when you can.</string>
+    <string name="comedown_psychedelic_hours_2">Don\'t try to \'figure it all out\' right now. Integration takes days.</string>
+    <string name="comedown_psychedelic_hours_3">Nature, art, or quiet music can help you process gently.</string>
+    <string name="comedown_psychedelic_hours_4">Distress or perceptual changes that persist for days are worth taking to a professional.</string>
+    <string name="comedown_psychedelic_avoid_1">Don\'t make big life decisions based on acute revelations — wait a week.</string>
+    <string name="comedown_psychedelic_avoid_2">Avoid screens and doom-scrolling while you\'re this impressionable.</string>
+    <string name="comedown_psychedelic_avoid_3">Cannabis is widely reported to bring the effects back, sometimes unpleasantly.</string>
+    <string name="comedown_psychedelic_avoid_4">Skip intense or crowded environments until you feel grounded.</string>
+
+    <!-- Dissociative -->
+    <string name="comedown_dissociative_happening_1">Feeling foggy or unreal for a while afterwards is commonly reported.</string>
+    <string name="comedown_dissociative_happening_2">Motor coordination and spatial awareness may still be impaired.</string>
+    <string name="comedown_dissociative_now_1">Stay seated or lying down. Your balance may not be what you think it is.</string>
+    <string name="comedown_dissociative_now_2">Drink water. Eat something simple when your stomach allows.</string>
+    <string name="comedown_dissociative_now_3">Stay somewhere safe with someone you trust if possible.</string>
+    <string name="comedown_dissociative_now_4">Avoid stairs, sharp objects, and anything requiring fine motor skills.</string>
+    <string name="comedown_dissociative_hours_1">The fog is reported to clear over hours. If it doesn\'t, seek medical help.</string>
+    <string name="comedown_dissociative_hours_2">Gentle sensory input (music, soft textures) can help you reconnect.</string>
+    <string name="comedown_dissociative_hours_3">Things feeling \'weird\' for a while is commonly reported.</string>
+    <string name="comedown_dissociative_avoid_1">Do not drive or operate machinery. Feeling normal does not establish that you can drive safely.</string>
+    <string name="comedown_dissociative_avoid_2">Alcohol, benzodiazepines and opioids on top of a dissociative raise the risk of stopped breathing.</string>
+    <string name="comedown_dissociative_avoid_3">Avoid hot baths or showers alone — you may not feel temperature accurately.</string>
+    <string name="comedown_dissociative_avoid_4">Your own read of how affected you are is unreliable while dissociated.</string>
+
+    <!-- Opioid -->
+    <string name="comedown_opioid_happening_1">As an opioid fades, increased pain sensitivity, restlessness and mild nausea are commonly reported.</string>
+    <string name="comedown_opioid_happening_2">How strong that is tracks how much and how often you\'ve been using.</string>
+    <string name="comedown_opioid_now_1">If someone is hard to wake, breathing slowly, or has blue lips, call emergency services. Give naloxone if you have it, following its instructions.</string>
+    <string name="comedown_opioid_now_2">Drink water, in sips. Eat something light.</string>
+    <string name="comedown_opioid_now_3">If you feel nauseous, lie on your side.</string>
+    <string name="comedown_opioid_now_4">Fresh air can help with the foggy, closed-in feeling.</string>
+    <string name="comedown_opioid_hours_1">Stay with someone, or let someone know to check on you. Heavy snoring or gurgling in sleep is a warning sign, not rest.</string>
+    <string name="comedown_opioid_hours_2">Light movement helps — even a short walk.</string>
+    <string name="comedown_opioid_hours_3">A warm bath can ease the achy, restless feeling — with someone in earshot.</string>
+    <string name="comedown_opioid_hours_4">Help is available through the numbers in Get Help.</string>
+    <string name="comedown_opioid_avoid_1">Tolerance drops quickly after a break. A dose you handled before is the documented cause of many overdoses.</string>
+    <string name="comedown_opioid_avoid_2">Alcohol, benzodiazepines and other depressants on top of an opioid raise the risk of stopped breathing.</string>
+    <string name="comedown_opioid_avoid_3">Don\'t isolate yourself. Let someone know where you are.</string>
+
+    <!-- Benzodiazepine -->
+    <string name="comedown_benzodiazepine_happening_1">As a benzodiazepine wears off, rebound anxiety and restlessness are commonly reported.</string>
+    <string name="comedown_benzodiazepine_happening_2">Memory and coordination can stay impaired after the sedation lifts.</string>
+    <string name="comedown_benzodiazepine_happening_3">After regular use, stopping abruptly can be dangerous.</string>
+    <string name="comedown_benzodiazepine_now_1">Stay somewhere calm and safe.</string>
+    <string name="comedown_benzodiazepine_now_2">Drink water and eat something.</string>
+    <string name="comedown_benzodiazepine_now_3">Breathing exercises: 4 seconds in, 7 seconds hold, 8 seconds out.</string>
+    <string name="comedown_benzodiazepine_now_4">Caffeine amplifies rebound anxiety.</string>
+    <string name="comedown_benzodiazepine_now_5">If someone is hard to wake or breathing slowly, call emergency services.</string>
+    <string name="comedown_benzodiazepine_hours_1">Sleep may be disrupted tonight.</string>
+    <string name="comedown_benzodiazepine_hours_2">Light activity like walking helps burn off anxious energy.</string>
+    <string name="comedown_benzodiazepine_hours_3">If this is frequent for you, consider talking to a professional about alternatives.</string>
+    <string name="comedown_benzodiazepine_avoid_1">Taking more in reaction to the rebound reinforces the cycle.</string>
+    <string name="comedown_benzodiazepine_avoid_2">Alcohol acts on the same receptors, and the combination can stop breathing.</string>
+    <string name="comedown_benzodiazepine_avoid_3">Do not drive. Feeling less sedated does not establish that memory or coordination are unimpaired.</string>
+    <string name="comedown_benzodiazepine_avoid_4">After regular use, a seizure or severe confusion on stopping is an emergency.</string>
+
+    <!-- Depressant -->
+    <string name="comedown_depressant_happening_1">As a depressant wears off, feeling shaky, anxious or nauseous is commonly reported.</string>
+    <string name="comedown_depressant_happening_2">Headaches and fatigue are common.</string>
+    <string name="comedown_depressant_now_1">If someone is hard to wake, breathing slowly, or vomiting while drowsy, put them on their side and call emergency services.</string>
+    <string name="comedown_depressant_now_2">Eat something with salt, protein, and carbs.</string>
+    <string name="comedown_depressant_now_3">If nauseous, small sips of water and lying on your side help.</string>
+    <string name="comedown_depressant_hours_1">Rest with someone nearby. A person who can\'t be woken needs help, not sleep.</string>
+    <string name="comedown_depressant_hours_2">A cool, dark room helps with headaches and overstimulation.</string>
+    <string name="comedown_depressant_hours_3">Light food every few hours, even if you don\'t feel hungry.</string>
+    <string name="comedown_depressant_hours_4">Fresh air and gentle movement when you\'re ready.</string>
+    <string name="comedown_depressant_avoid_1">Taking more of a depressant to ease the morning symptoms delays recovery.</string>
+    <string name="comedown_depressant_avoid_2">If you have been drinking heavily and daily for weeks, stopping abruptly can be dangerous — seizures and delirium tremens peak 2–4 days after the last drink.</string>
+    <string name="comedown_depressant_avoid_3">With daily phenibut or F-phenibut, dependence develops within weeks and withdrawal can be protracted.</string>
+    <string name="comedown_depressant_avoid_4">Acetaminophen (paracetamol) after heavy alcohol use adds stress to the liver.</string>
+    <string name="comedown_depressant_avoid_5">Avoid greasy, heavy food — it sounds good but often makes nausea worse.</string>
+
+    <!-- Cannabinoid -->
+    <string name="comedown_cannabinoid_happening_1">Feeling foggy, lethargic or mildly irritable afterwards is commonly reported.</string>
+    <string name="comedown_cannabinoid_happening_2">Appetite changes and sleep disruption are common after heavy sessions.</string>
+    <string name="comedown_cannabinoid_now_1">Drink water. A dry mouth is an effect of cannabis itself and doesn\'t by itself mean dehydration.</string>
+    <string name="comedown_cannabinoid_now_2">Eat something balanced.</string>
+    <string name="comedown_cannabinoid_now_3">If you feel anxious, slow your breathing. Anxiety is a listed effect of this class.</string>
+    <string name="comedown_cannabinoid_now_4">A change of scenery — even moving to a different room — can shift your headspace.</string>
+    <string name="comedown_cannabinoid_hours_1">Physical activity helps with the fog.</string>
+    <string name="comedown_cannabinoid_hours_2">Sleep quality may be off tonight.</string>
+    <string name="comedown_cannabinoid_hours_3">If you feel spacey, grounding exercises: name 5 things you can see, 4 you can touch.</string>
+    <string name="comedown_cannabinoid_hours_4">Repeated vomiting that only hot showers relieve is a recognized syndrome.</string>
+    <string name="comedown_cannabinoid_avoid_1">Do not drive. Impairment outlasts the feeling of being high.</string>
+    <string name="comedown_cannabinoid_avoid_2">Taking more cannabis to ease the comedown delays it.</string>
+    <string name="comedown_cannabinoid_avoid_3">Short-term memory gaps are commonly reported. Piru can\'t tell what caused one.</string>
+    <string name="comedown_cannabinoid_avoid_4">Skip intense social obligations if you\'re not feeling up to it.</string>
+
+    <!-- The classes the guide does not name. -->
+    <string name="comedown_other_happening_1">How you feel depends on what you took, how much, and your own body.</string>
+    <string name="comedown_other_happening_2">Piru doesn\'t measure any of this. It describes what sources report.</string>
+    <string name="comedown_other_now_1">Drink water and eat something nutritious.</string>
+    <string name="comedown_other_now_2">Rest in a comfortable, safe environment.</string>
+    <string name="comedown_other_now_3">If you feel unwell, don\'t hesitate to call for help.</string>
+    <string name="comedown_other_hours_1">Light food and fluids every few hours.</string>
+    <string name="comedown_other_hours_2">Give yourself time.</string>
+    <string name="comedown_other_avoid_1">Taking more within the same session adds to what is still active.</string>
+    <string name="comedown_other_avoid_2">Mixing adds risk.</string>
+
+    <!-- ==================== HelpScreen ==================== -->
+
+    <string name="help_title">Get Help</string>
+    <string name="help_alone_title">You don\'t have to do this alone</string>
+    <string name="help_alone_body">Piru can\'t assess how you are. The people at the numbers below can.</string>
+    <string name="help_alone_breathe">Take a deep breath.</string>
+    <string name="help_music_title">Put on familiar music</string>
+    <string name="help_music_detail_psychedelic">Music you know well is one of the most powerful grounding tools — especially during a psychedelic experience.</string>
+    <string name="help_music_detail">Familiar songs can ground you and bring comfort. Pick something you know well.</string>
+    <string name="help_friend_title">Call a friend or family member</string>
+    <string name="help_friend_detail">Someone who knows you can help more than you\'d expect. You don\'t have to explain everything — just hearing a familiar voice helps.</string>
+    <string name="help_emergency_heading">Emergency Services — %1$s</string>
+    <string name="help_modeled_active">Modeled as Active</string>
+    <string name="help_modeled_note">Estimates from pharmacokinetic modeling.</string>
+    <string name="help_active_total">%1$s %2$s total · est. ~%3$d%% remaining</string>
+    <string name="help_recovery_now">Recovery — Right Now</string>
+    <string name="help_view_full_guide">View Full Recovery Guide</string>
+    <string name="help_recovery_note">Showing the guide for the classes you logged in the last 48 hours. Tap above for the full guide.</string>
+    <string name="help_recent_entries">Recent Entries (24h)</string>
+    <string name="help_copied">Copied</string>
+    <string name="help_copy_summary">Copy Summary for Emergency Services</string>
+    <string name="help_share_state">Share Current State…</string>
+    <string name="help_share_note">Copies a plain-text summary of substances and recent doses to share with emergency responders.</string>
+    <string name="help_sms_home_us">Text HOME to 741741</string>
+    <string name="help_sms_home_ca">Text HOME to 686868</string>
+    <string name="help_relative_just_now">just now</string>
+    <string name="help_relative_minutes">%1$dm ago</string>
+    <string name="help_relative_hours">%1$dh ago</string>
+    <string name="help_relative_days">%1$dd ago</string>
+
+    <!--
+      The plain-text hand-off. Upstream leaves this in English because it is
+      built from raw Swift literals, but a responder reading a Chinese
+      speaker's phone should get it in Chinese, so it is extracted here.
+    -->
+    <string name="help_summary_heading">SUBSTANCE SUMMARY</string>
+    <string name="help_summary_generated">Generated: %1$s</string>
+    <string name="help_summary_active_heading">CURRENTLY ACTIVE:</string>
+    <string name="help_summary_active_row">- %1$s — %2$s %3$s total (est. ~%4$d%% remaining)</string>
+    <string name="help_summary_active_dose">  %1$s %2$s at %3$s</string>
+    <string name="help_summary_recent_heading">RECENT DOSES (LAST 24 HOURS):</string>
+    <string name="help_summary_logged_as">%1$s (logged as %2$s)</string>
+    <string name="help_summary_recent_row">- %1$s %2$s %3$s %4$s — %5$s</string>
+    <string name="help_summary_empty">No active substances or recent doses recorded.</string>
+    <string name="help_summary_footer">Generated by Piru. Estimates are approximate.</string>
+    <string name="help_share_chooser">Share current state</string>
+
+    <!--
+      Emergency service names. The English ones translate; the ones that are
+      already a local proper name ("Samaritans", "Notruf", "SAMU") are carried
+      across unchanged, as upstream carries them.
+    -->
+    <string name="help_service_emergency_services">Emergency Services</string>
+    <string name="help_service_suicide_crisis_lifeline">Suicide &amp; Crisis Lifeline</string>
+    <string name="help_service_poison_control">Poison Control</string>
+    <string name="help_service_samhsa">SAMHSA Helpline</string>
+    <string name="help_service_crisis_text_line">Crisis Text Line</string>
+    <string name="help_service_suicide_crisis_helpline">Suicide Crisis Helpline</string>
+    <string name="help_service_poison_centre">Poison Centre</string>
+    <string name="help_service_emergencias">Emergencias</string>
+    <string name="help_service_emergencias_ecu">Emergencias (ECU 911)</string>
+    <string name="help_service_linea_emergencias">Linea de Emergencias</string>
+    <string name="help_service_linea_crisis">Linea de Crisis</string>
+    <string name="help_service_servicios_emergencia">Servicios de Emergencia</string>
+    <string name="help_service_linea_de_la_vida">Linea de la Vida</string>
+    <string name="help_service_samu">SAMU</string>
+    <string name="help_service_cvv">CVV (Centro de Valorização da Vida)</string>
+    <string name="help_service_centro_asistencia_suicida">Centro de Asistencia al Suicida</string>
+    <string name="help_service_ambulancia">Ambulancia</string>
+    <string name="help_service_salud_responde">Salud Responde</string>
+    <string name="help_service_linea_113_salud">Linea 113 Salud</string>
+    <string name="help_service_linea_prevencion_suicidio">Linea de Prevencion del Suicidio</string>
+    <string name="help_service_samaritans">Samaritans</string>
+    <string name="help_service_frank">FRANK Drug Helpline</string>
+    <string name="help_service_pieta_house">Pieta House</string>
+    <string name="help_service_notruf">Notruf</string>
+    <string name="help_service_telefonseelsorge">Telefonseelsorge</string>
+    <string name="help_service_giftnotruf">Giftnotruf</string>
+    <string name="help_service_sanitatsnotruf">Sanitatsnotruf</string>
+    <string name="help_service_dargebotene_hand">Die Dargebotene Hand</string>
+    <string name="help_service_tox_info_suisse">Tox Info Suisse</string>
+    <string name="help_service_sos_amitie">SOS Amitie</string>
+    <string name="help_service_centre_antipoison">Centre Antipoison</string>
+    <string name="help_service_telefono_esperanza">Telefono de la Esperanza</string>
+    <string name="help_service_sos_voz_amiga">SOS Voz Amiga</string>
+    <string name="help_service_emergenze">Emergenze</string>
+    <string name="help_service_telefono_amico">Telefono Amico</string>
+    <string name="help_service_centro_antiveleni">Centro Antiveleni</string>
+    <string name="help_service_alarmnummer">Alarmnummer</string>
+    <string name="help_service_zelfmoordpreventie">113 Zelfmoordpreventie</string>
+    <string name="help_service_urgences">Urgences</string>
+    <string name="help_service_centre_antipoisons">Centre Antipoisons</string>
+    <string name="help_service_nodnummer">Nodnummer</string>
+    <string name="help_service_mind_sjalvmordslinjen">Mind Sjalvmordslinjen</string>
+    <string name="help_service_mental_helse">Mental Helse</string>
+    <string name="help_service_giftinformasjonen">Giftinformasjonen</string>
+    <string name="help_service_livslinien">Livslinien</string>
+    <string name="help_service_hatanumero">Hatanumero</string>
+    <string name="help_service_kriisipuhelin">Kriisipuhelin</string>
+    <string name="help_service_numer_alarmowy">Numer alarmowy</string>
+    <string name="help_service_telefon_zaufania">Telefon Zaufania</string>
+    <string name="help_service_tisnovka">Tisnovka</string>
+    <string name="help_service_linka_bezpeci">Linka bezpeci</string>
+    <string name="help_service_ekab">EKAB</string>
+    <string name="help_service_klimaka">Klimaka Crisis Line</string>
+    <string name="help_service_emergency">Emergency</string>
+    <string name="help_service_lifeline">Lifeline</string>
+    <string name="help_service_poisons_information">Poisons Information</string>
+    <string name="help_service_emergency_ambulance">Emergency (Ambulance)</string>
+    <string name="help_service_yorisoi">Yorisoi Hotline</string>
+    <string name="help_service_suicide_prevention_hotline">Suicide Prevention Hotline</string>
+    <string name="help_service_crisis_hotline">Crisis Hotline</string>
+    <string name="help_service_vandrevala">Vandrevala Foundation</string>
+    <string name="help_service_crisis_line">Crisis Line</string>
+    <string name="help_service_samaritans_singapore">Samaritans of Singapore</string>
+    <string name="help_service_befrienders">Befrienders</string>
+    <string name="help_service_samaritans_thailand">Samaritans of Thailand</string>
+    <string name="help_service_suicide_prevention">Suicide Prevention</string>
+    <string name="help_service_eran">ERAN Crisis Line</string>
+    <string name="help_service_acil_yardim">Acil Yardim</string>
+    <string name="help_service_intihar_onleme">Intihar Onleme Hatti</string>
+    <string name="help_service_sadag">SADAG Crisis Line</string>
+    <string name="help_service_befrienders_kenya">Befrienders Kenya</string>
+    <string name="help_service_psychological_help">Psychological Help</string>
+    <string name="help_service_lifeline_ukraine">Lifeline Ukraine</string>
+
+    <!-- ==================== EducationCardsScreen ==================== -->
+
+    <string name="education_title">Education</string>
+    <string name="education_subtitle">How dosing, tolerance, and recovery work</string>
+    <string name="education_ceiling_title">Ceiling Effect</string>
+    <string name="education_ceiling_subtitle">When dose and exposure aren\'t proportional</string>
+    <string name="education_ceiling_detail">Needs the ceiling explorer, which is not in this build.</string>
+    <string name="education_tolerance_title">How Modeled Tolerance Works</string>
+    <string name="education_tolerance_subtitle">Why effects fade and how receptors recover</string>
+    <string name="education_recovery_title">Recovery Guide</string>
+    <string name="education_recovery_subtitle">Comedown and aftercare tips</string>
+    <string name="education_classes_title">Drug Classes</string>
+    <string name="education_classes_subtitle">What the members of a family share</string>
+    <string name="education_footer">These screens describe what the catalog and the model say.</string>
+
+</resources>

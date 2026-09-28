@@ -37,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import glass.kagerou.piru.R
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -196,7 +197,7 @@ fun OnboardingStepChrome(
                 IconButton(onClick = onBack) {
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        contentDescription = stringResource(R.string.shell_back),
                         tint = colors.secondaryLabel,
                     )
                 }
@@ -217,7 +218,7 @@ fun OnboardingStepChrome(
             if (step == OnboardingStep.WELCOME) {
                 TextButton(onClick = onSkip) {
                     Text(
-                        "Skip",
+                        stringResource(R.string.shell_skip),
                         style = MaterialTheme.typography.bodyLarge,
                         color = colors.secondaryLabel,
                     )
@@ -243,10 +244,14 @@ fun OnboardingStepChrome(
 @Composable
 fun OnboardingProgressBar(current: Int, total: Int, modifier: Modifier = Modifier) {
     val colors = PiruTheme.colors
+    // Hoisted above the semantics block: `stringResource` is a composable read and
+    // `semantics { }` is not a composable lambda.
+    val label = stringResource(R.string.shell_progress)
+    val state = stringResource(R.string.shell_progress_step, current, total)
     Row(
         modifier = modifier.semantics(mergeDescendants = true) {
-            contentDescription = "Progress"
-            stateDescription = "Step $current of $total"
+            contentDescription = label
+            stateDescription = state
         },
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,

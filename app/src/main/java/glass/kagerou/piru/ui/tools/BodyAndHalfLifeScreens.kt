@@ -23,8 +23,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.engine.ActiveSubstance
 import glass.kagerou.piru.engine.ActiveSubstanceCalculator
 import glass.kagerou.piru.engine.PKModel
@@ -33,6 +35,7 @@ import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
 import glass.kagerou.piru.ui.theme.PiruTheme
 import java.time.Instant
+import java.util.Locale
 
 /**
  * What is still in the body.
@@ -81,11 +84,12 @@ fun BodyLoadScreen(modifier: Modifier = Modifier) {
     ) {
         item {
             Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("In your body", style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    "How much of each dose is still on board. This is elimination, not " +
-                        "effect — a substance can be gone from the curve and still in you, " +
-                        "and the other way round.",
+                    stringResource(R.string.toolsb_bodyload_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                )
+                Text(
+                    stringResource(R.string.toolsb_bodyload_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -95,7 +99,7 @@ fun BodyLoadScreen(modifier: Modifier = Modifier) {
         if (loaded && active.isEmpty()) {
             item {
                 Text(
-                    "Nothing with a known half-life is still on board.",
+                    stringResource(R.string.toolsb_bodyload_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -114,7 +118,11 @@ fun BodyLoadScreen(modifier: Modifier = Modifier) {
                     ) {
                         Text(substance.name, style = MaterialTheme.typography.titleSmall)
                         Text(
-                            "${trim(substance.totalRemaining)} ${substance.unit} left",
+                            stringResource(
+                                R.string.toolsb_bodyload_left,
+                                trim(substance.totalRemaining),
+                                substance.unit,
+                            ),
                             style = MaterialTheme.typography.titleSmall,
                         )
                     }
@@ -136,10 +144,21 @@ fun BodyLoadScreen(modifier: Modifier = Modifier) {
                             )
                         }
                     }
+                    // One sentence, three readouts: the whole line is a single
+                    // resource so a language that reorders them can, and the dose
+                    // count comes from its own pair because English needs the plural.
+                    val doseCount = if (substance.doses.size == 1) {
+                        stringResource(R.string.toolsb_bodyload_dose_count_one, substance.doses.size)
+                    } else {
+                        stringResource(R.string.toolsb_bodyload_dose_count_many, substance.doses.size)
+                    }
                     Text(
-                        "${(substance.eliminatedFraction * 100).toInt()}% eliminated · " +
-                            "${substance.doses.size} dose${if (substance.doses.size == 1) "" else "s"} · " +
-                            "half-life ${hours(substance.halfLifeMinutes)}",
+                        stringResource(
+                            R.string.toolsb_bodyload_row_summary,
+                            (substance.eliminatedFraction * 100).toInt(),
+                            doseCount,
+                            hours(substance.halfLifeMinutes),
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = PiruTheme.colors.secondaryLabel,
                     )
@@ -149,7 +168,7 @@ fun BodyLoadScreen(modifier: Modifier = Modifier) {
 
         item {
             Text(
-                "Predicted from a model, not measured. Not medical advice.",
+                stringResource(R.string.toolsb_model_disclaimer),
                 style = MaterialTheme.typography.bodySmall,
                 color = PiruTheme.colors.secondaryLabel,
                 modifier = Modifier.padding(bottom = 8.dp),
@@ -204,10 +223,12 @@ fun HalfLifeScreen(modifier: Modifier = Modifier) {
     ) {
         item {
             Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Half-life", style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    "How long a dose takes to fall by half, and the decay from there. " +
-                        "Elimination, not the felt effect.",
+                    stringResource(R.string.toolsb_halflife_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                )
+                Text(
+                    stringResource(R.string.toolsb_halflife_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -217,8 +238,7 @@ fun HalfLifeScreen(modifier: Modifier = Modifier) {
         if (loaded && choices.isEmpty()) {
             item {
                 Text(
-                    "Nothing in your log has a half-life in the catalog, so there is " +
-                        "nothing to plot.",
+                    stringResource(R.string.toolsb_halflife_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -250,8 +270,11 @@ fun HalfLifeScreen(modifier: Modifier = Modifier) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(name, style = MaterialTheme.typography.titleSmall)
                         Text(
-                            "Half-life ${hours(params.halfLifeMinutes)} · " +
-                                "elimination rate ${"%.5f".format(params.ke)} /min",
+                            stringResource(
+                                R.string.toolsb_halflife_summary,
+                                hours(params.halfLifeMinutes),
+                                params.ke,
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = PiruTheme.colors.secondaryLabel,
                         )
@@ -260,8 +283,11 @@ fun HalfLifeScreen(modifier: Modifier = Modifier) {
                         // people mean by "how long until it is out of me" — and saying
                         // "five half-lives ≈ 97 %" is more honest than a hard zero.
                         Text(
-                            "About ${hours(params.halfLifeMinutes * 5)} to 97 % eliminated, " +
-                                "and ${hours(params.halfLifeMinutes * 7)} to 99 %.",
+                            stringResource(
+                                R.string.toolsb_halflife_about_five,
+                                hours(params.halfLifeMinutes * 5),
+                                hours(params.halfLifeMinutes * 7),
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = PiruTheme.colors.secondaryLabel,
                         )
@@ -272,7 +298,7 @@ fun HalfLifeScreen(modifier: Modifier = Modifier) {
 
         item {
             Text(
-                "Predicted from a model, not measured. Not medical advice.",
+                stringResource(R.string.toolsb_model_disclaimer),
                 style = MaterialTheme.typography.bodySmall,
                 color = PiruTheme.colors.secondaryLabel,
                 modifier = Modifier.padding(bottom = 8.dp),
@@ -317,15 +343,23 @@ private fun DecayCurve(params: PKResolver.Params) {
     }
 }
 
+/**
+ * A duration in the shortest unit that still reads: "12 min", "1.5 h", "1.5 d".
+ *
+ * Those are unit abbreviations rather than copy, so they are not resources — but
+ * the format is locale-sensitive in Kotlin and is not in Swift's
+ * `String(format:)`, so the radix has to be pinned or a comma decimal separator
+ * would leak into a number the engine computed.
+ */
 private fun hours(minutes: Double): String = when {
     minutes < 90 -> "${minutes.toInt()} min"
-    minutes < 60 * 48 -> "%.1f h".format(minutes / 60)
-    else -> "%.1f d".format(minutes / 1_440)
+    minutes < 60 * 48 -> "%.1f h".format(Locale.ROOT, minutes / 60)
+    else -> "%.1f d".format(Locale.ROOT, minutes / 1_440)
 }
 
 private fun trim(value: Double): String =
     if (value >= 100) value.toInt().toString()
-    else "%.2f".format(value).trimEnd('0').trimEnd('.')
+    else "%.2f".format(Locale.ROOT, value).trimEnd('0').trimEnd('.')
 
 private fun glass.kagerou.piru.data.entity.DoseEntryEntity.toDoseRecordIfReplayable() =
     if (isUnknownDose) {

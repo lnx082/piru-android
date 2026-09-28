@@ -1,5 +1,6 @@
 package glass.kagerou.piru.ui.insights
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,13 +32,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.data.entity.SessionEntity
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.labels.appLocale
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.theme.PiruTheme
 import java.time.Instant
@@ -140,7 +144,11 @@ fun ReportsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
             val summary = if (names.size <= 3) {
                 names.joinToString(", ")
             } else {
-                names.take(3).joinToString(", ") + " +${names.size - 3} more"
+                context.getString(
+                    R.string.toolsb_reports_session_more,
+                    names.take(3).joinToString(", "),
+                    names.size - 3,
+                )
             }
             SessionSummary(
                 id = session.id,
@@ -197,10 +205,9 @@ fun ReportsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     ) {
         item {
             Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Reports", style = MaterialTheme.typography.headlineSmall)
+                Text(stringResource(R.string.toolsb_reports_title), style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    "Choose what a report would cover. The exports themselves are not " +
-                        "connected yet — this screen shows the scope they would be built from.",
+                    stringResource(R.string.toolsb_reports_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -211,7 +218,7 @@ fun ReportsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 for (option in ReportMode.entries) {
                     InsightsFilterPill(
-                        label = option.label,
+                        label = stringResource(option.labelRes),
                         color = PiruTheme.colors.accent,
                         isSelected = option == mode,
                         showDot = false,
@@ -262,19 +269,23 @@ fun ReportsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
 
         if (hasScope) {
             item {
-                InsightsSectionCard(title = "Scope") {
+                InsightsSectionCard(title = stringResource(R.string.toolsb_reports_scope_title)) {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        ScopeLine("Entries", entryCountInScope.toString())
+                        ScopeLine(stringResource(R.string.toolsb_reports_scope_entries), entryCountInScope.toString())
                         ScopeLine(
-                            "Substances",
+                            stringResource(R.string.toolsb_substances),
                             if (substanceFilter == null) {
                                 substancesInScope.size.toString()
                             } else {
-                                "$includedCount of ${substancesInScope.size}"
+                                stringResource(
+                                    R.string.toolsb_reports_filter_count,
+                                    includedCount,
+                                    substancesInScope.size,
+                                )
                             },
                         )
                         ScopeLine(
-                            "Sessions",
+                            stringResource(R.string.toolsb_reports_scope_sessions),
                             if (mode == ReportMode.LATEST) selectedSessions.size.toString() else "—",
                         )
                     }
@@ -323,9 +334,9 @@ fun ReportsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
 // MARK: - Scope
 
 /** The two scopes a report can be built over. */
-private enum class ReportMode(val label: String) {
-    LATEST("Latest"),
-    BY_DATE("By date"),
+private enum class ReportMode(@StringRes val labelRes: Int) {
+    LATEST(R.string.toolsb_reports_mode_latest),
+    BY_DATE(R.string.toolsb_reports_mode_by_date),
 }
 
 private data class SessionSummary(
@@ -350,21 +361,32 @@ private fun LatestScope(
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
             if (selectedCount == 0) {
-                "Select sessions"
+                stringResource(R.string.toolsb_reports_select_sessions)
             } else {
-                "$selectedCount of $totalCount sessions · $entryCount entries"
+                stringResource(
+                    R.string.toolsb_reports_selection_summary,
+                    selectedCount,
+                    totalCount,
+                    entryCount,
+                )
             },
             style = MaterialTheme.typography.bodyMedium,
             color = if (selectedCount == 0) PiruTheme.colors.secondaryLabel else MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f),
         )
         TextButton(onClick = onAll) {
-            Text(if (selectedCount == totalCount && totalCount > 0) "Deselect all" else "Select all")
+            Text(
+                if (selectedCount == totalCount && totalCount > 0) {
+                    stringResource(R.string.toolsb_deselect_all)
+                } else {
+                    stringResource(R.string.toolsb_select_all)
+                },
+            )
         }
     }
     if (summaries.isEmpty()) {
         Text(
-            "No sessions yet. A session is a run of doses close enough together to be one occasion.",
+            stringResource(R.string.toolsb_reports_no_sessions),
             style = MaterialTheme.typography.bodySmall,
             color = PiruTheme.colors.secondaryLabel,
         )
@@ -390,7 +412,11 @@ private fun LatestScope(
                         InsightsMiddot()
                     }
                     Text(
-                        shortDate(summary.startDate),
+                        shortDate(
+                            summary.startDate,
+                            LocalContext.current.getString(R.string.datefmt_short_weekday_day_month),
+                            appLocale(),
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = if (summary.title == null) FontWeight.SemiBold else FontWeight.Normal,
                     )
@@ -402,7 +428,11 @@ private fun LatestScope(
                 )
             }
             Text(
-                if (summary.doseCount == 1) "1 entry" else "${summary.doseCount} entries",
+                if (summary.doseCount == 1) {
+                    stringResource(R.string.toolsb_reports_entry_count_one)
+                } else {
+                    stringResource(R.string.toolsb_reports_entry_count_many, summary.doseCount)
+                },
                 style = MaterialTheme.typography.labelSmall,
                 color = PiruTheme.colors.secondaryLabel,
             )
@@ -420,11 +450,11 @@ private fun DateScope(
     entryCount: Int,
     substanceCount: Int,
 ) {
-    DateRow("From", start, onStart)
-    DateRow("To", end, onEnd)
+    DateRow(stringResource(R.string.toolsb_reports_date_from), start, onStart)
+    DateRow(stringResource(R.string.toolsb_reports_date_to), end, onEnd)
     if (entryCount > 0) {
         Text(
-            "$entryCount entries across $substanceCount substances",
+            stringResource(R.string.toolsb_reports_entries_across, entryCount, substanceCount),
             style = MaterialTheme.typography.labelSmall,
             color = PiruTheme.colors.secondaryLabel,
         )
@@ -462,9 +492,11 @@ private fun DateRow(label: String, date: LocalDate, onDate: (LocalDate) -> Unit)
                         onDate(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate())
                     }
                     showing = false
-                }) { Text("Set") }
+                }) { Text(stringResource(R.string.toolsb_reports_date_set)) }
             },
-            dismissButton = { TextButton(onClick = { showing = false }) { Text("Cancel") } },
+            dismissButton = {
+                TextButton(onClick = { showing = false }) { Text(stringResource(R.string.common_cancel)) }
+            },
         ) { DatePicker(state = state) }
     }
 }
@@ -495,40 +527,41 @@ private fun ExportList(
     entriesInScope: List<DoseEntryEntity>,
     sessionCountWithNotes: Int,
 ) {
-    InsightsSectionCard(title = "Exports", subtitle = "Not connected to the system share sheet yet") {
+    InsightsSectionCard(
+        title = stringResource(R.string.toolsb_reports_exports_title),
+        subtitle = stringResource(R.string.toolsb_reports_exports_subtitle),
+    ) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             ExportRow(
-                title = "Journal summary",
-                description = "Your entries, your meds and dose trends, as one document",
+                title = stringResource(R.string.toolsb_reports_export_journal_title),
+                description = stringResource(R.string.toolsb_reports_export_journal_desc),
             )
             ExportRow(
-                title = "Session images",
+                title = stringResource(R.string.toolsb_reports_export_session_images_title),
                 description = if (mode == ReportMode.LATEST) {
-                    "$selectedSessionCount sessions as individual images"
+                    stringResource(R.string.toolsb_reports_export_session_images_count, selectedSessionCount)
                 } else {
-                    "Sessions in this range as individual images"
+                    stringResource(R.string.toolsb_reports_export_session_images_range)
                 },
             )
             ExportRow(
-                title = "Stitched image",
-                description = "All selected sessions in one tall image",
+                title = stringResource(R.string.toolsb_reports_export_stitched_title),
+                description = stringResource(R.string.toolsb_reports_export_stitched_desc),
             )
             ExportRow(
-                title = "Markdown",
-                description = "Plain-text session data — for notes, AI, or records",
+                title = stringResource(R.string.toolsb_reports_export_markdown_title),
+                description = stringResource(R.string.toolsb_reports_export_markdown_desc),
             )
             ExportRow(
-                title = "Trip report",
+                title = stringResource(R.string.toolsb_reports_export_trip_title),
                 description = when (sessionCountWithNotes) {
-                    0 -> "Notes at their T+ offsets, descriptors by domain — none of the " +
-                        "selected sessions has notes yet"
-                    1 -> "Notes at their T+ offsets, descriptors by domain — 1 session with notes"
-                    else -> "Notes at their T+ offsets, descriptors by domain — " +
-                        "$sessionCountWithNotes sessions with notes"
+                    0 -> stringResource(R.string.toolsb_reports_export_trip_none)
+                    1 -> stringResource(R.string.toolsb_reports_export_trip_one)
+                    else -> stringResource(R.string.toolsb_reports_export_trip_many, sessionCountWithNotes)
                 },
             )
             Text(
-                "${entriesInScope.size} entries are in scope.",
+                stringResource(R.string.toolsb_reports_export_in_scope, entriesInScope.size),
                 style = MaterialTheme.typography.labelSmall,
                 color = PiruTheme.colors.secondaryLabel,
             )
@@ -549,7 +582,7 @@ private fun ExportRow(title: String, description: String) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(title, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
             Text(
-                "Not wired up",
+                stringResource(R.string.toolsb_reports_not_wired_up),
                 style = MaterialTheme.typography.labelSmall,
                 color = PiruTheme.colors.secondaryLabel,
             )
@@ -577,9 +610,13 @@ private fun SubstanceFilter(
                 modifier = Modifier.fillMaxWidth().clickable { onExpanded(!expanded) },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Substances", style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
                 Text(
-                    "$includedCount of ${substances.size}",
+                    stringResource(R.string.toolsb_substances),
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    stringResource(R.string.toolsb_reports_filter_count, includedCount, substances.size),
                     style = MaterialTheme.typography.labelSmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -588,8 +625,8 @@ private fun SubstanceFilter(
             }
             if (expanded) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = onAll) { Text("Select all") }
-                    TextButton(onClick = onNone) { Text("Deselect all") }
+                    TextButton(onClick = onAll) { Text(stringResource(R.string.toolsb_select_all)) }
+                    TextButton(onClick = onNone) { Text(stringResource(R.string.toolsb_deselect_all)) }
                 }
                 for (substance in substances) {
                     val included = filter == null || filter.contains(substance)
@@ -620,7 +657,12 @@ private val CLOCK: DateTimeFormatter = DateTimeFormatter.ofLocalizedTime(FormatS
 private fun clockTime(instant: Instant, zone: ZoneId): String =
     CLOCK.withLocale(Locale.getDefault()).format(instant.atZone(zone))
 
-private val SHORT_DAY: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE d MMM", Locale.ROOT)
-
-private fun shortDate(instant: Instant): String = SHORT_DAY.format(instant.atZone(ZoneId.systemDefault()))
+/**
+ * A report row's day. `Locale.ROOT` was wrong here — it pins the month and
+ * weekday *names* to English, so a Chinese device read "Mon 28 Sep". The names
+ * now come from the app's own resolved locale, which the caller passes in, and
+ * the field order from the resource, because Chinese reads M月d日 EEE.
+ */
+private fun shortDate(instant: Instant, pattern: String, locale: Locale): String =
+    DateTimeFormatter.ofPattern(pattern, locale).format(instant.atZone(ZoneId.systemDefault()))
 

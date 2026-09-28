@@ -27,9 +27,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.DailyDoseItemEntity
 import glass.kagerou.piru.model.DoseFrequency
 import glass.kagerou.piru.model.doseFormatted
@@ -92,10 +94,14 @@ fun MyMedsHubScreen(
             modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("My Meds", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
+            Text(
+                stringResource(R.string.meds_my_meds),
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.weight(1f),
+            )
             Icon(
                 imageVector = Icons.Filled.Add,
-                contentDescription = "Add a Med",
+                contentDescription = stringResource(R.string.meds_add_a_med),
                 tint = PiruTheme.colors.accent,
                 modifier = Modifier
                     .clip(CircleShape)
@@ -116,11 +122,12 @@ fun MyMedsHubScreen(
                             modifier = Modifier.padding(20.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            Text("No Meds Yet", style = MaterialTheme.typography.titleSmall)
                             Text(
-                                "Keep track of what you take and when — one tap to set up " +
-                                    "gentle reminders. Prescriptions, supplements, vitamins: " +
-                                    "anything on a schedule.",
+                                stringResource(R.string.meds_no_meds_yet),
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                            Text(
+                                stringResource(R.string.meds_no_meds_blurb),
                                 style = captionSecondaryStyle,
                             )
                         }
@@ -136,8 +143,8 @@ fun MyMedsHubScreen(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         MedsGlyph(kind = group.glyph(), tint = PiruTheme.colors.secondaryLabel, size = 13.dp)
-                        Text(group.label, style = MaterialTheme.typography.labelLarge)
-                        Text(group.rangeLabel, style = captionSecondaryStyle)
+                        Text(stringResource(group.labelRes), style = MaterialTheme.typography.labelLarge)
+                        Text(stringResource(group.rangeLabelRes), style = captionSecondaryStyle)
                     }
                 }
                 item(key = "card-${group.slug}") {
@@ -176,7 +183,7 @@ fun MyMedsHubScreen(
                             tint = PiruTheme.colors.secondaryLabel,
                             modifier = Modifier.size(18.dp),
                         )
-                        Text("Notification Settings", style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.meds_notification_settings), style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             }
@@ -223,7 +230,11 @@ private fun AddMedButton(onClick: () -> Unit) {
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text("Add a Med", style = MaterialTheme.typography.titleSmall, color = PiruTheme.colors.accent)
+        Text(
+            stringResource(R.string.meds_add_a_med),
+            style = MaterialTheme.typography.titleSmall,
+            color = PiruTheme.colors.accent,
+        )
     }
 }
 
@@ -257,7 +268,10 @@ private fun MedRow(
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (item.isQuiet) {
-                    MedsCapsuleChip(text = "quiet", tint = PiruTheme.colors.secondaryLabel)
+                    MedsCapsuleChip(
+                        text = stringResource(R.string.meds_quiet_chip),
+                        tint = PiruTheme.colors.secondaryLabel,
+                    )
                 }
             }
             Text(rowSubtitle(item, group, zone), style = captionSecondaryStyle)
@@ -283,24 +297,40 @@ private fun MedRow(
  * The "also …" clause is what makes a twice-daily med legible in both of the
  * groups it appears in without duplicating it: each row leads with its own
  * group's time and mentions the rest.
+ *
+ * `@Composable` because every clause is a resource — the "also" tail cannot be
+ * appended to a translated prefix, so each shape of the line is one string.
  */
+@Composable
 private fun rowSubtitle(item: DailyDoseItemEntity, group: MedTimeGroup, zone: ZoneId): String {
     val dose = "${doseFormatted(item.amount)} ${item.unit}"
     if (item.isAsNeeded) {
         val limit = item.maxPerDay
-        return if (limit != null) "$dose · up to ${limit}× daily" else "$dose · as needed"
+        return if (limit != null) {
+            stringResource(R.string.meds_row_subtitle_up_to_daily, dose, limit)
+        } else {
+            stringResource(R.string.meds_row_subtitle_as_needed, dose)
+        }
     }
     val times = item.reminderTimesMinutes
-    if (times.isEmpty()) return "$dose · anytime"
+    if (times.isEmpty()) return stringResource(R.string.meds_row_subtitle_anytime, dose)
 
     val inGroup = times.filter { MedTimeGroup.groupForMinutes(it) == group }
     val others = times.filter { MedTimeGroup.groupForMinutes(it) != group }
-    var text = "$dose · " + inGroup.joinToString(" · ") { timeText(it, zone) }
+    var text = stringResource(
+        R.string.meds_row_subtitle_times,
+        dose,
+        inGroup.joinToString(" · ") { timeText(it, zone) },
+    )
     if (others.isNotEmpty()) {
-        text += " · also " + others.joinToString(", ") { timeText(it, zone) }
+        text = stringResource(
+            R.string.meds_row_subtitle_also,
+            text,
+            others.joinToString(stringResource(R.string.common_list_separator)) { timeText(it, zone) },
+        )
     }
     if (item.frequency != DoseFrequency.DAILY) {
-        text += " · ${frequencyShortLabel(item.frequency)}"
+        text = stringResource(R.string.meds_row_subtitle_times, text, frequencyShortLabel(item.frequency))
     }
     return text
 }

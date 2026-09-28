@@ -11,8 +11,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import glass.kagerou.piru.R
 import glass.kagerou.piru.ui.theme.PiruTheme
 
 // The My Meds card's trailing info lines, one composable per fact so each
@@ -48,7 +50,12 @@ fun RestockInfoLine(
             )
         },
     ) {
-        Text("$name · $daysLeft days left", style = captionSecondaryStyle, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Text(
+            stringResource(R.string.meds_restock_line, name, daysLeft),
+            style = captionSecondaryStyle,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
@@ -73,7 +80,12 @@ fun NextDueInfoLine(
             )
         },
     ) {
-        Text("Next: $name at $timeText", style = captionSecondaryStyle, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Text(
+            stringResource(R.string.meds_next_due_line, name, timeText),
+            style = captionSecondaryStyle,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
@@ -119,18 +131,22 @@ fun MissedYesterdayInfoLine(
  * logged" with no hour, a single notice with no slot time names the med alone,
  * and a single timed notice names the end of the day it went missing from —
  * which is the difference between "you missed a dose" and "the evening one".
+ *
+ * `@Composable` because the names have to be joined with the language's own
+ * list conjunction, and the slot's name may be a med the user typed.
  */
+@Composable
 private fun missedText(notice: MissedYesterdayNotice): String {
     if (notice.count > 1) {
-        return "Yesterday's ${andList(notice.names)} weren't logged"
+        return stringResource(R.string.meds_missed_multi, andList(notice.names))
     }
     val minutes = notice.slotMinutes
-        ?: return "Yesterday's ${notice.name} wasn't logged"
+        ?: return stringResource(R.string.meds_missed_single, notice.name)
     return when (MedTimeGroup.groupForMinutes(minutes)) {
-        MedTimeGroup.MORNING -> "Yesterday's morning dose of ${notice.name} wasn't logged"
-        MedTimeGroup.AFTERNOON -> "Yesterday's afternoon dose of ${notice.name} wasn't logged"
-        MedTimeGroup.EVENING -> "Yesterday's evening dose of ${notice.name} wasn't logged"
-        else -> "Yesterday's night dose of ${notice.name} wasn't logged"
+        MedTimeGroup.MORNING -> stringResource(R.string.meds_missed_morning, notice.name)
+        MedTimeGroup.AFTERNOON -> stringResource(R.string.meds_missed_afternoon, notice.name)
+        MedTimeGroup.EVENING -> stringResource(R.string.meds_missed_evening, notice.name)
+        else -> stringResource(R.string.meds_missed_night, notice.name)
     }
 }
 

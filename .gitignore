@@ -11,6 +11,11 @@ local.properties
 # the source, and `SubstanceReader.kt` appears twice in the tree.
 bin/
 
+# Python bytecode from tools/. The scripts get run, and CPython writes a cache
+# beside them; it is not source and it is not reproducible across versions.
+__pycache__/
+*.pyc
+
 # The release signing identity. **Never commit either of these.**
 #
 # A keystore is the app's identity: whoever holds it can publish an update to

@@ -28,8 +28,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import glass.kagerou.piru.R
 import glass.kagerou.piru.model.Oklch
 import glass.kagerou.piru.model.OklchPickerModel
 import glass.kagerou.piru.model.P3Color
@@ -86,9 +88,13 @@ fun SubstanceColorPicker(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Text("Colour", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.shell_colour), style = MaterialTheme.typography.titleSmall)
                     Text(
-                        if (model.usesDefault) "Class default" else "Custom",
+                        if (model.usesDefault) {
+                            stringResource(R.string.shell_colour_class_default)
+                        } else {
+                            stringResource(R.string.shell_colour_custom)
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = PiruTheme.colors.secondaryLabel,
                     )
@@ -116,7 +122,7 @@ fun SubstanceColorPicker(
                 ) {
                     Image(
                         bitmap = planeBitmap.asImageBitmap(),
-                        contentDescription = "Lightness and chroma",
+                        contentDescription = stringResource(R.string.shell_colour_plane_description),
                         modifier = Modifier.fillMaxWidth().height(180.dp),
                     )
                 }
@@ -141,7 +147,7 @@ fun SubstanceColorPicker(
                 ) {
                     Image(
                         bitmap = railBitmap.asImageBitmap(),
-                        contentDescription = "Hue",
+                        contentDescription = stringResource(R.string.shell_colour_hue_description),
                         modifier = Modifier.fillMaxWidth().height(28.dp),
                     )
                 }
@@ -162,15 +168,22 @@ fun SubstanceColorPicker(
                             drawRect(model.tint.toComposeColor())
                         }
                     }
+                    // The separators and the degree sign are the resource's; the three
+                    // numbers are Oklch coordinates and read the same in any language.
                     Text(
-                        "L %.2f · C %.3f · H %.0f°".format(model.color.l, model.color.c, model.color.h),
+                        stringResource(
+                            R.string.shell_colour_readout,
+                            model.color.l,
+                            model.color.c,
+                            model.color.h,
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = PiruTheme.colors.secondaryLabel,
                     )
                 }
 
                 TextButton(onClick = { onChange(model.restoreDefault()) }, enabled = !model.usesDefault) {
-                    Text("Use the class colour")
+                    Text(stringResource(R.string.shell_colour_use_class))
                 }
             }
         }

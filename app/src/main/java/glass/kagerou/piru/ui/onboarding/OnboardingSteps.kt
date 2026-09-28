@@ -53,10 +53,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.annotation.StringRes
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.UserProfileStore
 import glass.kagerou.piru.health.HealthConnectVitals
 import glass.kagerou.piru.ui.components.PiruCard
@@ -112,18 +115,17 @@ fun OnboardingWelcomeStep(nav: OnboardingNav) {
     val hasICloudBackup = false
 
     OnboardingLayout(
-        title = "Welcome to Piru",
+        title = stringResource(R.string.shell_onboarding_welcome_title),
         subtitle = if (hasICloudBackup) {
-            "We found an existing backup in your iCloud. Pick up where you left off, or start fresh."
+            stringResource(R.string.shell_onboarding_welcome_body_backup)
         } else {
-            "Log medications and substances, record how you feel, and explore referenced " +
-                "information. Piru is a record and a reference, not medical advice."
+            stringResource(R.string.shell_onboarding_welcome_body)
         },
         hero = { OnboardingAppIconHero() },
     ) {
         if (hasICloudBackup) {
             OnboardingPillButton(
-                title = "Restore from Backup",
+                title = stringResource(R.string.shell_onboarding_restore_backup),
                 onClick = {
                     // Unreachable while `hasICloudBackup` is false, and deliberately
                     // a no-op rather than a plausible-looking lie. When a backup
@@ -131,9 +133,13 @@ fun OnboardingWelcomeStep(nav: OnboardingNav) {
                     // `nav.advance()`.
                 },
             )
-            OnboardingPillButton(title = "Start Fresh", prominence = Prominence.NEUTRAL, onClick = nav.advance)
+            OnboardingPillButton(
+                title = stringResource(R.string.shell_start_fresh),
+                prominence = Prominence.NEUTRAL,
+                onClick = nav.advance,
+            )
         } else {
-            OnboardingPillButton(title = "Get Started", onClick = nav.advance)
+            OnboardingPillButton(title = stringResource(R.string.shell_onboarding_get_started), onClick = nav.advance)
         }
     }
 }
@@ -151,8 +157,8 @@ fun OnboardingWelcomeStep(nav: OnboardingNav) {
 @Composable
 fun OnboardingPrivacyStep(nav: OnboardingNav) {
     OnboardingLayout(
-        title = "Where your journal lives",
-        subtitle = "Your journal is stored in the app on this device.",
+        title = stringResource(R.string.shell_onboarding_privacy_title),
+        subtitle = stringResource(R.string.shell_onboarding_privacy_subtitle),
         hero = { OnboardingIconHero(Icons.Filled.Lock) },
         mid = {
             OnboardingGroupedCard(
@@ -160,23 +166,23 @@ fun OnboardingPrivacyStep(nav: OnboardingNav) {
             ) {
                 OnboardingBulletRow(
                     icon = Icons.Filled.Phone,
-                    title = "No account",
-                    detail = "No sign-up, and no Piru server that receives your journal.",
+                    title = stringResource(R.string.shell_onboarding_privacy_no_account_title),
+                    detail = stringResource(R.string.shell_onboarding_privacy_no_account_detail),
                 )
                 OnboardingBulletRow(
                     icon = Icons.Filled.Share,
-                    title = "Copies only when you ask",
-                    detail = "An export or backup is made when you ask and saved where you choose.",
+                    title = stringResource(R.string.shell_onboarding_privacy_copies_title),
+                    detail = stringResource(R.string.shell_onboarding_privacy_copies_detail),
                 )
                 OnboardingBulletRow(
                     icon = Icons.Filled.Info,
-                    title = "No ads or trackers",
-                    detail = "Details are in Settings under About Piru.",
+                    title = stringResource(R.string.shell_onboarding_privacy_no_ads_title),
+                    detail = stringResource(R.string.shell_onboarding_privacy_no_ads_detail),
                 )
             }
         },
     ) {
-        OnboardingPillButton(title = "Continue", onClick = nav.advance)
+        OnboardingPillButton(title = stringResource(R.string.shell_continue), onClick = nav.advance)
     }
 }
 
@@ -201,9 +207,8 @@ fun OnboardingDepthStep(nav: OnboardingNav) {
     var selection by remember { mutableStateOf(DisclosureTier.CURIOUS) }
 
     OnboardingLayout(
-        title = "How much detail?",
-        subtitle = "Piru can keep it simple or go deep into the pharmacology. " +
-            "Change this anytime in Settings.",
+        title = stringResource(R.string.shell_onboarding_depth_title),
+        subtitle = stringResource(R.string.shell_onboarding_depth_subtitle),
         hero = { OnboardingIconHero(Icons.Filled.Menu) },
         mid = {
             Column(
@@ -219,7 +224,7 @@ fun OnboardingDepthStep(nav: OnboardingNav) {
         },
     ) {
         OnboardingPillButton(
-            title = "Continue",
+            title = stringResource(R.string.shell_continue),
             onClick = {
                 // The profile row, not preferences: the tier is a profile field
                 // that a screen reads to decide how much to show, and a preferences
@@ -250,8 +255,12 @@ private fun TierRow(tier: DisclosureTier, selected: Boolean, onSelect: () -> Uni
                 modifier = Modifier.weight(1f).padding(start = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(3.dp),
             ) {
-                Text(tier.displayName, style = MaterialTheme.typography.titleSmall)
-                Text(tier.summary, style = MaterialTheme.typography.bodySmall, color = colors.secondaryLabel)
+                Text(stringResource(tier.displayName), style = MaterialTheme.typography.titleSmall)
+                Text(
+                    stringResource(tier.summary),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.secondaryLabel,
+                )
             }
             if (selected) {
                 // The row's own selected state carries this for assistive tech;
@@ -270,22 +279,27 @@ private fun TierRow(tier: DisclosureTier, selected: Boolean, onSelect: () -> Uni
  * Ported from `Piru/Data/Services/UserProfile.swift`. The retired
  * `pharma-nerd` value is missing on purpose: the source maps it forward to
  * Curious on read, and nothing in this port can write it.
+ *
+ * The labels are `@StringRes` ids rather than strings, because the enum is not
+ * composable and the two are read inside one. The **wire** values beside them are
+ * not copy at all — `"harm-reduction"` is what an installed build holds, and
+ * renaming it would orphan a stored profile.
  */
 private enum class DisclosureTier(
-    val displayName: String,
-    val summary: String,
+    @StringRes val displayName: Int,
+    @StringRes val summary: Int,
     val wire: String,
     val icon: ImageVector,
 ) {
     CASUAL(
-        displayName = "Casual",
-        summary = "Plain names, pharmacology folded away until you open it.",
+        displayName = R.string.shell_onboarding_tier_casual,
+        summary = R.string.shell_onboarding_tier_casual_summary,
         wire = OnboardingPrefs.TIER_CASUAL,
         icon = Icons.AutoMirrored.Filled.List,
     ),
     CURIOUS(
-        displayName = "Curious",
-        summary = "Mechanism and pharmacokinetics open on the page, receptor names in the Tolerance tool.",
+        displayName = R.string.shell_onboarding_tier_curious,
+        summary = R.string.shell_onboarding_tier_curious_summary,
         wire = OnboardingPrefs.TIER_CURIOUS,
         icon = Icons.Filled.Search,
     ),
@@ -381,9 +395,8 @@ fun OnboardingHealthStep(nav: OnboardingNav) {
     }
 
     OnboardingLayout(
-        title = "Turn on Health Connect",
-        subtitle = "Show your body weight and heart rate from Health Connect alongside your " +
-            "journal entries, on the session timeline.",
+        title = stringResource(R.string.shell_onboarding_health_title),
+        subtitle = stringResource(R.string.shell_onboarding_health_subtitle),
         hero = { OnboardingIconHero(Icons.Filled.Favorite) },
         mid = {
             Column(
@@ -395,7 +408,10 @@ fun OnboardingHealthStep(nav: OnboardingNav) {
                 PiruCard(modifier = Modifier.fillMaxWidth()) { OnboardingVitalsSampleChart() }
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Your body weight", style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        stringResource(R.string.shell_onboarding_health_weight_label),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
                     OnboardingWeightStepper(value = weightKg, onValueChange = { weightKg = it })
                     OnboardingNote(
                         icon = when {
@@ -414,7 +430,11 @@ fun OnboardingHealthStep(nav: OnboardingNav) {
         },
     ) {
         OnboardingPillButton(
-            title = if (connecting) "Connecting…" else "Continue",
+            title = if (connecting) {
+                stringResource(R.string.shell_onboarding_connecting)
+            } else {
+                stringResource(R.string.shell_continue)
+            },
             enabled = !connecting,
             onClick = {
                 if (availability != HealthConnectVitals.Availability.AVAILABLE) {
@@ -431,7 +451,7 @@ fun OnboardingHealthStep(nav: OnboardingNav) {
             },
         )
         OnboardingPillButton(
-            title = "I'll Set This Later",
+            title = stringResource(R.string.shell_onboarding_set_later),
             prominence = Prominence.NEUTRAL,
             onClick = {
                 // Deliberately requests nothing at all — not even a permission
@@ -443,19 +463,25 @@ fun OnboardingHealthStep(nav: OnboardingNav) {
     }
 }
 
-/** The three-state note under the weight, plus the two unavailable states. */
+/**
+ * The three-state note under the weight, plus the two unavailable states.
+ *
+ * `@Composable` because it resolves its copy through `stringResource`, and it is
+ * only ever read from the step's own composition.
+ */
+@Composable
 private fun noteText(
     availability: HealthConnectVitals.Availability,
     synced: Boolean,
     noRead: Boolean,
 ): String = when {
     availability == HealthConnectVitals.Availability.NOT_INSTALLED ->
-        "This device does not have Health Connect. Set your weight above instead."
+        stringResource(R.string.shell_onboarding_health_note_no_health_connect)
     availability == HealthConnectVitals.Availability.PROVIDER_UPDATE_REQUIRED ->
-        "Health Connect is on this device but needs an update before Piru can read it."
-    synced -> "Synced from Health Connect — check the number looks right."
-    noRead -> "Couldn't read a weight from Health Connect. Set it above instead."
-    else -> "Change what Piru can see anytime in Health Connect's own settings."
+        stringResource(R.string.shell_onboarding_health_note_needs_update)
+    synced -> stringResource(R.string.shell_onboarding_health_note_synced)
+    noRead -> stringResource(R.string.shell_onboarding_health_note_no_read)
+    else -> stringResource(R.string.shell_onboarding_health_note_settings)
 }
 
 /**
@@ -480,7 +506,7 @@ private fun OnboardingWeightStepper(value: Double, onValueChange: (Double) -> Un
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        StepButton(Icons.Filled.KeyboardArrowDown, "Decrease") {
+        StepButton(Icons.Filled.KeyboardArrowDown, stringResource(R.string.shell_onboarding_decrease)) {
             onValueChange(max(0.0, value - step).snapTo(step))
         }
         Row(verticalAlignment = Alignment.Bottom) {
@@ -495,7 +521,7 @@ private fun OnboardingWeightStepper(value: Double, onValueChange: (Double) -> Un
                 color = colors.secondaryLabel,
             )
         }
-        StepButton(Icons.Filled.KeyboardArrowUp, "Increase") {
+        StepButton(Icons.Filled.KeyboardArrowUp, stringResource(R.string.shell_onboarding_increase)) {
             onValueChange((value + step).snapTo(step))
         }
     }
@@ -578,8 +604,8 @@ private fun OnboardingVitalsSampleChart() {
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            ChartLegend(color = accent, label = "Alcohol", labelColor = secondary)
-            ChartLegend(color = heart, label = "Heart rate", labelColor = secondary)
+            ChartLegend(color = accent, label = stringResource(R.string.shell_chart_alcohol), labelColor = secondary)
+            ChartLegend(color = heart, label = stringResource(R.string.shell_chart_heart_rate), labelColor = secondary)
         }
         Canvas(modifier = Modifier.fillMaxWidth().height(108.dp)) {
             val pad = 4f
@@ -658,7 +684,7 @@ private fun OnboardingVitalsSampleChart() {
             drawPath(heartLine, color = heart, style = Stroke(width = 1.8f))
         }
         Text(
-            "A couple of drinks, with the heart rate a watch recorded alongside.",
+            stringResource(R.string.shell_onboarding_health_chart_caption),
             style = MaterialTheme.typography.bodySmall,
             color = secondary,
         )
@@ -720,8 +746,8 @@ fun OnboardingRemindersStep(nav: OnboardingNav) {
     }
 
     OnboardingLayout(
-        title = "Notifications, your pick",
-        subtitle = "Choose what Piru may send. Everything stays adjustable in Settings, switch by switch.",
+        title = stringResource(R.string.shell_onboarding_reminders_title),
+        subtitle = stringResource(R.string.shell_onboarding_reminders_subtitle),
         hero = { OnboardingIconHero(Icons.Filled.Notifications) },
         mid = {
             OnboardingGroupedCard(
@@ -729,25 +755,22 @@ fun OnboardingRemindersStep(nav: OnboardingNav) {
             ) {
                 OnboardingToggleRow(
                     icon = Icons.Filled.Refresh,
-                    title = "Never miss a dose",
-                    detail = "Reminders at each routine's time — and, if you want, a gentle re-ask " +
-                        "a little later, like snooze.",
+                    title = stringResource(R.string.shell_onboarding_reminders_doses_title),
+                    detail = stringResource(R.string.shell_onboarding_reminders_doses_detail),
                     checked = doseReminders.value,
                     onCheckedChange = { doseReminders.value = it },
                 )
                 OnboardingToggleRow(
                     icon = Icons.Filled.PlayArrow,
-                    title = "During a session",
-                    detail = "Hydration and wind-down nudges, wearing-off alerts, and onset/peak " +
-                        "timing cues while something is active.",
+                    title = stringResource(R.string.shell_onboarding_reminders_session_title),
+                    detail = stringResource(R.string.shell_onboarding_reminders_session_detail),
                     checked = sessionAlerts.value,
                     onCheckedChange = { sessionAlerts.value = it },
                 )
                 OnboardingToggleRow(
                     icon = Icons.Filled.Warning,
-                    title = "A safety net",
-                    detail = "A heads-up if one substance's daily total climbs into a heavy " +
-                        "range, or tracked stock runs low.",
+                    title = stringResource(R.string.shell_onboarding_reminders_safety_title),
+                    detail = stringResource(R.string.shell_onboarding_reminders_safety_detail),
                     checked = safetyNet.value,
                     onCheckedChange = { safetyNet.value = it },
                 )
@@ -755,7 +778,11 @@ fun OnboardingRemindersStep(nav: OnboardingNav) {
         },
     ) {
         OnboardingPillButton(
-            title = if (requesting) "Turning On…" else "Enable Selected",
+            title = if (requesting) {
+                stringResource(R.string.shell_onboarding_turning_on)
+            } else {
+                stringResource(R.string.shell_onboarding_enable_selected)
+            },
             enabled = !requesting,
             onClick = {
                 if (requesting) return@OnboardingPillButton
@@ -777,7 +804,7 @@ fun OnboardingRemindersStep(nav: OnboardingNav) {
             },
         )
         OnboardingPillButton(
-            title = "Not Now",
+            title = stringResource(R.string.shell_not_now),
             prominence = Prominence.NEUTRAL,
             onClick = {
                 // No choices written and nothing requested, matching the source:

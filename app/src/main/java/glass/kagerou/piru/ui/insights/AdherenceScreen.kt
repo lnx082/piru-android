@@ -32,10 +32,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.DailyDoseItemEntity
 import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.engine.AdherenceCalculator
@@ -47,14 +49,18 @@ import glass.kagerou.piru.engine.MonthAdherence
 import glass.kagerou.piru.model.doseFormatted
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
+import glass.kagerou.piru.ui.labels.CoreLabels
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.nav.PushRoute
 import glass.kagerou.piru.ui.nav.SheetRoute
 import glass.kagerou.piru.ui.theme.PiruTheme
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
+import java.time.Month
 import java.time.YearMonth
 import java.time.ZoneId
+import java.time.format.TextStyle
 import java.util.Locale
 
 
@@ -148,10 +154,9 @@ fun AdherenceScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     ) {
         item {
             Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Adherence", style = MaterialTheme.typography.headlineSmall)
+                Text(stringResource(R.string.toolsb_adherence_title), style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    "How consistently your scheduled meds got taken. It counts; " +
-                        "it does not keep score.",
+                    stringResource(R.string.toolsb_adherence_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -161,10 +166,8 @@ fun AdherenceScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         if (loaded && items.isEmpty()) {
             item {
                 InsightsEmptyPanel(
-                    "No meds yet",
-                    "Adherence tracks how consistently you take your scheduled meds. " +
-                        "Add one from the journal's My Meds card and this screen starts " +
-                        "working.",
+                    stringResource(R.string.toolsb_adherence_empty_title),
+                    stringResource(R.string.toolsb_adherence_empty_detail),
                 )
             }
         }
@@ -244,9 +247,13 @@ private fun TodayCard(
     PiruCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Today", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                 Text(
-                    "${today.takenCount}/${today.totalCount} taken",
+                    stringResource(R.string.toolsb_adherence_today),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    stringResource(R.string.toolsb_adherence_today_taken, today.takenCount, today.totalCount),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -265,7 +272,7 @@ private fun TodayCard(
             }
             if (today.takenCount < today.totalCount) {
                 Text(
-                    "Record an entry",
+                    stringResource(R.string.toolsb_adherence_record_entry),
                     style = MaterialTheme.typography.labelLarge,
                     color = PiruTheme.colors.accent,
                     modifier = Modifier
@@ -341,14 +348,14 @@ private fun MonthCard(summary: MonthAdherence, month: YearMonth) {
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
                     if (summary.hasData) {
-                        "${summary.taken} of ${summary.due} scheduled doses"
+                        stringResource(R.string.toolsb_adherence_month_doses, summary.taken, summary.due)
                     } else {
-                        "Nothing was scheduled this month"
+                        stringResource(R.string.toolsb_adherence_month_none_scheduled)
                     },
                     style = MaterialTheme.typography.titleSmall,
                 )
                 Text(
-                    "${month.month.name.lowercase().replaceFirstChar { it.uppercase() }} ${month.year}",
+                    stringResource(R.string.toolsb_adherence_month_year, monthName(month.monthValue), month.year),
                     style = MaterialTheme.typography.bodySmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -368,10 +375,9 @@ private fun MonthCard(summary: MonthAdherence, month: YearMonth) {
 private fun RemindersRow(onClick: () -> Unit) {
     PiruCard(modifier = Modifier.fillMaxWidth(), onClick = onClick) {
         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Reminders", style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.toolsb_adherence_reminders_title), style = MaterialTheme.typography.titleSmall)
             Text(
-                "Reminder times live on each med. Which notifications Piru may send, and " +
-                    "the hours it stays quiet, are set here.",
+                stringResource(R.string.toolsb_adherence_reminders_detail),
                 style = MaterialTheme.typography.bodySmall,
                 color = PiruTheme.colors.secondaryLabel,
             )
@@ -397,7 +403,11 @@ private fun CalendarCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = { onMonth(displayedMonth.minusMonths(1)) }) { Text("‹") }
                 Text(
-                    "${displayedMonth.month.name.lowercase().replaceFirstChar { it.uppercase() }} ${displayedMonth.year}",
+                    stringResource(
+                        R.string.toolsb_adherence_month_year,
+                        monthName(displayedMonth.monthValue),
+                        displayedMonth.year,
+                    ),
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier
                         .weight(1f)
@@ -608,10 +618,10 @@ private fun DayDetailSheet(
 ) {
     val status = day.status
     val label = when (status) {
-        AdherenceStatus.Complete -> "All taken"
-        AdherenceStatus.Partial -> "Partially taken"
-        AdherenceStatus.Missed -> "All missed"
-        AdherenceStatus.NoData -> "Nothing due"
+        AdherenceStatus.Complete -> stringResource(R.string.toolsb_adherence_day_all_taken)
+        AdherenceStatus.Partial -> stringResource(R.string.toolsb_adherence_day_partially_taken)
+        AdherenceStatus.Missed -> stringResource(R.string.toolsb_adherence_day_all_missed)
+        AdherenceStatus.NoData -> stringResource(R.string.toolsb_adherence_day_nothing_due)
     }
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
         Text(
@@ -619,7 +629,7 @@ private fun DayDetailSheet(
             style = MaterialTheme.typography.titleMedium,
         )
         Text(
-            "$label · ${day.takenCount}/${day.totalCount} taken",
+            stringResource(R.string.toolsb_adherence_day_summary, label, day.takenCount, day.totalCount),
             style = MaterialTheme.typography.bodyMedium,
             color = PiruTheme.colors.secondaryLabel,
         )
@@ -629,16 +639,20 @@ private fun DayDetailSheet(
             Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
                 Text(
                     if (itemAdherence.taken) {
-                        "Taken: ${itemAdherence.item.substance}"
+                        stringResource(R.string.toolsb_adherence_item_taken, itemAdherence.item.substance)
                     } else {
-                        "Not logged: ${itemAdherence.item.route.displayName.lowercase()} " +
-                            itemAdherence.item.substance
+                        stringResource(
+                            R.string.toolsb_adherence_item_not_logged,
+                            CoreLabels.route(itemAdherence.item.route).lowercase(),
+                            itemAdherence.item.substance,
+                        )
                     },
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 val dose = entity?.let { "${doseFormatted(it.amount)} ${it.unit}" } ?: ""
+                val frequency = shortFrequency(itemAdherence.item)
                 Text(
-                    "$dose — ${shortFrequency(itemAdherence.item)}".trim(),
+                    "$dose — $frequency".trim(),
                     style = MaterialTheme.typography.bodySmall,
                     color = PiruTheme.colors.secondaryLabel,
                 )
@@ -652,16 +666,20 @@ private fun DayDetailSheet(
  * The cadence a med is on.
  *
  * Upstream prints `DoseFrequency.shortLabel`; the port's `DoseFrequency` carries
- * only the wire value and its long name, so the short form is spelled out here.
- * When the model gains `shortLabel` this is where it plugs in.
+ * only the wire value and its long name, so the short form is spelled out here
+ * — as resources, since these are words on screen. When the model gains
+ * `shortLabel` this is where it plugs in.
  */
+@Composable
 private fun shortFrequency(item: AdherenceItem): String = when (item.frequency) {
-    glass.kagerou.piru.model.DoseFrequency.DAILY -> "Daily"
-    glass.kagerou.piru.model.DoseFrequency.EVERY_OTHER_DAY -> "Every 2 days"
-    glass.kagerou.piru.model.DoseFrequency.WEEKLY -> "Weekly"
-    glass.kagerou.piru.model.DoseFrequency.BIWEEKLY -> "Biweekly"
-    glass.kagerou.piru.model.DoseFrequency.MONTHLY -> "Monthly"
-    glass.kagerou.piru.model.DoseFrequency.SPECIFIC_DAYS -> "Custom days"
+    glass.kagerou.piru.model.DoseFrequency.DAILY -> stringResource(R.string.toolsb_adherence_frequency_daily)
+    glass.kagerou.piru.model.DoseFrequency.EVERY_OTHER_DAY ->
+        stringResource(R.string.toolsb_adherence_frequency_every_2_days)
+    glass.kagerou.piru.model.DoseFrequency.WEEKLY -> stringResource(R.string.toolsb_adherence_frequency_weekly)
+    glass.kagerou.piru.model.DoseFrequency.BIWEEKLY -> stringResource(R.string.toolsb_adherence_frequency_biweekly)
+    glass.kagerou.piru.model.DoseFrequency.MONTHLY -> stringResource(R.string.toolsb_adherence_frequency_monthly)
+    glass.kagerou.piru.model.DoseFrequency.SPECIFIC_DAYS ->
+        stringResource(R.string.toolsb_adherence_frequency_custom_days)
 }
 
 // MARK: - Month picker
@@ -715,12 +733,14 @@ private fun MonthPicker(displayedMonth: YearMonth, zone: ZoneId, onPick: (YearMo
 
 // MARK: - Dates
 
-private val MONTH_NAMES = listOf(
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
-)
-
-private fun monthName(month: Int): String = MONTH_NAMES[month - 1]
+/**
+ * A month's name, read from the platform.
+ *
+ * The port carries no month table: a heading that said "March" on a Chinese
+ * device would be the port's English leaking through, and `MedsFormControls`
+ * reads its weekday ladder from the platform for the same reason.
+ */
+private fun monthName(month: Int): String = Month.of(month).getDisplayName(TextStyle.FULL, Locale.getDefault())
 
 /** Foundation's weekday numbering (`1` = Sunday … `7` = Saturday) from a [LocalDate]. */
 private fun foundationWeekdayOf(date: LocalDate): Int = date.dayOfWeek.value % 7 + 1
@@ -739,5 +759,23 @@ private fun firstWeekdayOf(): Int =
 /** Whether [month] is the current month or later — i.e. whether paging forward says anything. */
 private fun atOrAfterCurrentMonth(month: YearMonth, zone: ZoneId): Boolean = month >= YearMonth.now(zone)
 
+/**
+ * Foundation's weekday ladder, `1` = Sunday … `7` = Saturday.
+ *
+ * The column headers come from the platform rather than a table in this file:
+ * a calendar headed "Sun Mon Tue" on a Chinese device is the port's English
+ * leaking through. `MedsFormControls.kt` builds the same ladder the same way.
+ */
+private val FOUNDATION_WEEKDAYS: List<DayOfWeek> = listOf(
+    DayOfWeek.SUNDAY,
+    DayOfWeek.MONDAY,
+    DayOfWeek.TUESDAY,
+    DayOfWeek.WEDNESDAY,
+    DayOfWeek.THURSDAY,
+    DayOfWeek.FRIDAY,
+    DayOfWeek.SATURDAY,
+)
+
 private fun shortWeekday(weekday: Int): String =
-    listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat").getOrElse(weekday - 1) { "?" }
+    FOUNDATION_WEEKDAYS.getOrNull(weekday - 1)
+        ?.getDisplayName(TextStyle.SHORT, Locale.getDefault()) ?: "?"
