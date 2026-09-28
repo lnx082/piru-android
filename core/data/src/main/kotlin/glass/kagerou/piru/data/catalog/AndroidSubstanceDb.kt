@@ -47,7 +47,31 @@ class AndroidSubstanceDb private constructor(
     private val connection: SQLiteConnection,
 ) : SubstanceDb {
 
-    override fun query(sql: String, args: List<Any?>): List<Row> =
+    /**
+     * The connection is **not** thread-safe, and this lock is the whole of the
+     * defence. The bundled connection owns raw SQLite state — a prepared-statement
+     * list, a parser, an error buffer — that two threads corrupt by using at once,
+     * and the failure is a native `abort()`, not a Java exception: the process dies
+     * with `Fatal signal 6 (SIGABRT)` and a tombstone whose top frame is
+     * `CheckJNI::NewStringUTF` inside a `step()` on a connection somebody else is
+     * already preparing a statement on.
+     *
+     * What made it reachable is worth recording, because every one of the callers
+     * looks innocent on its own: the catalog is read by the journal, the tolerance
+     * repository, the body-load tool and the receptor-load chart, and once those
+     * started loading off the main thread two of them genuinely run at the same
+     * time. Serialization by the main thread was never a guarantee this class could
+     * rely on — it only looked like one while every caller happened to be on it.
+     *
+     * A `synchronized` block rather than a `Mutex`: `query` is a plain blocking
+     * function on a background dispatcher, not a suspend one, and making it
+     * suspending to reach a `Mutex` would push the choice of dispatcher up into
+     * every reader. The section is short — one statement, stepped to completion and
+     * closed before it returns.
+     */
+    private val connectionLock = Any()
+
+    override fun query(sql: String, args: List<Any?>): List<Row> = synchronized(connectionLock) {
         connection.prepare(sql).use { statement ->
             args.forEachIndexed { index, arg -> statement.bind(index + 1, arg) }
             val columns = (0 until statement.getColumnCount()).map { statement.getColumnName(it) }
@@ -59,9 +83,12 @@ class AndroidSubstanceDb private constructor(
                 }
             }
         }
+    }
 
     override fun close() {
-        connection.close()
+        // Under the same lock: closing the connection out from under a query is the
+        // same corruption by a different route.
+        synchronized(connectionLock) { connection.close() }
     }
 
     /**
