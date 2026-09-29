@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test
  * failure this file is here to catch.
  *
  * The unit label is injected rather than read from resources, which is what lets this
- * run as a plain JVM test with no Android runtime 鈥?see `UnitLabel`.
+ * run as a plain JVM test with no Android runtime —see `UnitLabel`.
  */
 class SummaryFindingsTest {
 
@@ -162,7 +162,7 @@ class SummaryFindingsTest {
     }
 
     /**
-     * The boundary itself. 50 is the reference, so 50 fires 鈥?`>= 50`, not `> 50`. A
+     * The boundary itself. 50 is the reference, so 50 fires —`>= 50`, not `> 50`. A
      * report that stayed silent at exactly the threshold would be silent at the one
      * number the guideline names.
      */
@@ -224,7 +224,7 @@ class SummaryFindingsTest {
     /**
      * A dangerous class pair the user never actually took together is **not** a finding.
      * This is the rule that stops the report from frightening someone over a month in
-     * which the two substances never met 鈥?the interaction table can say the pair is
+     * which the two substances never met —the interaction table can say the pair is
      * dangerous from the classes alone, and the overlap pass is what says whether it
      * happened.
      */

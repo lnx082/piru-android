@@ -1,4 +1,4 @@
-﻿package glass.kagerou.piru.ui.journal
+package glass.kagerou.piru.ui.journal
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,17 +48,17 @@ import java.util.UUID
 /**
  * A session: its span, its curves, and the doses inside it.
  *
- * Ported from `Journal/Session/` 鈥?twenty-one files and about 3,700 lines across
+ * Ported from `Journal/Session/` —twenty-one files and about 3,700 lines across
  * six sections (timeline, check-ins, entries, body load, safety, recovery). This
  * draws three of them: the header, the effect graph, and the entry list. The
- * remaining three are each a subsystem of their own 鈥?check-ins need the
+ * remaining three are each a subsystem of their own —check-ins need the
  * notification scheduler, body load needs the depot path, and the safety section
  * reads the interaction checker.
  *
  * ## What a session is, and what it is not
  * Upstream's framing is worth carrying: a session is **an analysis artifact**.
  * Time is continuous and doses are logged when they are taken; the app groups
- * them afterwards, by clustering, and a session is that grouping 鈥?never a thing
+ * them afterwards, by clustering, and a session is that grouping —never a thing
  * the user has to open before they are allowed to log. So this screen renders a
  * *reading* of the log, and the log is the truth.
  */
@@ -123,12 +123,12 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
                             currentTime = loaded.lastDoseDate?.toInstant()
                                 ?: loaded.startDate.toInstant(),
                             // The session graph keeps distinct routes separate and
-                            // merges redoses 鈥?the same rule the day view uses.
+                            // merges redoses —the same rule the day view uses.
                             stackRedoses = true,
                             dayBounded = false,
                             // The only graph that carries the cardio lane. The day
                             // view shows today's doses, and a session is the unit a
-                            // heart-rate response belongs to 鈥?see the lane's own note.
+                            // heart-rate response belongs to —see the lane's own note.
                             vitals = vitals,
                         )
                     }
@@ -183,7 +183,7 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
 private fun SessionHeader(session: SessionEntity, doseCount: Int, zone: ZoneId) {
     val start = session.startDate.toInstant()
     val last = session.lastDoseDate?.toInstant()
-    // The language this screen's strings resolved to 鈥?the app's, not the
+    // The language this screen's strings resolved to —the app's, not the
     // phone's, so an English screen never gets a German month name.
     val dateLocale = appLocale()
     // Resolved before the builder: the combined length is the only translated
@@ -199,7 +199,7 @@ private fun SessionHeader(session: SessionEntity, doseCount: Int, zone: ZoneId) 
         Text(
             // A title the user wrote wins; the fallback is the day, and its
             // field order comes from the resources so Chinese reads
-            // 9鏈?8鏃ユ槦鏈熶竴 rather than "鏄熸湡涓€, 28 涔濇湀".
+            // 9月28日星期一 rather than "星期一, 28 九月".
             session.title?.takeIf { it.isNotBlank() }
                 ?: start.atZone(zone).format(
                     DateTimeFormatter.ofPattern(
@@ -213,10 +213,10 @@ private fun SessionHeader(session: SessionEntity, doseCount: Int, zone: ZoneId) 
             buildString {
                 append(start.atZone(zone).format(DateTimeFormatter.ofPattern("HH:mm")))
                 if (last != null) {
-                    append(" 鈥?")
+                    append(" – ")
                     append(last.atZone(zone).format(DateTimeFormatter.ofPattern("HH:mm")))
                     if (durationText != null) {
-                        append("  路  ")
+                    append("  ·  ")
                         append(durationText)
                     }
                 }
@@ -260,8 +260,8 @@ internal fun DoseEntryEntity.toDoseRecordForSession() = glass.kagerou.piru.engin
  * Ported from `SessionDetailModel.fetchVitals`.
  *
  * ## It reads; it never prompts
- * Permission is raised in exactly two places 鈥?the onboarding health step and the
- * health settings screen 鈥?and never here. Upstream documents the reason and it is
+ * Permission is raised in exactly two places —the onboarding health step and the
+ * health settings screen —and never here. Upstream documents the reason and it is
  * not a style preference: this screen is already a presented sheet, and asking for
  * Health consent from inside it is a double-presentation conflict, so the prompt
  * flashes up, is dismissed instantly, and re-fires every time the screen opens. With
@@ -276,7 +276,7 @@ internal fun DoseEntryEntity.toDoseRecordForSession() = glass.kagerou.piru.engin
  *
  * ## Why the window is the doses, not the session row
  * A session's `lastDoseDate` is when the last dose was logged, not when its effects
- * ended 鈥?a long-acting dose is still climbing hours later. Reading only to that
+ * ended —a long-acting dose is still climbing hours later. Reading only to that
  * point would cut the lane off exactly where the question gets interesting, so the
  * window runs from the first dose to the later of the last dose and now, and the
  * engine's own framing decides what to draw.

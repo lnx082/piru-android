@@ -237,7 +237,7 @@
 
     <string name="shell_settings_title">Settings</string>
     <string name="shell_settings_appearance">Appearance</string>
-    <string name="shell_settings_appearance_note">Piru ships one skin in this build. The alternate skins and the light/dark override arrive with the appearance screen.</string>
+    <string name="shell_settings_appearance_note">Piru has a light and a dark side, and follows your phone\'s setting. Alternate skins, and a mode override for choosing light or dark regardless of the phone, arrive with the appearance screen.</string>
     <string name="shell_settings_substance_colours">Substance colours</string>
     <string name="shell_settings_substance_colours_detail">Every substance has a colour from its class. Set your own for the ones you log.</string>
     <string name="shell_settings_notifications">Notifications</string>

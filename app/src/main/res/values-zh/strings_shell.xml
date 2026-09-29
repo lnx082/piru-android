@@ -210,7 +210,7 @@
 
     <string name="shell_settings_title">设置</string>
     <string name="shell_settings_appearance">外观</string>
-    <string name="shell_settings_appearance_note">这个版本的 Piru 只有一套皮肤。其他皮肤和明暗模式切换会随外观界面一起到来。</string>
+    <string name="shell_settings_appearance_note">Piru 有明亮与深色两面，并跟随手机的设置。其他皮肤，以及在手机上强制选择明亮或深色的模式开关，会随外观界面一起到来。</string>
     <string name="shell_settings_substance_colours">物质颜色</string>
     <string name="shell_settings_substance_colours_detail">每种物质都有一个来自其类别的颜色。你可以为自己记录的那些设置自己的颜色。</string>
     <string name="shell_settings_notifications">通知</string>
