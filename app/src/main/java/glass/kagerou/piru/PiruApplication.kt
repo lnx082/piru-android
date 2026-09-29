@@ -15,6 +15,7 @@ import glass.kagerou.piru.notifications.MedReminderScheduler
 import glass.kagerou.piru.notifications.NotificationPreferencesStore
 import glass.kagerou.piru.notifications.PiruNotifications
 import glass.kagerou.piru.substance.ContentLanguage
+import glass.kagerou.piru.widget.MedWidgetRefresh
 import glass.kagerou.piru.substance.DbSubstanceCatalog
 import java.io.File
 import java.time.ZoneId
@@ -90,6 +91,11 @@ class PiruApplication : Application() {
             syncBodyWeightFromHealth()
             MedReminderScheduler.enqueueReconcile(this@PiruApplication)
             MedReminderScheduler.scheduleRollForward(this@PiruApplication)
+            // The home-screen widget's own refresh timer is a persisted work request,
+            // which a force-stop or a fresh install will not have. Re-arming it on every
+            // launch — cheap, and a no-op when no widget is placed — is what keeps a
+            // placed widget from sitting on a stale day after the app is reinstalled.
+            MedWidgetRefresh.afterWrite(this@PiruApplication)
         }
     }
 

@@ -114,6 +114,27 @@
         </provider>
 
         <!--
+          The home-screen widget.
+
+          `updatePeriodMillis` is **zero**, which means "never on your own": the
+          platform's own timer is capped at thirty minutes and fires at fixed intervals
+          from the moment the widget was added, so it cannot express either moment this
+          widget has to be right at — the instant a slot falls due, and the instant the
+          day rolls over. `MedWidgetWorker` refreshes it at both, and every write path
+          refreshes it as it happens.
+        -->
+        <receiver
+            android:name=".widget.TodayMedsWidgetReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/today_meds_widget_info" />
+        </receiver>
+
+        <!--
           The low-stock and reminder alarms survive a restart through this, which
           reschedules them from the store rather than from a saved alarm list —
           the store is the durable record and an alarm is only a delivery

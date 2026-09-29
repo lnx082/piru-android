@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Today's medication schedule.
+
+    `updatePeriodMillis="0"` is deliberate and is the one line here worth reading twice:
+    zero means the platform never refreshes this widget on its own. Its own timer is
+    capped at thirty minutes and runs from whenever the widget was added, so it cannot
+    land on either moment this widget has to be right at — the minute a slot falls due,
+    and midnight. `MedWidgetWorker` does those; see its note.
+
+    The default size is the medium family, which is the one that shows a list. A user can
+    resize down to the small family and Glance re-measures, so the size here is a
+    starting point rather than a constraint.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_todays_meds_desc"
+    android:initialLayout="@layout/glance_default_loading_layout"
+    android:minWidth="180dp"
+    android:minHeight="110dp"
+    android:previewImage="@mipmap/ic_launcher"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="3"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen" />

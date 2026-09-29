@@ -258,6 +258,12 @@ fun QuickLogSheet(
                                 // reminders that were materialized against the record as it
                                 // stood a moment ago — see `PiruApplication`.
                                 app.reconcileRoutineOccurrences()
+                                // The home-screen widget shows the same slots this write
+                                // just settled, so it is refreshed here rather than on a
+                                // timer: a checklist that keeps showing a dose as due
+                                // after it was logged is the one failure a medication
+                                // widget must not have.
+                                glass.kagerou.piru.widget.MedWidgetRefresh.afterWrite(context)
                                 committing = false
                                 onCommitted()
                                 onDismiss()

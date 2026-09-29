@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The home-screen widget's copy.
+
+    Its own file because a widget is drawn from a different process with no app
+    composition of its own, so its strings are not reached by any screen — and because
+    the widget picker's description is read by someone who has not opened the app yet
+    and does not know what "Piru" is.
+
+    No emoji and no exclamation, matching the app: a widget that cheers at someone for
+    taking their medication is the tone this app does not use.
+-->
+<resources>
+    <string name="widget_todays_meds">Today\'s Meds</string>
+    <string name="widget_todays_meds_desc">Today\'s medication schedule, and what is still due.</string>
+    <string name="widget_no_meds">No meds today</string>
+    <string name="widget_all_taken">All taken</string>
+    <string name="widget_supplements">Supplements</string>
+</resources>

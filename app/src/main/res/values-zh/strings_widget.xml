@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_todays_meds">今日用药</string>
+    <string name="widget_todays_meds_desc">今天的用药安排，以及还没到点的部分。</string>
+    <string name="widget_no_meds">今天没有用药</string>
+    <string name="widget_all_taken">全部已服</string>
+    <string name="widget_supplements">补剂</string>
+</resources>
