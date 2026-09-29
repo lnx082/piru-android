@@ -262,11 +262,11 @@
     <string name="shell_health_open_failed">无法在此设备上打开 Health Connect。它可能需要安装或更新。</string>
     <string name="shell_health_what_is_read">读取的内容</string>
     <string name="shell_health_type_heart_rate">心率</string>
-    <string name="shell_health_type_heart_rate_detail">为场次图表读取；这个版本还没有把它画在图上。</string>
+    <string name="shell_health_type_heart_rate_detail">画在场次效应曲线下方，可以沿时间轴移动游标查看。</string>
     <string name="shell_health_type_resting_heart_rate">静息心率</string>
     <string name="shell_health_type_resting_heart_rate_detail">缓慢的日常基线。与一次场次一起读取。</string>
     <string name="shell_health_type_blood_pressure">血压</string>
-    <string name="shell_health_type_blood_pressure_detail">从 Health Connect 读取；这个版本还没有把它画在场次时间线上。</string>
+    <string name="shell_health_type_blood_pressure_detail">在场次时间线上按每次读数画一根竖条。</string>
     <string name="shell_health_type_workouts">锻炼</string>
     <string name="shell_health_type_workouts_detail">标出运动期间的心率，这样跑步带来的上升不会被当成剂量带来的上升。</string>
     <string name="shell_health_type_weight">体重</string>

@@ -25,8 +25,6 @@ Not in this build, each for a stated reason rather than an oversight:
   what it needs and offers the search that does work.
 - **PDF reports** — the summary screens are here; the export is not.
 - **Widgets** — Glance widgets are planned, not built.
-- **The vitals lane** — heart rate is read from Health Connect but not yet drawn
-  on the timeline; the health screen says so where it lists what is read.
 - **Traditional Chinese** — this build ships English and Simplified Chinese.
   Upstream also carries Traditional Chinese, across 3,186 strings; that catalogue
   is not ported yet.

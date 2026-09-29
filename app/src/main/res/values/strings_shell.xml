@@ -289,11 +289,11 @@
     <string name="shell_health_open_failed">Health Connect could not be opened on this device. It may need to be installed or updated.</string>
     <string name="shell_health_what_is_read">What is read</string>
     <string name="shell_health_type_heart_rate">Heart rate</string>
-    <string name="shell_health_type_heart_rate_detail">Read for the session graphs, and not yet drawn on them in this build.</string>
+    <string name="shell_health_type_heart_rate_detail">Drawn under the effect curves on a session, with a cursor you can move along it.</string>
     <string name="shell_health_type_resting_heart_rate">Resting heart rate</string>
     <string name="shell_health_type_resting_heart_rate_detail">The slow daily baseline. Read alongside a session.</string>
     <string name="shell_health_type_blood_pressure">Blood pressure</string>
-    <string name="shell_health_type_blood_pressure_detail">Read from Health Connect, and not yet drawn on the session timeline in this build.</string>
+    <string name="shell_health_type_blood_pressure_detail">Shown on the session timeline as a bar per reading, where one exists.</string>
     <string name="shell_health_type_workouts">Workouts</string>
     <string name="shell_health_type_workouts_detail">Marks the heart rate during exercise, so a rise from a run is not read as a rise from a dose.</string>
     <string name="shell_health_type_weight">Weight</string>
