@@ -487,7 +487,7 @@
     <string name="toolsb_adherence_frequency_monthly">每月</string>
     <string name="toolsb_adherence_frequency_custom_days">自定日期</string>
     <string name="toolsb_reports_title">报告</string>
-    <string name="toolsb_reports_subtitle">选择一份报告要涵盖的范围。导出本身还没有接通——这个页面显示的是它们将依据的范围。</string>
+    <string name="toolsb_reports_subtitle">选择报告要涵盖的范围，然后导出。PDF 与两种文本导出会送到分享面板；图片导出还没有做。</string>
     <string name="toolsb_reports_mode_latest">最近</string>
     <string name="toolsb_reports_mode_by_date">按日期</string>
     <string name="toolsb_reports_select_sessions">选择场次</string>

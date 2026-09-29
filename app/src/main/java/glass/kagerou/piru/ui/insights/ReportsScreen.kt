@@ -376,10 +376,27 @@ fun ReportsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                 // it and the recipient sees a document called what it is.
                 putExtra(Intent.EXTRA_SUBJECT, file.nameWithoutExtension)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                // The grant has to be attached as clip data as well as flagged, and this
+                // is the fix for a crash the release walk caught: with only the flag, the
+                // chooser handed the URI to the print spooler and the spooler was denied
+                // — `SecurityException: Permission Denial: opening provider
+                // androidx.core.content.FileProvider from ProcessRecord{...com.android.bips}`
+                // — so "Print" in the share sheet failed inside the system's own print
+                // service. `FLAG_GRANT_READ_URI_PERMISSION` authorises the URI *for the
+                // intent it is set on*; when a chooser re-targets the intent, a target
+                // that enumerates no clips gets nothing, and the clip is what carries the
+                // grant across that hop.
+                clipData = android.content.ClipData.newRawUri(file.name, uri)
             }
-            context.startActivity(
-                Intent.createChooser(intent, context.getString(R.string.toolsb_reports_share_chooser)),
-            )
+            // And the chooser itself needs the flag, because that is the intent whose
+            // target list the chooser's own read is authorised against. Setting it on
+            // both is the documented belt-and-braces, and the cost of being wrong is a
+            // security exception in someone else's process.
+            val chooser = Intent.createChooser(
+                intent,
+                context.getString(R.string.toolsb_reports_share_chooser),
+            ).apply { addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+            context.startActivity(chooser)
         }
     }
 

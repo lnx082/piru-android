@@ -492,7 +492,7 @@
     <string name="toolsb_adherence_frequency_monthly">Monthly</string>
     <string name="toolsb_adherence_frequency_custom_days">Custom days</string>
     <string name="toolsb_reports_title">Reports</string>
-    <string name="toolsb_reports_subtitle">Choose what a report would cover. The exports themselves are not connected yet — this screen shows the scope they would be built from.</string>
+    <string name="toolsb_reports_subtitle">Choose what a report covers, then export it. The PDF and the two text exports go to the share sheet; the image exports are still to come.</string>
     <string name="toolsb_reports_mode_latest">Latest</string>
     <string name="toolsb_reports_mode_by_date">By date</string>
     <string name="toolsb_reports_select_sessions">Select sessions</string>
@@ -510,7 +510,7 @@
     <string name="toolsb_reports_scope_sessions">Sessions</string>
     <string name="toolsb_reports_filter_count">%1$d of %2$d</string>
     <string name="toolsb_reports_exports_title">Exports</string>
-    <string name="toolsb_reports_exports_subtitle">The PDF report and the two text exports go to the share sheet; the image exports are not yet</string>
+    <string name="toolsb_reports_exports_subtitle">The PDF report and the two text exports go to the share sheet; the image exports are not wired up yet.</string>
     <string name="toolsb_reports_export_journal_title">Journal summary</string>
     <string name="toolsb_reports_export_journal_desc">A PDF for a clinician: your entries, your meds, findings, interactions and half-life curves</string>
     <string name="toolsb_reports_pdf_failed">The report could not be written. Nothing was shared.</string>
