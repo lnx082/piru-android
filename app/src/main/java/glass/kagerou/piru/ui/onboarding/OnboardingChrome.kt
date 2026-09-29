@@ -647,6 +647,17 @@ object OnboardingPrefs {
         prefs(context).edit().putBoolean(KEY_SHOW_SESSION_VITALS, value).apply()
     }
 
+    /**
+     * Whether the vitals overlay is opted into.
+     *
+     * False until the user grants Health access on the health step, which is what
+     * upstream's `showSessionVitals` defaults to as well: the overlay is the one
+     * place another app's readings are drawn inside the user's own log, so it is
+     * opt-in rather than on-by-default-with-a-toggle.
+     */
+    fun showSessionVitals(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_SHOW_SESSION_VITALS, false)
+
     /** Kept only so a stale key from an earlier build is not left behind. See `writeDisclosureTier`'s replacement, `PiruApplication.setDisclosureTier`. */
     fun clearRetiredKeys(context: Context) {
         prefs(context).edit()
