@@ -96,16 +96,11 @@
     <string name="shell_onboarding_import_piru_detail">恢复你从 Piru 导出的完整日记。</string>
     <string name="shell_onboarding_import_psylog_title">PsyLog 格式</string>
     <string name="shell_onboarding_import_psylog_detail">从 PsyLog 或任何使用该格式的应用导入——新旧版本均支持。</string>
-    <string name="shell_onboarding_import_not_ported">这个版本能读取文件，但还不能把它变成条目——导入层尚未移植。</string>
+    <string name="shell_onboarding_import_merges">导入只会往日记里加内容，并跳过已经有的剂量——它从不替换这里已有的东西。</string>
     <string name="shell_onboarding_reading">读取中…</string>
     <string name="shell_onboarding_import_action">导入数据</string>
     <string name="shell_onboarding_import_read_failed">无法读取该文件。</string>
-    <string name="shell_onboarding_import_not_json">该文件不是 JSON，所以不是 Piru 会读取的导出文件。</string>
-    <string name="shell_onboarding_import_encrypted">这是一份加密的 Piru 备份。这个版本还不能解密或恢复它。</string>
-    <string name="shell_onboarding_import_piru_export">这是一份 Piru 导出。用来读取它的导入层尚未移植。</string>
-    <string name="shell_onboarding_import_psylog_export">这是一份 PsyLog 导出。用来读取它的导入层尚未移植。</string>
-    <string name="shell_onboarding_import_legacy_export">这是一份早期版本的 Piru 导出。用来读取它的导入层尚未移植。</string>
-    <string name="shell_onboarding_import_unrecognised">这份 JSON 的顶层既不是 Piru 导出，也不是 PsyLog 导出。</string>
+    <string name="shell_onboarding_import_device_key">这是一份锁定在 iPhone 上的 Piru 备份。它的密钥存在那台设备的 iCloud 钥匙串里，所以任何 Android 版本都打不开。如果那台手机还在，请在它的「数据与备份」里导出一份未加密的副本。</string>
 
     <!-- ==================== 引导页：皮肤 ==================== -->
 
@@ -251,7 +246,7 @@
 
     <!-- ==================== 设置：健康数据 ==================== -->
 
-    <string name="shell_health_intro">Piru 可以在你记录的剂量旁边显示心率、血压和体重。它只读取——从不写入健康记录，这里的内容也不会离开手机。</string>
+    <string name="shell_health_intro">Piru 用你的体重来缩放剂量模型，并从 Health Connect 读取心率和血压。它只读取——从不写入健康记录，这里的内容也不会离开手机。</string>
     <string name="shell_health_not_installed_title">此设备上没有 Health Connect</string>
     <string name="shell_health_not_installed_body">在这个 Android 版本上它是一个独立的应用。从 Play 商店安装它就能开启这项功能；在那之前，Piru 的其余部分照常工作。</string>
     <string name="shell_health_update_title">Health Connect 需要更新</string>
@@ -267,11 +262,11 @@
     <string name="shell_health_open_failed">无法在此设备上打开 Health Connect。它可能需要安装或更新。</string>
     <string name="shell_health_what_is_read">读取的内容</string>
     <string name="shell_health_type_heart_rate">心率</string>
-    <string name="shell_health_type_heart_rate_detail">与你的剂量一起绘制，让曲线显示每一剂前后你的身体在做什么。</string>
+    <string name="shell_health_type_heart_rate_detail">为场次图表读取；这个版本还没有把它画在图上。</string>
     <string name="shell_health_type_resting_heart_rate">静息心率</string>
-    <string name="shell_health_type_resting_heart_rate_detail">缓慢的基线，用于与一次场次对比。</string>
+    <string name="shell_health_type_resting_heart_rate_detail">缓慢的日常基线。与一次场次一起读取。</string>
     <string name="shell_health_type_blood_pressure">血压</string>
-    <string name="shell_health_type_blood_pressure_detail">有读数的地方会显示在场次时间线上。</string>
+    <string name="shell_health_type_blood_pressure_detail">从 Health Connect 读取；这个版本还没有把它画在场次时间线上。</string>
     <string name="shell_health_type_workouts">锻炼</string>
     <string name="shell_health_type_workouts_detail">标出运动期间的心率，这样跑步带来的上升不会被当成剂量带来的上升。</string>
     <string name="shell_health_type_weight">体重</string>
@@ -284,8 +279,18 @@
     <string name="shell_health_use_reading">使用来自 Health Connect 的读数（%1$.1f kg）</string>
     <string name="shell_health_weight_value">%1$.1f kg</string>
     <string name="shell_health_no_reading_title">如果读数一直不出现</string>
-    <string name="shell_health_no_reading_body">Piru 只能看到其他应用写入 Health Connect 的内容。如果你的手表同步到一个不往那里写入的应用，Piru 做什么都不会让那些数字出现。</string>
+    <string name="shell_health_no_reading_body">Piru 只能看到其他应用写入 Health Connect 的内容。如果你的手表同步到一个不往那里写入的应用，Piru 做什么都不会让那些数字出现——上面那一步才是把它们打开的地方。</string>
     <string name="shell_health_disclaimer">读数按其他应用记录的原样显示。Piru 不核实它们。Not medical advice.</string>
+
+    <!--
+      手环应用里的一次性设置，才是决定读数是否存在的那一步。Piru 无法代做：
+      这个授权属于手环应用，而不属于我们。
+    -->
+    <string name="shell_health_source_title">怎么让读数进来</string>
+    <string name="shell_health_source_lead">Piru 从不直接连接手表或手环。只有当拥有这些数据的应用被设置为写入 Health Connect 之后，这里才会有读数——在那个应用里打开一个开关，一次就够。</string>
+    <string name="shell_health_source_xiaomi_detail">「我的」→「设置」→ 打开「与云端同步」；再到「我的」→「第三方数据」→ 打开「Health」，并勾选要共享的项目。绑定国行小米账号的手环没有第二步：决定这件事的是账号所在区域，手机上的任何应用都改不了它。</string>
+    <string name="shell_health_source_xiaomi_title">小米运动健康 / Mi Fitness</string>
+    <string name="shell_health_source_other">其他应用——Zepp、华为运动健康、Samsung Health——都有同样的两项设置，只是名字不同。直接写入 Health Connect 的体重秤则不需要任何应用。靠导出文件来共享的应用不算数据源：导入进来的是文件，不是健康记录。</string>
 
     <!-- ==================== 设置：通知 ==================== -->
 

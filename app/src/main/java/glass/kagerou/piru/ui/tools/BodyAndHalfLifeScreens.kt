@@ -97,7 +97,6 @@ fun BodyLoadScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     // dispatcher, which is the main one, so the default dispatcher is named
     // explicitly rather than assumed.
     LaunchedEffect(navigator.dataVersion, range) {
-        selected = null
         val (computed, built) = withContext(Dispatchers.Default) {
             val catalog = app.catalog()
             val entries = app.database.doseEntryDao().all().mapNotNull { it.toDoseRecordIfReplayable() }
@@ -126,6 +125,13 @@ fun BodyLoadScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         }
         active = computed
         trail = built
+        // The cursor starts at the end of the window — the newest sample, which is the
+        // chart's own "now" — rather than absent. An absent cursor has nothing to
+        // focus, so a screen reader user had no way into the chart at all: the drag
+        // these step actions replace is the only other way to move it. It also answers
+        // "where is this now" without requiring a tap, and "Back to now" is still
+        // where a moved cursor returns.
+        selected = built.firstOrNull()?.points?.lastOrNull()?.date
         loaded = true
     }
 
@@ -187,6 +193,7 @@ fun BodyLoadScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                         windowFrom = windowFrom,
                         windowTo = windowTo,
                         axisCaption = stringResource(R.string.toolsb_bodyload_axis_caption),
+                        accessibilityLabel = stringResource(R.string.scrub_label_body_load),
                     )
 
                     selected?.let { at ->
@@ -474,24 +481,50 @@ fun HalfLifeScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
  * body-load readout uses, with a time cursor over it.
  *
  * The cursor differs from the other screens' in two ways, both because this curve
- * is a *single dose's own arc* rather than a window over the log: it starts absent
- * (there is no "now" on this axis to rest at), and it has no "back to now" — a
- * reset would name a moment that does not exist. Drag it, or tap where you want it,
- * and the readout says how much of the dose is left at that elapsed time.
+ * is a *single dose's own arc* rather than a window over the log: it starts at the
+ * dose itself rather than at a "now", and it has no "back to now" — a reset would
+ * name a moment that does not exist. Drag it, or tap where you want it, and the
+ * readout says how much of the dose is left at that elapsed time.
+ *
+ * It used to start *absent*, and no longer does. An absent cursor has nothing to
+ * focus, so a screen reader user had no way in at all: the drag these actions
+ * replace is the only other way to move it. Seeding it at zero costs a sighted
+ * reader nothing — the rule sits on the curve's left edge, where a tap would have
+ * put it anyway — and it is the reading that is true before anything has been
+ * eliminated.
  */
 @Composable
 private fun DecayCurve(params: PKResolver.Params) {
     val accent = PiruTheme.colors.accent
     val mark = PiruTheme.colors.secondaryLabel.copy(alpha = 0.3f)
     val spanMinutes = params.halfLifeMinutes * 7
-    var scrubMinutes by remember(params) { mutableStateOf<Double?>(null) }
+    var scrubMinutes by remember(params) { mutableStateOf<Double?>(0.0) }
+
+    // One reading, used twice: the cursor's spoken state and the visible readout are
+    // the same sentence, so a screen reader and a sighted reader cannot be told
+    // different things about the same moment.
+    val scrubAt = scrubMinutes?.let { minutes ->
+        minutes to PKModel.fractionRemainingInBody(minutes, params.ke, params.ka)
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Box(modifier = Modifier.fillMaxWidth().height(120.dp)) {
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
-                    .timeScrub { fraction -> scrubMinutes = fraction * spanMinutes },
+                    .timeScrub(
+                        label = stringResource(R.string.scrub_label_half_life),
+                        readout = scrubAt?.let {
+                            stringResource(
+                                R.string.scrub_cursor_at,
+                                stringResource(R.string.toolsb_halflife_scrub_after, hours(it.first)),
+                            )
+                        },
+                        // One half-life is the unit this curve is actually about, and
+                        // it is a seventh of the window the curve draws.
+                        cursorFraction = scrubAt?.let { (it.first / spanMinutes).toFloat().coerceIn(0f, 1f) },
+                        stepFraction = 1f / 7f,
+                    ) { fraction -> scrubMinutes = fraction * spanMinutes },
             ) {
                 val steps = 120
                 var previous = Offset.Zero
@@ -524,8 +557,7 @@ private fun DecayCurve(params: PKResolver.Params) {
             }
         }
 
-        scrubMinutes?.let { minutes ->
-            val fraction = PKModel.fractionRemainingInBody(minutes, params.ke, params.ka)
+        scrubAt?.let { (minutes, fraction) ->
             ScrubReadout(
                 title = stringResource(R.string.toolsb_halflife_scrub_after, hours(minutes)),
                 rows = listOf(

@@ -1,4 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="scrub_reset">回到现在</string>
+
+    <string name="scrub_cursor_hint">用操作项让时间游标前后移动一步。</string>
+    <string name="scrub_cursor_back">游标后退一步</string>
+    <string name="scrub_cursor_forward">游标前进一步</string>
+    <string name="scrub_cursor_at">游标位于 %1$s</string>
+
+    <string name="scrub_label_journal">今天的剂量效应曲线，带可拖动的时间游标</string>
+    <string name="scrub_label_tolerance">受体负荷随时间的变化，带可拖动的时间游标</string>
+    <string name="scrub_label_body_load">体内含量随时间的变化，带可拖动的时间游标</string>
+    <string name="scrub_label_half_life">单剂消除曲线，带可拖动的时间游标</string>
 </resources>

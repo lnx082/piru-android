@@ -223,6 +223,42 @@ fun HealthConnectScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {
                     PiruCard(modifier = Modifier.fillMaxWidth()) {
                         Column(
                             modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(stringResource(R.string.shell_health_source_title), style = MaterialTheme.typography.titleSmall)
+                            Text(
+                                stringResource(R.string.shell_health_source_lead),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = PiruTheme.colors.secondaryLabel,
+                            )
+                            // Named rather than described: the most common source on
+                            // Android is a Xiaomi band, and its two switches live in
+                            // places nobody guesses. The generic "check your app's
+                            // settings" would be true and useless.
+                            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                Text(
+                                    stringResource(R.string.shell_health_source_xiaomi_title),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                Text(
+                                    stringResource(R.string.shell_health_source_xiaomi_detail),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = PiruTheme.colors.secondaryLabel,
+                                )
+                            }
+                            Text(
+                                stringResource(R.string.shell_health_source_other),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = PiruTheme.colors.secondaryLabel,
+                            )
+                        }
+                    }
+                }
+
+                item {
+                    PiruCard(modifier = Modifier.fillMaxWidth()) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
                             Text(stringResource(R.string.shell_health_body_weight), style = MaterialTheme.typography.titleSmall)

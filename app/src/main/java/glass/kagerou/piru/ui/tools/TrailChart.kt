@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -82,6 +83,8 @@ internal fun TrailChart(
     windowFrom: Instant,
     windowTo: Instant,
     axisCaption: String,
+    /** What this plot is, for a screen reader. The caller's, because the title is. */
+    accessibilityLabel: String,
     modifier: Modifier = Modifier,
     height: Dp = 200.dp,
 ) {
@@ -96,12 +99,28 @@ internal fun TrailChart(
 
     val spanMillis = (windowTo.toEpochMilli() - windowFrom.toEpochMilli()).coerceAtLeast(1L).toDouble()
 
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    // The gap is what keeps the 0% gridline label — which is drawn at the baseline, so it
+    // hangs a little below it — from reading as part of the date row underneath.
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        // The cursor's reading in the same words the caller's readout uses, so the
+        // spoken label and the visible card cannot disagree about the instant.
+        val cursorAt = selected?.let { trailReadoutTitle(it) }
         Canvas(
             modifier = modifier
                 .fillMaxWidth()
                 .height(height)
-                .timeScrub { fraction -> onSelect(scrubInstantAt(fraction, windowFrom, windowTo)) },
+                .timeScrub(
+                    label = accessibilityLabel,
+                    readout = cursorAt?.let { stringResource(R.string.scrub_cursor_at, it) },
+                    cursorFraction = selected?.let {
+                        ((it.toEpochMilli() - windowFrom.toEpochMilli()) / spanMillis).toFloat()
+                            .coerceIn(0f, 1f)
+                    },
+                    // A twentieth of the window: these trails span weeks, so a step
+                    // has to be small enough to be a nudge and large enough to move
+                    // something visible.
+                    stepFraction = 1f / 20f,
+                ) { fraction -> onSelect(scrubInstantAt(fraction, windowFrom, windowTo)) },
         ) {
             fun xFor(date: Instant): Float =
                 (((date.toEpochMilli() - windowFrom.toEpochMilli()) / spanMillis) * size.width).toFloat()
@@ -138,7 +157,24 @@ internal fun TrailChart(
             }
         }
 
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        // The three parts of the axis line: the window's two ends, and what the y-axis
+        // is a fraction *of*. The caption is the middle child on purpose — `SpaceBetween`
+        // then puts each end hard against its own edge and centres the caption between
+        // them, which is the reading order of an axis.
+        //
+        // `Arrangement.spacedBy` rather than trusting `SpaceBetween` alone: with no
+        // minimum, a long caption in a narrow language leaves the three labels abutting,
+        // and "9月15日占你近期峰值的比例" reads as one string. The spacing is what keeps
+        // them three strings, and the copy should still be short enough that it never
+        // has to be squeezed to fit.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(
+                space = 12.dp,
+                alignment = Alignment.CenterHorizontally,
+            ),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Text(
                 shortTrailDate(windowFrom, axisPattern, dateLocale),
                 style = MaterialTheme.typography.labelSmall,

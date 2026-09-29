@@ -75,6 +75,17 @@ import kotlin.math.roundToInt
  * bands, milestone ribbons, the phase-band underlay, the pinch/pan gestures and the
  * vitals lane. They are layout and gesture work rather than model work, which is why
  * they can follow without touching anything below.
+ *
+ * ## [plotHeight] sizes the curves, not the canvas
+ * The canvas is as tall as the caller asks **plus** whatever the lanes below the plot
+ * need: the clock band, then one strip per duration-less substance. Upstream computes
+ * its own height the same way, in `GraphMetrics.graphHeight`, and the reason is the bug
+ * this grew out of — with the marker lanes hung directly under the baseline and the
+ * clock labels drawn in that same band, every marker name landed on top of the axis.
+ * A caller cannot know how much room those lanes want, because it depends on how many
+ * of the day's substances the *catalog* has no duration for; so the height is the
+ * graph's to finish, and a chart with marker lanes is legitimately taller than one
+ * without.
  */
 @Composable
 fun TimelineGraph(
@@ -82,7 +93,7 @@ fun TimelineGraph(
     markers: List<DoseMarker>,
     currentTime: Instant,
     modifier: Modifier = Modifier,
-    height: Dp = 220.dp,
+    plotHeight: Dp = 220.dp,
     /** Merge a substance's redoses into one curve. On for the day view; the session graph does the same. */
     stackRedoses: Boolean = true,
     /** Clamp the frame to a day rather than letting a long-acting dose stretch it. */
@@ -90,7 +101,7 @@ fun TimelineGraph(
     sampleCount: Int = 260,
 ) {
     if (states.isEmpty() && markers.isEmpty()) {
-        EmptyGraph(height, modifier)
+        EmptyGraph(plotHeight, modifier)
         return
     }
 
@@ -135,7 +146,7 @@ fun TimelineGraph(
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val widthPx = constraints.maxWidth.toFloat()
-        val heightPx = with(LocalDensity.current) { height.toPx() }
+        val plotHeightPx = with(LocalDensity.current) { plotHeight.toPx() }
 
         // The gutter is sized from the widest marker label rather than fixed: a
         // truncated substance name is worse than a narrower plot, and the labels
@@ -151,6 +162,13 @@ fun TimelineGraph(
                 ).size.width
             } ?: 0
         }
+        // The clock labels' own height, measured rather than guessed. It decides how
+        // tall the band under the baseline has to be before the first marker lane may
+        // begin, and a guessed constant is exactly how this band came to be too short
+        // for what it had to hold.
+        val clockLabelHeight = remember(measurer) {
+            measurer.measure(CLOCK_LABEL_SPECIMEN, TextStyle(fontSize = 10.sp)).size.height.toFloat()
+        }
         // The geometry lives outside the Canvas now, because the drag gesture needs
         // the same mapping the drawing does — an inset the draw knows and the
         // gesture does not is how a cursor ends up under the finger but not where it
@@ -158,21 +176,68 @@ fun TimelineGraph(
         val leftGutter = 0f
         val rightGutter = maxOf(44f, widestLabel + 10f)
         val topGutter = 14f
-        val bottomGutter = 22f + markerLanes.size * 12f
+        // Everything below the plot, in draw order and in non-overlapping bands: the
+        // clock labels, then one strip per marker lane. Both halves are load-bearing.
+        //
+        // The lanes used to be hung at `baseline + 18f` inside a canvas too short to
+        // hold them, so every marker name landed on the clock labels *and* on the axis
+        // line — the bug this geometry grew out of. Reserving the bands is the fix, not
+        // the spacing: a lane is placed from the canvas's own bottom edge and the clock
+        // band is measured from the labels it has to hold, so neither can drift into the
+        // other however many lanes a day turns out to have.
+        val clockBand = clockLabelHeight + 10f
+        val markerLaneGap = 6f
+        val markerLaneHeight = clockLabelHeight + 8f
+        val bottomGutter = clockBand + (markerLaneGap + markerLaneHeight) * markerLanes.size
         val plotWidth = widthPx - leftGutter - rightGutter
-        val plotHeight = heightPx - topGutter - bottomGutter
-        val drawable = plotWidth > 0f && plotHeight > 0f
+        val curveHeight = plotHeightPx
+        // The canvas is taller than the curves by exactly the bands below them, which is
+        // why a day with marker lanes draws a taller card than one without: there is
+        // genuinely more to draw. Upstream reaches the same shape from the other
+        // direction, by growing `GraphMetrics.graphHeight` with the lane count.
+        val canvasHeightDp = with(LocalDensity.current) {
+            (topGutter + curveHeight + bottomGutter).toDp()
+        }
+        val drawable = plotWidth > 0f && curveHeight > 0f
 
         fun xFor(minutes: Double): Float = leftGutter + (minutes / spanMinutes).toFloat() * plotWidth
         fun minutesForX(x: Float): Double =
             if (plotWidth <= 0f) 0.0 else (((x - leftGutter) / plotWidth).toDouble() * spanMinutes).coerceIn(0.0, spanMinutes)
 
         Column {
+            // The cursor's own position and reading, in the words `ScrubReadout` uses
+            // below — so the label a screen reader announces and the card a sighted
+            // reader sees cannot say two different things about the same instant.
+            //
+            // At rest the cursor is *at now*, which is where the rule has always been
+            // drawn, so the reading is the present rather than nothing. That is what
+            // keeps this node present without a drag: a cursor that only exists once
+            // someone has touched it has no node to focus and no state to read, which
+            // is exactly the gap this closes.
+            val cursorMoment = scrubTime ?: currentTime
+            val cursorMinutes = minutesBetween(start, cursorMoment)
+            val cursorAt = cursorMoment.atZone(zone).let { atZone ->
+                val sameDay = atZone.toLocalDate() == start.atZone(zone).toLocalDate()
+                if (sameDay) {
+                    atZone.format(DateTimeFormatter.ofPattern("HH:mm"))
+                } else {
+                    atZone.format(DateTimeFormatter.ofPattern(dateTimePattern, dateLocale))
+                }
+            }
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(height)
-                    .timeScrub(enabled = drawable) { fraction ->
+                    .height(canvasHeightDp)
+                    .timeScrub(
+                        enabled = drawable,
+                        label = stringResource(R.string.scrub_label_journal),
+                        readout = stringResource(R.string.scrub_cursor_at, cursorAt),
+                        cursorFraction = (cursorMinutes / spanMinutes).toFloat().coerceIn(0f, 1f),
+                        // One step tries to be an hour: the window here is bounded to a
+                        // day, but its length follows the day's own activity, so the
+                        // fraction is what an hour *is* on this particular day.
+                        stepFraction = (60.0 / spanMinutes).toFloat(),
+                    ) { fraction ->
                         val minutes = minutesForX(fraction * widthPx)
                         scrubTime = start.plusMillis((minutes * 60_000.0).toLong())
                     },
@@ -180,8 +245,8 @@ fun TimelineGraph(
                 Canvas(Modifier.fillMaxSize()) {
                     if (!drawable) return@Canvas
 
-                    val baseline = topGutter + plotHeight
-                    fun yFor(value: Double): Float = baseline - (value * derived.yNormalization).toFloat() * plotHeight
+                    val baseline = topGutter + curveHeight
+                    fun yFor(value: Double): Float = baseline - (value * derived.yNormalization).toFloat() * curveHeight
 
                     // The tick ladder, drawn under the curves so a gridline never crosses one.
                     var tick = 0.0
@@ -200,7 +265,10 @@ fun TimelineGraph(
                             textLayoutResult = measured,
                             topLeft = Offset(
                                 x = (x - measured.size.width / 2f).coerceIn(0f, size.width - measured.size.width),
-                                y = baseline + 4f,
+                                // Centred in the clock band, which is measured from this
+                                // very text — so the labels sit in reserved space rather
+                                // than in whatever was left over.
+                                y = baseline + (clockBand - measured.size.height) / 2f,
                             ),
                         )
                         tick += tickMinutes
@@ -227,9 +295,13 @@ fun TimelineGraph(
                     // Single doses that resolve no duration are not curves, but they are still
                     // the *fact* the graph is about — so they get a lane of dots each rather
                     // than disappearing from the picture.
+                    //
+                    // Placed from the canvas's own bottom edge and upward, which is the half
+                    // of the fix that keeps them off the clock labels: lane 0 sits lowest and
+                    // the clock band is the only thing between the last lane and the plot.
                     var laneIndex = 0
                     for (group in markerLanes) {
-                        val y = baseline + 18f + laneIndex * 12f
+                        val y = size.height - laneIndex * (markerLaneGap + markerLaneHeight) - markerLaneHeight / 2f
                         val first = group.first()
                         val measured = measurer.measure(
                             first.substanceName,
@@ -332,3 +404,13 @@ private fun EmptyGraph(height: Dp, modifier: Modifier) {
 
 private fun minutesBetween(from: Instant, to: Instant): Double =
     Duration.between(from, to).toMillis() / 60_000.0
+
+/**
+ * The shape every clock label has, measured to size the band that holds them.
+ *
+ * `HH:mm` at the axis' 10sp is the tallest a tick label ever gets, and every tick is
+ * that shape, so one specimen is enough to reserve the room. Measured rather than
+ * written as a dp constant on purpose: the constant is what let the marker lanes drift
+ * onto the axis, because it was the same 22f for both the label band and the lanes.
+ */
+private const val CLOCK_LABEL_SPECIMEN = "00:00"

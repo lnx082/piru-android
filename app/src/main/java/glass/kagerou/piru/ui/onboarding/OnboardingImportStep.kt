@@ -1,17 +1,22 @@
 package glass.kagerou.piru.ui.onboarding
 
-import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,45 +25,84 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import glass.kagerou.piru.PiruApplication
 import glass.kagerou.piru.R
+import glass.kagerou.piru.data.backup.BackupCrypto
+import glass.kagerou.piru.data.export.DataExportImport
+import glass.kagerou.piru.ui.settings.OpenBackupDialog
+import glass.kagerou.piru.ui.settings.describeImportReport
 import glass.kagerou.piru.ui.theme.PiruTheme
-import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 
 /**
  * Bring an existing journal in.
  *
  * Ported from `OnboardingImportStep.swift` (94 lines).
  *
- * ## The picker is real; the importer behind it is not ported
- * The source calls `DataExportImport.importJSON(data:context:)`, which
- * auto-detects a Piru export, a PsyLog export, an early `doseEntries` dump, or
- * an encrypted envelope. **That type does not exist in this port.** `:core:data`
- * carries `BackupCrypto` and the entities an import would write into, but no
- * reader that turns a JSON document into rows, and no `classify`.
+ * ## The step the file used to describe as impossible
+ * This screen used to raise the system picker, read the bytes, classify the file
+ * and tell the user the import layer was not ported. That stopped being true when
+ * `DataExportImport` landed in `:core:data` — the classifier it wrote by hand is
+ * that type's `classify`, and the same type's `importJSON` is what the Data &
+ * Backup screen has been calling since. So this calls it too, and the copy says
+ * what actually happens.
  *
- * So the step does the part it can do honestly: it raises the system file picker
- * over `application/json` (the Android counterpart of `.fileImporter`), reads
- * the bytes through the content resolver, and tells the user what the file
- * appears to be and what is missing. Two things it deliberately does **not** do:
- * it does not render an "Import complete" state it could never reach, and it
- * does not stay quiet about the gap until after the user has picked a file — the
- * note is on screen before they tap. Where the import lands: a `DataExportImport`
- * equivalent in `:core:data`, called where [readAndClassify] returns.
+ * ## What it does with each of the four shapes
+ * - **Piru native, PsyLog, the early `doseEntries` dump** — imported. Nothing here
+ *   chooses between them, because [DataExportImport.classify] reads the top-level
+ *   keys and routes; the picker offers `application/json` and the file decides.
+ * - **An encrypted envelope** — [BackupCrypto] recognises it and this asks for the
+ *   passphrase in place. Onboarding is the one screen where bouncing the user to
+ *   Data & Backup would mean finishing the flow, finding the screen, and starting
+ *   again, and a user arriving with their whole journal on a new phone is exactly
+ *   the user that hits this.
+ * - **A device-key envelope** — refused by name, because the key lives in an Apple
+ *   service and there is nothing on this platform that can open it.
+ *
+ * ## Merge, not replace
+ * Onboarding imports into a store the user has not written to yet, so a merge is a
+ * restore. There is no wipe here and no merge-or-replace dialog: a destructive
+ * choice offered before the user has seen the app is a choice about data they
+ * cannot picture yet.
  */
 @Composable
 fun OnboardingImportStep(nav: OnboardingNav) {
     val context = LocalContext.current
+    val app = remember(context) { context.applicationContext as PiruApplication }
     val scope = rememberCoroutineScope()
-    var reading by remember { mutableStateOf(false) }
-    var notice by remember { mutableStateOf<String?>(null) }
+
+    var outcome by remember { mutableStateOf<Outcome?>(null) }
+    var busy by remember { mutableStateOf(false) }
+    // A picked encrypted backup, held as raw bytes so a wrong passphrase can be
+    // retried without asking for the file again.
+    var lockedBackup by remember { mutableStateOf<ByteArray?>(null) }
+
+    suspend fun import(text: String) {
+        busy = true
+        outcome = try {
+            DataExportImport.validate(text)
+            val report = DataExportImport.importJSON(
+                text = text,
+                db = app.database,
+                catalog = runCatching { app.catalog() }.getOrNull(),
+            )
+            // Through the application, not this screen's scope: the row counts and
+            // every memoized replay are keyed off what was just written, and this
+            // step advances the moment the user taps Continue.
+            app.refreshLiveStores()
+            Outcome.Imported(describeImportReport(context, report))
+        } catch (error: Throwable) {
+            Outcome.Failed(DataExportImport.importErrorMessage(error))
+        }
+        busy = false
+    }
 
     // OpenDocument rather than GetContent: an export arrives from a file manager
     // or a download, not from another app publishing it as a stream, and
@@ -69,9 +113,27 @@ fun OnboardingImportStep(nav: OnboardingNav) {
         // rather than a failure and gets no notice.
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
-            reading = true
-            notice = readAndClassify(context, uri)
-            reading = false
+            busy = true
+            val bytes = readBytes(context, uri)
+            busy = false
+            if (bytes == null) {
+                outcome = Outcome.Failed(context.getString(R.string.shell_onboarding_import_read_failed))
+                return@launch
+            }
+            // The envelope decides first: `classify` would also throw `Encrypted`
+            // for this file, but only `BackupCrypto` knows whether this build can
+            // open it.
+            when (val inspection = runCatching { BackupCrypto.inspect(bytes) }.getOrNull()) {
+                is BackupCrypto.Inspection.DeviceKey ->
+                    outcome = Outcome.Failed(context.getString(R.string.shell_onboarding_import_device_key))
+
+                is BackupCrypto.Inspection.Passphrase -> {
+                    lockedBackup = bytes
+                    outcome = null
+                }
+
+                null -> import(bytes.toString(Charsets.UTF_8))
+            }
         }
     }
 
@@ -96,28 +158,24 @@ fun OnboardingImportStep(nav: OnboardingNav) {
                         detail = stringResource(R.string.shell_onboarding_import_psylog_detail),
                     )
                 }
+                // One line, and it is not decoration: a merge is what this does, and
+                // a user who has already used the app on this phone deserves to know
+                // that importing will not have replaced anything.
                 OnboardingNote(
                     icon = Icons.Filled.Info,
-                    text = stringResource(R.string.shell_onboarding_import_not_ported),
+                    text = stringResource(R.string.shell_onboarding_import_merges),
                 )
-                val result = notice
-                if (result != null) {
-                    Text(
-                        result,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = PiruTheme.colors.dangerText,
-                    )
-                }
+                outcome?.let { ImportResult(it) }
             }
         },
     ) {
         OnboardingPillButton(
-            title = if (reading) {
+            title = if (busy) {
                 stringResource(R.string.shell_onboarding_reading)
             } else {
                 stringResource(R.string.shell_onboarding_import_action)
             },
-            enabled = !reading,
+            enabled = !busy,
             onClick = { picker.launch(arrayOf("application/json")) },
         )
         OnboardingPillButton(
@@ -126,45 +184,80 @@ fun OnboardingImportStep(nav: OnboardingNav) {
             onClick = nav.advance,
         )
     }
+
+    lockedBackup?.let { bytes ->
+        OpenBackupDialog(
+            onDismiss = { lockedBackup = null },
+            onPassphrase = { passphrase ->
+                lockedBackup = null
+                scope.launch {
+                    busy = true
+                    val plaintext = runCatching {
+                        withContext(Dispatchers.Default) {
+                            BackupCrypto.decrypt(bytes, passphrase).toString(Charsets.UTF_8)
+                        }
+                    }.getOrElse { error ->
+                        busy = false
+                        // One message for a wrong passphrase and a tampered file
+                        // alike, because GCM cannot tell them apart.
+                        outcome = Outcome.Failed(
+                            context.getString(
+                                when ((error as? BackupCrypto.BackupException)?.failure) {
+                                    BackupCrypto.Failure.DEVICE_KEY_UNAVAILABLE ->
+                                        R.string.shell_data_device_key_unsupported
+                                    else -> R.string.shell_data_passphrase_wrong
+                                },
+                            ),
+                        )
+                        return@launch
+                    }
+                    busy = false
+                    import(plaintext)
+                }
+            },
+        )
+    }
+}
+
+/** What the last attempt did, so the step can say it rather than appear inert. */
+private sealed interface Outcome {
+    /** A file was read into the store; the sentence is the row counts. */
+    data class Imported(val summary: String) : Outcome
+
+    /** Nothing was written, and the reason is [message]. */
+    data class Failed(val message: String) : Outcome
 }
 
 /**
- * Read the picked document and say what it is.
+ * The result line: what landed, or why nothing did.
  *
- * A port of the *classification* half of the source's `DataExportImport`, driven
- * off the same top-level keys — `sealed` + `kind` is an encrypted envelope,
- * `piruExportVersion` is a Piru export, `experiences` is PsyLog, `doseEntries` is
- * the early legacy shape — because that is the part that needs no schema and
- * tells the user whether they picked the right file. Reading it into the store is
- * the part this build cannot do, and the notice says so rather than failing with
- * something generic.
- *
- * `org.json` rather than a serialization library: it is on the platform, and this
- * needs one object's key set, not a typed model of a document nobody has ported.
- *
- * Takes a `Context` rather than being `@Composable`: it runs inside the picker's
- * callback, where there is no composition to read a resource from. The keys it
- * tests (`sealed`, `piruExportVersion`, `experiences`, `doseEntries`) are wire
- * values and stay as they are.
+ * Tone follows the step's own rule — a failure that the user can act on says what
+ * to do, and one they cannot says what is true rather than wearing a warning the
+ * step has no remedy for.
  */
-private suspend fun readAndClassify(context: Context, uri: Uri): String {
-    val bytes = withContext(Dispatchers.IO) {
-        runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
-    } ?: return context.getString(R.string.shell_onboarding_import_read_failed)
+@Composable
+private fun ImportResult(outcome: Outcome) {
+    val (icon, tint, text) = when (outcome) {
+        is Outcome.Imported -> Triple(
+            Icons.Filled.CheckCircle,
+            PiruTheme.colors.successText,
+            outcome.summary,
+        )
 
-    val root = runCatching { JSONObject(String(bytes, Charsets.UTF_8)) }.getOrNull()
-        ?: return context.getString(R.string.shell_onboarding_import_not_json)
-
-    return when {
-        root.has("sealed") && root.has("kind") ->
-            context.getString(R.string.shell_onboarding_import_encrypted)
-        root.has("piruExportVersion") ->
-            context.getString(R.string.shell_onboarding_import_piru_export)
-        root.has("experiences") ->
-            context.getString(R.string.shell_onboarding_import_psylog_export)
-        root.has("doseEntries") ->
-            context.getString(R.string.shell_onboarding_import_legacy_export)
-        else ->
-            context.getString(R.string.shell_onboarding_import_unrecognised)
+        is Outcome.Failed -> Triple(Icons.Filled.Warning, PiruTheme.colors.dangerText, outcome.message)
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(16.dp))
+        Text(text, style = MaterialTheme.typography.bodySmall, color = tint)
     }
 }
+
+/** The picked document's bytes, or null when the provider could not be read. */
+private suspend fun readBytes(context: android.content.Context, uri: Uri): ByteArray? =
+    withContext(Dispatchers.IO) {
+        runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
+    }

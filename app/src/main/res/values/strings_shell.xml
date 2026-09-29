@@ -116,16 +116,11 @@
     <string name="shell_onboarding_import_piru_detail">Restore a full journal you exported from Piru.</string>
     <string name="shell_onboarding_import_psylog_title">PsyLog format</string>
     <string name="shell_onboarding_import_psylog_detail">Import from PsyLog or any app that shares its format — both old and new versions.</string>
-    <string name="shell_onboarding_import_not_ported">This build can read a file but not yet turn one into entries — the import layer is not ported.</string>
+    <string name="shell_onboarding_import_merges">Importing adds to your journal and skips doses it already has — it never replaces what is here.</string>
     <string name="shell_onboarding_reading">Reading…</string>
     <string name="shell_onboarding_import_action">Import Data</string>
     <string name="shell_onboarding_import_read_failed">Could not read that file.</string>
-    <string name="shell_onboarding_import_not_json">That file is not JSON, so it is not an export Piru reads.</string>
-    <string name="shell_onboarding_import_encrypted">That is an encrypted Piru backup. This build cannot decrypt or restore one yet.</string>
-    <string name="shell_onboarding_import_piru_export">That is a Piru export. The import layer that would read it is not ported.</string>
-    <string name="shell_onboarding_import_psylog_export">That is a PsyLog export. The import layer that would read it is not ported.</string>
-    <string name="shell_onboarding_import_legacy_export">That is an early Piru export. The import layer that would read it is not ported.</string>
-    <string name="shell_onboarding_import_unrecognised">That JSON has neither a Piru nor a PsyLog export at its top level.</string>
+    <string name="shell_onboarding_import_device_key">That is a Piru backup locked to an iPhone. Its key lives in the iCloud Keychain on that device, so no Android build can open it. If you still have the phone, export an unencrypted copy from Data &amp; Backup there.</string>
 
     <!-- ==================== Onboarding: skins ==================== -->
 
@@ -278,7 +273,7 @@
 
     <!-- ==================== Settings: health data ==================== -->
 
-    <string name="shell_health_intro">Piru can show your heart rate, blood pressure and weight next to the doses you logged. It only reads — it never writes a health record, and nothing here leaves the phone.</string>
+    <string name="shell_health_intro">Piru scales your dose models by your body weight, and reads heart rate and blood pressure from Health Connect. It only reads — it never writes a health record, and nothing here leaves the phone.</string>
     <string name="shell_health_not_installed_title">Health Connect is not on this device</string>
     <string name="shell_health_not_installed_body">On this version of Android it is a separate app. Installing it from the Play Store turns this on; until then the rest of Piru works exactly as it does now.</string>
     <string name="shell_health_update_title">Health Connect needs an update</string>
@@ -294,11 +289,11 @@
     <string name="shell_health_open_failed">Health Connect could not be opened on this device. It may need to be installed or updated.</string>
     <string name="shell_health_what_is_read">What is read</string>
     <string name="shell_health_type_heart_rate">Heart rate</string>
-    <string name="shell_health_type_heart_rate_detail">Plotted against your doses, so the curve shows what your body did around each one.</string>
+    <string name="shell_health_type_heart_rate_detail">Read for the session graphs, and not yet drawn on them in this build.</string>
     <string name="shell_health_type_resting_heart_rate">Resting heart rate</string>
-    <string name="shell_health_type_resting_heart_rate_detail">The slow baseline, for comparison against a session.</string>
+    <string name="shell_health_type_resting_heart_rate_detail">The slow daily baseline. Read alongside a session.</string>
     <string name="shell_health_type_blood_pressure">Blood pressure</string>
-    <string name="shell_health_type_blood_pressure_detail">Shown on the session timeline where a reading exists.</string>
+    <string name="shell_health_type_blood_pressure_detail">Read from Health Connect, and not yet drawn on the session timeline in this build.</string>
     <string name="shell_health_type_workouts">Workouts</string>
     <string name="shell_health_type_workouts_detail">Marks the heart rate during exercise, so a rise from a run is not read as a rise from a dose.</string>
     <string name="shell_health_type_weight">Weight</string>
@@ -311,8 +306,19 @@
     <string name="shell_health_use_reading">Use the reading from Health Connect (%1$.1f kg)</string>
     <string name="shell_health_weight_value">%1$.1f kg</string>
     <string name="shell_health_no_reading_title">If a reading never appears</string>
-    <string name="shell_health_no_reading_body">Piru sees only what other apps have written into Health Connect. If your watch syncs to an app that does not write there, nothing Piru does will make those numbers show up.</string>
+    <string name="shell_health_no_reading_body">Piru sees only what other apps have written into Health Connect. If your watch syncs to an app that does not write there, nothing Piru does will make those numbers show up — the steps above are what turns them on.</string>
     <string name="shell_health_disclaimer">Readings are shown as the other app recorded them. Piru does not verify them. Not medical advice.</string>
+
+    <!--
+      The one-time setup in the *band's* app, which is the step that decides a
+      reading exists at all. Piru cannot do any of it for the user: the grant is
+      the band app's, not ours.
+    -->
+    <string name="shell_health_source_title">Getting a reading in</string>
+    <string name="shell_health_source_lead">Piru never talks to a watch or a band. A reading exists here only once the app that owns it has been told to write into Health Connect — one switch, once, in that app.</string>
+    <string name="shell_health_source_xiaomi_detail">Profile → Settings → Sync with the cloud, on. Then Profile → Third-party data → Health, and choose the items to share. A band paired to a mainland-China account does not offer the second step; the region the account is registered in decides that, and no app on the phone can change it.</string>
+    <string name="shell_health_source_xiaomi_title">Mi Fitness / Xiaomi Health (小米运动健康)</string>
+    <string name="shell_health_source_other">Any other app — Zepp, Huawei Health, Samsung Health — has the same pair of settings under a different name. A scale that writes to Health Connect directly needs no app at all. Anything that shares by exporting a file is not a source: an import is a file, not a health record.</string>
 
     <!-- ==================== Settings: notifications ==================== -->
 

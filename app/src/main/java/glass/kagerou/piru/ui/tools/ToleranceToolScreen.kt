@@ -128,8 +128,7 @@ fun ToleranceToolScreen(navigator: AppNavigator, modifier: Modifier = Modifier) 
     // runs on the default dispatcher — `LaunchedEffect` continues on the
     // composition's dispatcher, which is the main one.
     LaunchedEffect(navigator.dataVersion, range) {
-        selected = null
-        loadSeries = withContext(Dispatchers.Default) {
+        val built = withContext(Dispatchers.Default) {
             buildReceptorLoadSeries(
                 app = app,
                 entries = app.database.doseEntryDao().all(),
@@ -137,6 +136,14 @@ fun ToleranceToolScreen(navigator: AppNavigator, modifier: Modifier = Modifier) 
                 futureHorizonMinutes = TOLERANCE_FUTURE_HORIZON_MINUTES,
             )
         }
+        loadSeries = built
+        // The cursor starts at the end of the window — the newest sample, which is
+        // the chart's own "now" — rather than absent. An absent cursor has nothing
+        // to focus, so a screen reader user had no way into the chart at all; the
+        // drag these step actions replace is the only other way to move it. It also
+        // answers the question the card is read for ("where is this now") without
+        // requiring a tap, and "Back to now" is still where a moved cursor returns.
+        selected = built.firstOrNull()?.points?.lastOrNull()?.date
     }
 
     // Safety-critical first, then by how much of a usual dose is gone. The
@@ -199,6 +206,7 @@ fun ToleranceToolScreen(navigator: AppNavigator, modifier: Modifier = Modifier) 
                         windowFrom = loadSeries.first().points.first().date,
                         windowTo = loadSeries.first().points.last().date,
                         axisCaption = stringResource(R.string.toolsb_receptor_axis_caption),
+                        accessibilityLabel = stringResource(R.string.scrub_label_tolerance),
                     )
                     selected?.let { at ->
                         ScrubReadout(

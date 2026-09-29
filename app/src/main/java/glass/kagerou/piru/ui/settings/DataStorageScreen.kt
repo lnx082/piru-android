@@ -293,7 +293,7 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
                     context.getString(
                         if (replace) R.string.shell_data_restore_complete else R.string.shell_data_import_complete,
                     ),
-                    describe(context, report),
+                    describeImportReport(context, report),
                 )
             } catch (error: Throwable) {
                 report(
@@ -1002,45 +1002,10 @@ internal fun passphraseFeedback(passphrase: String, confirmation: String): Passp
 /**
  * Asks for the passphrase of a picked encrypted backup.
  *
- * One field, because there is nothing to confirm — the file already exists and the
- * passphrase either opens it or does not.
+ * `OpenBackupDialog` and `describeImportReport` live in `ImportCopy.kt`: the
+ * onboarding import step grew a real importer behind its picker, and a second
+ * screen that reads the same files must describe them in the same words.
  */
-@Composable
-private fun OpenBackupDialog(onDismiss: () -> Unit, onPassphrase: (String) -> Unit) {
-    var passphrase by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.shell_data_open_backup_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    stringResource(R.string.shell_data_open_backup_body),
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                OutlinedTextField(
-                    value = passphrase,
-                    onValueChange = { passphrase = it },
-                    label = { Text(stringResource(R.string.shell_passphrase)) },
-                    singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Password,
-                        autoCorrectEnabled = false,
-                        capitalization = KeyboardCapitalization.None,
-                        imeAction = ImeAction.Done,
-                    ),
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { onPassphrase(passphrase) }, enabled = passphrase.isNotEmpty()) {
-                Text(stringResource(R.string.shell_data_open))
-            }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.shell_cancel)) } },
-    )
-}
 
 // MARK: - The delete flow
 
@@ -1148,61 +1113,11 @@ private const val MIME_ANY = "*/*"
 private fun appVersion(): String = "Piru ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
 
 /**
- * What an import did, in one sentence, plus what it could not take.
+ * What an import did: `describeImportReport`, in `ImportCopy.kt`.
  *
- * The second half is the part that matters. Four sections of a Piru file have no
- * table in this build, and an import that reported only "your data was imported"
- * would be telling the user their lab measurements came across when they did not.
- * An empty count means nothing new was added, which is a normal answer for a
- * re-import and is said as one rather than as a failure.
+ * Shared with the onboarding import step, which reads the same files and has to
+ * say the same things about them.
  */
-private fun describe(context: android.content.Context, report: DataExportImport.ImportReport): String {
-    val parts = buildList {
-        if (report.entriesAdded > 0) {
-            add(
-                context.getString(
-                    if (report.entriesAdded == 1) {
-                        R.string.shell_data_import_entry_one
-                    } else {
-                        R.string.shell_data_import_entry_many
-                    },
-                    report.entriesAdded,
-                ),
-            )
-        }
-        if (report.sessionsAdded > 0) {
-            add(context.getString(R.string.shell_data_import_sessions, report.sessionsAdded))
-        }
-        if (report.medsAdded > 0) {
-            add(context.getString(R.string.shell_data_import_medications, report.medsAdded))
-        }
-        if (report.favoritesAdded > 0) {
-            add(context.getString(R.string.shell_data_import_favorites, report.favoritesAdded))
-        }
-    }
-    val head = if (parts.isEmpty()) {
-        context.getString(R.string.shell_data_import_nothing_new)
-    } else {
-        context.getString(R.string.shell_data_import_added, parts.joinToString(", "))
-    }
-    if (report.unsupported.isEmpty()) return head
-    return head + " " + report.unsupported.joinToString(" ") { section ->
-        // The four section names are the file's own keys; anything else is a
-        // section this build has never heard of and is named as it arrived.
-        val what = when (section.name) {
-            "labMeasurements" -> context.getString(R.string.shell_data_section_lab)
-            "customUnits" -> context.getString(R.string.shell_data_section_units)
-            "drinkPresets" -> context.getString(R.string.shell_data_section_drinks)
-            "settings" -> context.getString(R.string.shell_data_section_settings)
-            else -> section.name
-        }
-        if (section.rows > 0) {
-            context.getString(R.string.shell_data_import_unsupported_rows, section.rows, what)
-        } else {
-            context.getString(R.string.shell_data_import_unsupported, what)
-        }
-    }
-}
 
 /** A snapshot of the store as it stands, returning the file it landed in. */
 private suspend fun snapshotNow(app: PiruApplication, reason: String): File? {

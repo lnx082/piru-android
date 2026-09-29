@@ -12,7 +12,7 @@ tone, and the model documentation the original ships alongside its code.
 
 Mid-port, and honest about it. Working: the journal and its timeline, quick
 logging, sessions and notes, the substance library, every tool, the insights
-pages, reminders, and Health Connect.
+pages, reminders, Health Connect, and data export and import.
 
 Not in this build, each for a stated reason rather than an oversight:
 
@@ -25,10 +25,11 @@ Not in this build, each for a stated reason rather than an oversight:
   what it needs and offers the search that does work.
 - **PDF reports** — the summary screens are here; the export is not.
 - **Widgets** — Glance widgets are planned, not built.
-- **Localization** — upstream carries 3,186 strings in English, Simplified and
-  Traditional Chinese. This build is English only until there is a localization
-  layer for it to be one of many in, rather than three screens in a Chinese
-  language app.
+- **The vitals lane** — heart rate is read from Health Connect but not yet drawn
+  on the timeline; the health screen says so where it lists what is read.
+- **Traditional Chinese** — this build ships English and Simplified Chinese.
+  Upstream also carries Traditional Chinese, across 3,186 strings; that catalogue
+  is not ported yet.
 
 ## Building
 
@@ -67,6 +68,13 @@ purpose: it is what lets the pharmacology be tested in milliseconds rather than
 on a device. The instrumentation specs run against real SQLite, because several
 of the bugs this port has hit were engine differences that a JVM shadow cannot
 reproduce.
+
+### Releasing
+
+[RELEASE.md](RELEASE.md) is the checklist. The line that matters is the one that
+had been living in someone's head rather than in the repository: **install the
+release APK on a device and walk the app**, before the tag. Compilation, R8 and
+the unit suites do not run the application.
 
 ## Layout
 

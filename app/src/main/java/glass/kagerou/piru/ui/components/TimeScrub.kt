@@ -26,6 +26,11 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.R
@@ -71,15 +76,71 @@ import java.time.Instant
  * The callback is a fresh lambda on every recomposition, so keying `pointerInput` on
  * it would restart the gesture while the user is mid-drag. It is read through
  * [rememberUpdatedState] instead, which is what makes the modifier a `@Composable`.
+ *
+ * ## Reaching the cursor without a finger
+ * The plot is a `Canvas`, which carries no semantics, so for a screen reader the
+ * entire feature used to be absent — there was no node to focus and nothing to
+ * hear. [label] and [readout] put one there: the graph says what it is, the node's
+ * state is the cursor's current reading, and two custom actions move the cursor one
+ * [stepFraction] at a time. VoiceOver/TalkBack users open the actions from the
+ * local context menu, which is why they are `CustomAccessibilityAction` rather than
+ * a swipe handler — a swipe on a graph would fight the page scroll.
+ *
+ * The step is the caller's to give because only the caller knows its grid: the
+ * journal samples a day's window, the trails sample a window that reaches into the
+ * future, and one "step" has to mean one sample of whichever grid is on screen.
+ *
+ * A chart whose cursor can legitimately be absent (the half-life curve starts with
+ * none) exposes no node while it is absent, and that is the correct behaviour rather
+ * than an oversight: there is no reading to announce. Each of those callers seeds a
+ * cursor where it can, so the feature is reachable without a drag.
  */
 @Composable
 fun Modifier.timeScrub(
     enabled: Boolean = true,
+    /**
+     * What the plot is, for a screen reader. Read from resources by the caller, so
+     * this file stays free of screen names.
+     */
+    label: String? = null,
+    /**
+     * The cursor's current reading — "Cursor at 14:32" — or null when the cursor is
+     * absent and there is nothing to announce.
+     */
+    /**
+     * The cursor's current reading — "Cursor at 14:32" — or null when the cursor is
+     * absent and there is nothing to announce.
+     */
+    readout: String? = null,
+    /**
+     * Where the cursor currently sits, as a fraction of the window, or null when it
+     * is absent.
+     *
+     * This is a second value rather than something derivable from [readout] because
+     * the step actions need a *number* to step from, and this modifier parses no
+     * formatted dates: each caller already holds its cursor in the unit its own
+     * readout needs (an instant, a fraction, minutes since a dose), and converting to
+     * a fraction here would mean guessing at that unit.
+     */
+    cursorFraction: Float? = null,
+    /**
+     * How far one labelled action moves the cursor, as a fraction of the window.
+     * Ignored unless a [label], a [readout] and a [cursorFraction] are all present.
+     */
+    stepFraction: Float = 0.02f,
     onFraction: (Float) -> Unit,
 ): Modifier {
     val latest by rememberUpdatedState(onFraction)
     if (!enabled) return this
-    return this
+    // Hoisted above the `semantics { }` block, which is not a composable lambda.
+    val content = label
+    val state = readout
+    val at = cursorFraction
+    val backLabel = stringResource(R.string.scrub_cursor_back)
+    val forwardLabel = stringResource(R.string.scrub_cursor_forward)
+    val hint = stringResource(R.string.scrub_cursor_hint)
+
+    val scrubbed = this
         .pointerInput(Unit) {
             detectHorizontalDragGestures { change, _ ->
                 change.consume()
@@ -93,6 +154,29 @@ fun Modifier.timeScrub(
                 latest(fractionOf(offset.x, size.width.toFloat()))
             }
         }
+
+    if (content == null || state == null || at == null) return scrubbed
+
+    return scrubbed.semantics(mergeDescendants = true) {
+        // The hint rides in the description rather than in a separate field: Compose
+        // semantics has no hint, and a reader that hears "dose effect over today"
+        // and then two unexplained actions has been told what the graph is but not
+        // what it is for.
+        contentDescription = if (state.isNotEmpty()) "$content. $state. $hint" else "$content. $hint"
+        stateDescription = state
+        // The direction is the axis' own: the fraction runs left to right, so
+        // "forward" is later in time on every chart that carries this cursor.
+        customActions = listOf(
+            CustomAccessibilityAction(backLabel) {
+                latest((at - stepFraction).coerceIn(0f, 1f))
+                true
+            },
+            CustomAccessibilityAction(forwardLabel) {
+                latest((at + stepFraction).coerceIn(0f, 1f))
+                true
+            },
+        )
+    }
 }
 
 /**

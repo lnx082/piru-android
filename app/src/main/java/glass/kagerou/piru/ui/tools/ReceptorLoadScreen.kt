@@ -357,7 +357,20 @@ private fun ReceptorLoadChart(
                 }
             }
         }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        // The same three-part axis line `TrailChart` draws, given the same treatment for
+        // the same reason: the window's two ends, the caption saying what the y-axis is a
+        // fraction of, and a minimum gap so a long caption cannot run its neighbours into
+        // one string. This chart predates `TrailChart` and has not been folded into it —
+        // its y-axis is per-series normalised rather than shared — so the rule is repeated
+        // here rather than shared, and the spacing has to be kept in step by hand.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(
+                space = 12.dp,
+                alignment = Alignment.CenterHorizontally,
+            ),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Text(
                 visibleFrom?.let { shortTrailDate(it, axisDayPattern, dateLocale) } ?: "",
                 style = MaterialTheme.typography.labelSmall,

@@ -10,6 +10,7 @@ import glass.kagerou.piru.data.UserProfileStore
 import glass.kagerou.piru.data.catalog.AndroidSubstanceDb
 import glass.kagerou.piru.data.export.DataExportImport
 import glass.kagerou.piru.data.catalog.SubstanceCatalogInstaller
+import glass.kagerou.piru.health.HealthConnectVitals
 import glass.kagerou.piru.notifications.MedReminderScheduler
 import glass.kagerou.piru.notifications.NotificationPreferencesStore
 import glass.kagerou.piru.notifications.PiruNotifications
@@ -83,9 +84,43 @@ class PiruApplication : Application() {
             // this fills, and every PK figure in the app is scaled by it.
             profile().load()
             notificationPreferences().load()
+            // After the profile, never before: the sync below decides whether a
+            // reading may replace what is stored by asking *where* the stored
+            // weight came from, and an unloaded profile reports no source at all.
+            syncBodyWeightFromHealth()
             MedReminderScheduler.enqueueReconcile(this@PiruApplication)
             MedReminderScheduler.scheduleRollForward(this@PiruApplication)
         }
+    }
+
+    /**
+     * Adopt the phone's newest body weight, if it has one and the user has not
+     * typed their own.
+     *
+     * Ported from `HealthKitBodyMass.syncLatest()`, which the iOS app calls on
+     * launch. Same shape, same silence: this never prompts — the grant belongs to
+     * the single combined Health request on the health screen and in onboarding —
+     * so it is safe to call unconditionally, including for a user who has never
+     * opened that screen. With no grant, no Health Connect, or no weight record the
+     * read returns nothing and this does nothing.
+     *
+     * ## Why it is worth doing without being asked
+     * Every PK curve in the app is scaled by this one number, and a bathroom scale
+     * is a better source for it than a figure someone typed once and forgot. The
+     * stored source is what keeps that from being rude: a weight the user entered
+     * by hand is never overwritten (see `UserProfileStore.syncWeightFromHealthConnect`),
+     * so the phone only ever wins against another phone reading or the default.
+     *
+     * @return the weight now in use, or null when nothing changed.
+     */
+    suspend fun syncBodyWeightFromHealth(): Double? {
+        val kg = HealthConnectVitals(this).latestBodyMassKg() ?: return null
+        val stored = profile().syncWeightFromHealthConnect(kg) ?: return null
+        // The number changed, so every memoized replay computed against the old one
+        // is stale — the same invalidation a weight typed on the health screen
+        // triggers through `onChanged`.
+        invalidateRepositoryCaches()
+        return stored.bodyWeightKg
     }
 
     /**

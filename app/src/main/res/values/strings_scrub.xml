@@ -8,4 +8,25 @@
 -->
 <resources>
     <string name="scrub_reset">Back to now</string>
+
+    <!--
+        What the cursor says to a screen reader. The chart itself is a Canvas and
+        carries no semantics, so without these the whole feature is invisible to
+        TalkBack — a user who cannot drag has no way to reach the number the
+        cursor exists to produce.
+    -->
+    <string name="scrub_cursor_hint">Use the actions to move the time cursor one step.</string>
+    <string name="scrub_cursor_back">Cursor back one step</string>
+    <string name="scrub_cursor_forward">Cursor forward one step</string>
+    <string name="scrub_cursor_at">Cursor at %1$s</string>
+
+    <!--
+        One per chart that carries the cursor. Named for the data rather than the
+        gesture: a screen reader user hears what the graph is, then what the
+        cursor is currently reading from it.
+    -->
+    <string name="scrub_label_journal">Dose effect over today, with a draggable time cursor</string>
+    <string name="scrub_label_tolerance">Receptor load over time, with a draggable time cursor</string>
+    <string name="scrub_label_body_load">Body load over time, with a draggable time cursor</string>
+    <string name="scrub_label_half_life">Elimination curve for one dose, with a draggable time cursor</string>
 </resources>

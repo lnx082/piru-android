@@ -85,7 +85,7 @@ Match upstream's `zh-Hans`, which is already in the catalogue and readable in
 ```bash
 python tools/zh_from_xcstrings.py \
     app/src/main/res/values/strings_journal.xml \
-    app/src/main/res/values-zh-rCN/strings_journal.xml
+    app/src/main/res/values-zh/strings_journal.xml
 ```
 
 Entries it could not find are written with `translatable="false"`, which is
