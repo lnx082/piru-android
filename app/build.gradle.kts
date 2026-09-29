@@ -21,6 +21,11 @@ android {
         targetSdk = 37
         versionCode = 5
         versionName = "0.4.0"
+        // The widget's specs read the real store through `WidgetState.load`, which is
+        // what a placed widget does — an in-memory database would test a database the
+        // widget never sees. JUnit 4 through AndroidJUnitRunner, the same runner
+        // `:core:data`'s device specs use.
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildFeatures {
@@ -125,6 +130,14 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.kotest.assertions.core)
     testRuntimeOnly(libs.junit.platform.launcher)
+
+    // Device specs. The widget is the reason this module has any: what it draws is
+    // decided by `WidgetState.load` reading the real store, and a JVM test cannot run
+    // that read or the provider metadata the launcher enumerates.
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.kotest.assertions.core)
+    androidTestImplementation(libs.kotlinx.coroutines.core)
 }
 
 tasks.withType<Test>().configureEach {

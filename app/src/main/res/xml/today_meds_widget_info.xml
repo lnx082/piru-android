@@ -11,13 +11,18 @@
     The default size is the medium family, which is the one that shows a list. A user can
     resize down to the small family and Glance re-measures, so the size here is a
     starting point rather than a constraint.
+
+    There is deliberately **no `previewImage`**. With one, the picker showed the app icon
+    — a launcher icon is square and this widget is 3x2, so it read as "we did not make a
+    preview" rather than as the app. Without one the launcher renders the widget's own
+    `initialLayout` at the target size, which is a real widget-shaped frame and can never
+    disagree with what the widget looks like when placed.
 -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/widget_todays_meds_desc"
     android:initialLayout="@layout/glance_default_loading_layout"
     android:minWidth="180dp"
     android:minHeight="110dp"
-    android:previewImage="@mipmap/ic_launcher"
     android:resizeMode="horizontal|vertical"
     android:targetCellWidth="3"
     android:targetCellHeight="2"

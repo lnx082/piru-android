@@ -24,7 +24,6 @@ work = "2.12.0"
 # surface a user puts on their home screen and looks at without opening the app, so
 # an alpha there is not a trade worth making.
 glance = "1.1.1"
-
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
