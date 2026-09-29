@@ -92,6 +92,28 @@
         </activity>
 
         <!--
+          Shareable files. The only thing served through it is the exported PDF
+          report: a share intent cannot hand another app a `file://` URI — since API
+          24 that throws — so the report has to be addressed as a content URI, which
+          means a provider.
+
+          `exported="false"` with `grantUriPermissions="true"` is the pair that matters:
+          nothing can query the provider, and the one URI the user chose to share is
+          granted to that app and no other. No permission is declared, deliberately —
+          a `READ_EXTERNAL_STORAGE` here would be a scarier dialog in front of the same
+          operation, on a directory the app already owns.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <!--
           The low-stock and reminder alarms survive a restart through this, which
           reschedules them from the store rather than from a saved alarm list —
           the store is the durable record and an alarm is only a delivery

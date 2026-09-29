@@ -323,6 +323,31 @@
     <string name="toolsb_summary_unit_mg_diazepam_eq">mg 地西泮当量</string>
     <string name="toolsb_summary_unit_common_doses">常见剂量</string>
     <string name="toolsb_summary_unit_mg">mg</string>
+
+    <!-- ==================== 导出的 PDF 报告 ==================== -->
+    <string name="toolsb_pdf_title">Piru — 物质报告</string>
+    <string name="toolsb_pdf_period">时间范围</string>
+    <string name="toolsb_pdf_generated">生成时间</string>
+    <string name="toolsb_pdf_current_medications">当前用药</string>
+    <string name="toolsb_pdf_col_substance">物质</string>
+    <string name="toolsb_pdf_col_dose">剂量</string>
+    <string name="toolsb_pdf_col_schedule">途径</string>
+    <string name="toolsb_pdf_key_findings">要点</string>
+    <string name="toolsb_pdf_interactions">显著相互作用</string>
+    <string name="toolsb_pdf_no_interactions">这段时间内的物质之间没有发现相互作用。</string>
+    <string name="toolsb_pdf_interaction_footnote">基于本记录按类别给出的组合；并非穷尽的两两药理学分析。</string>
+    <string name="toolsb_pdf_duplicate_title">可能的同一物质重复记录</string>
+    <string name="toolsb_pdf_duplicate_blurb">这些名称在数据目录里指向同一种物质——商品名与通用名，或同一种药物的两种写法。</string>
+    <string name="toolsb_pdf_substance_summary">物质汇总</string>
+    <string name="toolsb_pdf_total_doses">剂</string>
+    <string name="toolsb_pdf_medications">种药物</string>
+    <string name="toolsb_pdf_pk_profiles">药代动力学曲线</string>
+    <string name="toolsb_pdf_usage_log">记录明细</string>
+    <string name="toolsb_pdf_notes">备注</string>
+    <string name="toolsb_pdf_disclaimer">本报告由 Piru 生成，仅供参考，不构成医疗建议。关于物质使用与用药管理，请务必咨询合格的医疗专业人员。</string>
+    <string name="toolsb_pdf_page">第 %1$d 页</string>
+    <string name="toolsb_pdf_more_substances">另有 %1$d 项显著组合。</string>
+    <string name="toolsb_pdf_days_used">天有记录</string>
     <string name="toolsb_patterns_title">规律</string>
     <string name="toolsb_patterns_subtitle">一段时间内记录累加出什么：用药天数、累积暴露、剂量有没有变化，以及哪些物质同时活跃。</string>
     <string name="toolsb_patterns_error_log_unreadable">无法读取记录</string>
@@ -480,9 +505,10 @@
     <string name="toolsb_reports_scope_sessions">场次</string>
     <string name="toolsb_reports_filter_count">%1$d / %2$d</string>
     <string name="toolsb_reports_exports_title">导出</string>
-    <string name="toolsb_reports_exports_subtitle">文本导出已接通分享面板；图片导出尚未接通</string>
+    <string name="toolsb_reports_exports_subtitle">PDF 报告与两种文本导出已接通分享面板；图片导出尚未接通</string>
     <string name="toolsb_reports_export_journal_title">日记摘要</string>
-    <string name="toolsb_reports_export_journal_desc">你的条目、你的药物和剂量趋势，汇为一份文档</string>
+    <string name="toolsb_reports_export_journal_desc">给医生看的 PDF：你的记录、用药、要点、相互作用与半衰期曲线</string>
+    <string name="toolsb_reports_pdf_failed">报告无法写入，没有分享任何内容。</string>
     <string name="toolsb_reports_export_session_images_title">场次图片</string>
     <string name="toolsb_reports_export_session_images_count">%1$d 个场次导出为单独图片</string>
     <string name="toolsb_reports_export_session_images_range">此范围内的场次导出为单独图片</string>

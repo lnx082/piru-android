@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Where the exported PDF reports live.
+
+    A private subdirectory rather than the cache directory: `cache-path` is what most
+    examples use, and it is the wrong choice here — the system may delete a cache file
+    at any time, including in the window between the share sheet opening and the
+    receiving app reading the URI, which shows up as "could not attach file" for the
+    user and looks like a bug in the app rather than a bad storage choice.
+
+    `report/` is created on demand by the writer. The directory is app-private and
+    stays that way: the provider below is `exported="false"` with
+    `grantUriPermissions="true"`, so the only way in is the one URI an `ACTION_SEND`
+    hands to the chosen app.
+-->
+<paths>
+    <files-path
+        name="reports"
+        path="report/" />
+</paths>

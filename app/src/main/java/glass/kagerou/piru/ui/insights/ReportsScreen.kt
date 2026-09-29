@@ -1,6 +1,7 @@
 package glass.kagerou.piru.ui.insights
 
 import android.content.Intent
+import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.core.content.FileProvider
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -39,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
 import glass.kagerou.piru.R
+import glass.kagerou.piru.data.entity.DailyDoseItemEntity
 import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.data.entity.SessionEntity
 import glass.kagerou.piru.data.entity.SessionNoteEntity
@@ -111,6 +114,7 @@ fun ReportsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     var allNotes by remember { mutableStateOf<List<SessionNoteEntity>>(emptyList()) }
     var notesBySession by remember { mutableStateOf<Map<UUID, List<SessionNoteEntity>>>(emptyMap()) }
     var sessionsWithNotes by remember { mutableStateOf<Set<UUID>>(emptySet()) }
+    var dailyDoseItems by remember { mutableStateOf<List<DailyDoseItemEntity>>(emptyList()) }
     var loaded by remember { mutableStateOf(false) }
 
     val zone = remember { ZoneId.systemDefault() }
@@ -130,6 +134,9 @@ fun ReportsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
             .filter { it.hasContent && it.sessionId != null }
             .mapNotNull { it.sessionId }
             .toSet()
+        // The PDF's Current Medications section is the daily-dose list, which is not a
+        // session's and so is not reached by anything else on this screen.
+        dailyDoseItems = app.database.dailyDoseItemDao().all()
         loaded = true
     }
 
@@ -190,6 +197,9 @@ fun ReportsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         }
     }
 
+    /** The instants the scope selection resolves to, for the report's Period line. */
+    val doseTimestamps = remember(scopeEntries) { scopeEntries.map { it.timestamp.toInstant() } }
+
     // Notes belonging to the scope: the selected sessions' notes, or every note
     // whose timestamp falls in the date range.
     val scopeNotes = remember(mode, selectedSessions, customStart, customEnd, allNotes, notesBySession) {
@@ -200,6 +210,30 @@ fun ReportsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                 val to = customEnd.plusDays(1).atStartOfDay(zone).toInstant()
                 allNotes.filter { it.timestamp.toInstant() >= from && it.timestamp.toInstant() < to }
             }
+        }
+    }
+
+    /**
+     * The window the report covers, as two instants.
+     *
+     * Derived from the same scope selection the entries come from rather than carried
+     * separately: a PDF whose Period line disagreed with its own contents would be worse
+     * than one with no period at all. The latest-sessions mode takes the span of the
+     * doses actually selected — which is what the user picked — and the date mode takes
+     * the calendar days, inclusive of the end date the picker shows.
+     */
+    val scopeStart = remember(mode, selectedSessions, customStart, doseTimestamps) {
+        when (mode) {
+            ReportMode.LATEST -> doseTimestamps.minOrNull() ?: customStart.atStartOfDay(zone).toInstant()
+            ReportMode.BY_DATE -> customStart.atStartOfDay(zone).toInstant()
+        }
+    }
+    val scopeEnd = remember(mode, selectedSessions, customEnd, doseTimestamps) {
+        when (mode) {
+            ReportMode.LATEST -> doseTimestamps.maxOrNull() ?: customEnd.plusDays(1).atStartOfDay(zone).toInstant()
+            // Inclusive of the end date the picker shows, so the window runs to the
+            // start of the day after it — the same rule `scopeEntries` filters on.
+            ReportMode.BY_DATE -> customEnd.plusDays(1).atStartOfDay(zone).toInstant()
         }
     }
 
@@ -298,6 +332,54 @@ fun ReportsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
             if (reports.isNotEmpty()) {
                 shareText(reports.joinToString("\n\n---\n\n"))
             }
+        }
+    }
+
+    /**
+     * The PDF report: the one export that leaves as a file rather than as text.
+     *
+     * It goes through `FileProvider` because a share intent cannot hand another app a
+     * `file://` URI — that throws since API 24 — so the permission to read this one file
+     * is granted to the chosen app through the intent's flags and nothing else can reach
+     * the directory.
+     *
+     * A failure here is reported rather than swallowed. The user has just asked to hand
+     * a document to a clinician, and "nothing happened" is indistinguishable from a
+     * report that was produced and then lost.
+     */
+    val onSharePdf: () -> Unit = {
+        shareScope.launch {
+            val file = runCatching {
+                ReportPdfExport.write(
+                    context = context,
+                    app = app,
+                    entries = scopeEntries,
+                    dailyDoseItems = dailyDoseItems,
+                    start = scopeStart,
+                    end = scopeEnd,
+                )
+            }.getOrNull()
+            if (file == null) {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.toolsb_reports_pdf_failed),
+                    Toast.LENGTH_LONG,
+                ).show()
+                return@launch
+            }
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/pdf"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                // `EXTRA_SUBJECT` is what an email client uses for the subject line, and
+                // the report's own name is the right one: the user does not have to type
+                // it and the recipient sees a document called what it is.
+                putExtra(Intent.EXTRA_SUBJECT, file.nameWithoutExtension)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(
+                Intent.createChooser(intent, context.getString(R.string.toolsb_reports_share_chooser)),
+            )
         }
     }
 
@@ -401,6 +483,7 @@ fun ReportsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                     selectedSessionCount = selectedSessions.size,
                     entriesInScope = scopeEntries,
                     sessionCountWithNotes = tripSessions.size,
+                    onSharePdf = onSharePdf,
                     onShareMarkdown = onShareMarkdown,
                     onShareTrip = onShareTrip,
                 )
@@ -629,6 +712,7 @@ private fun ExportList(
     selectedSessionCount: Int,
     entriesInScope: List<DoseEntryEntity>,
     sessionCountWithNotes: Int,
+    onSharePdf: () -> Unit,
     onShareMarkdown: () -> Unit,
     onShareTrip: () -> Unit,
 ) {
@@ -640,6 +724,10 @@ private fun ExportList(
             ExportRow(
                 title = stringResource(R.string.toolsb_reports_export_journal_title),
                 description = stringResource(R.string.toolsb_reports_export_journal_desc),
+                // Wired only when there is something to put in the report: an export
+                // that produces an empty document is the "looks tappable and does
+                // nothing" failure this list is written to avoid.
+                onClick = if (entriesInScope.isNotEmpty()) onSharePdf else null,
             )
             ExportRow(
                 title = stringResource(R.string.toolsb_reports_export_session_images_title),
