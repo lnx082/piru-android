@@ -47,6 +47,9 @@ class AndroidSubstanceDb private constructor(
     private val connection: SQLiteConnection,
 ) : SubstanceDb {
 
+    /** False once [close] has run; read and written only under [PROCESS_LOCK]. */
+    private var open = true
+
     /**
      * The connection is **not** thread-safe, and this lock is the whole of the
      * defence. The bundled connection owns raw SQLite state — a prepared-statement
@@ -69,9 +72,25 @@ class AndroidSubstanceDb private constructor(
      * every reader. The section is short — one statement, stepped to completion and
      * closed before it returns.
      */
-    private val connectionLock = Any()
-
-    override fun query(sql: String, args: List<Any?>): List<Row> = synchronized(connectionLock) {
+    /**
+     * **Process-wide**, not per-instance, and that is the point.
+     *
+     * A per-instance lock only serializes callers that happen to share the instance. Two
+     * `AndroidSubstanceDb`s over the same file are two SQLite connections with two
+     * separate parsers and two statement lists, and they corrupt each other's *shared*
+     * state — the page cache and the file's WAL — with the same native crash a
+     * single-connection race produces. That is not hypothetical: `EsterPKIndexLoader`
+     * opened its own handle, read eight rows and closed it, and when its `close()` landed
+     * while the application's long-lived handle was mid-`query()` the process died with
+     * `SIGSEGV` in `sqlite3DbMallocRawNN` and `selectExpander` — a use-after-free, which
+     * is what closing a connection underneath a running statement is.
+     *
+     * A companion-object lock costs nothing here: the catalog is one file, read-only, and
+     * the queries are short. Serializing every reader in the process against one lock is
+     * exactly the guarantee the callers were already assuming.
+     */
+    override fun query(sql: String, args: List<Any?>): List<Row> = synchronized(PROCESS_LOCK) {
+        check(open) { "AndroidSubstanceDb was closed" }
         connection.prepare(sql).use { statement ->
             args.forEachIndexed { index, arg -> statement.bind(index + 1, arg) }
             val columns = (0 until statement.getColumnCount()).map { statement.getColumnName(it) }
@@ -86,9 +105,15 @@ class AndroidSubstanceDb private constructor(
     }
 
     override fun close() {
-        // Under the same lock: closing the connection out from under a query is the
-        // same corruption by a different route.
-        synchronized(connectionLock) { connection.close() }
+        // Under the same process-wide lock, and it marks the instance shut rather than
+        // leaving a dangling handle: a later `query` on a closed instance now raises a
+        // Java exception naming the mistake, where before it reached SQLite and took the
+        // process down with native memory corruption.
+        synchronized(PROCESS_LOCK) {
+            if (!open) return
+            open = false
+            connection.close()
+        }
     }
 
     /**
@@ -115,12 +140,25 @@ class AndroidSubstanceDb private constructor(
 
     companion object {
         /**
+         * The lock every reader and closer in this process shares.
+         *
+         * See [query] for why it is not per-instance.
+         */
+        private val PROCESS_LOCK = Any()
+
+        /**
          * Open the installed catalog.
          *
          * The file is opened through the driver rather than a framework
          * `SQLiteDatabase`, so the handle is not read-only in SQLite's own sense.
          * Nothing here ever writes, and the file's integrity is checked against
          * the published hash before this is called.
+         *
+         * Opening a second handle is allowed and serialized by [PROCESS_LOCK], but the
+         * caller should prefer the application's shared one: this is a read-only catalog,
+         * so a short-lived handle buys nothing that the long-lived one does not already
+         * give, and it was a short-lived handle closing under a running query that
+         * crashed a released build.
          */
         fun open(file: File): AndroidSubstanceDb =
             AndroidSubstanceDb(BundledSQLiteDriver().open(file.absolutePath))

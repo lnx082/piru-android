@@ -1,6 +1,7 @@
 package glass.kagerou.piru.widget
 
 import android.content.Context
+import android.util.Log
 import android.graphics.Color as AndroidColor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
@@ -36,7 +37,6 @@ import androidx.glance.unit.ColorProvider
 import glass.kagerou.piru.MainActivity
 import glass.kagerou.piru.PiruApplication
 import glass.kagerou.piru.R
-import glass.kagerou.piru.data.PiruDatabase
 import glass.kagerou.piru.ui.meds.MedSlot
 import glass.kagerou.piru.ui.meds.MyMedsModel
 import glass.kagerou.piru.ui.meds.SlotState
@@ -80,6 +80,12 @@ import kotlinx.coroutines.withContext
  */
 class TodayMedsWidget : GlanceAppWidget() {
 
+    /** Shared by the widget and its state loader, so one filter finds both. */
+    internal companion object {
+        const val TAG = "PiruMedWidget"
+    }
+
+
     /**
      * Two layouts come from one composition.
      *
@@ -93,7 +99,21 @@ class TodayMedsWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         // Off the main thread: this reads Room, and `provideGlance` runs in a scope the
         // host controls.
-        val state = withContext(Dispatchers.IO) { WidgetState.load(context) }
+        val state = try {
+            withContext(Dispatchers.IO) { WidgetState.load(context) }
+        } catch (cancellation: kotlinx.coroutines.CancellationException) {
+            // The host cancelled the session — a resize, a removal, a rebind. Rethrowing is
+            // what lets the coroutine machinery unwind; swallowing it here would keep a
+            // dead session alive.
+            throw cancellation
+        } catch (failure: Exception) {
+            // The widget still renders, as an empty day. Glance's alternative is to
+            // propagate, which the launcher shows as "there was a problem loading the
+            // widget" — an error the user cannot act on, for a read that failed. The log
+            // is what makes it diagnosable, because the tile cannot say what went wrong.
+            Log.e(TAG, "widget state read failed; rendering an empty day", failure)
+            WidgetState.EMPTY
+        }
         provideContent {
             GlanceTheme {
                 TodayMedsContent(state)
@@ -178,13 +198,20 @@ internal data class WidgetState(
             val zone = ZoneId.systemDefault()
             val app = context.applicationContext as? PiruApplication
             return runCatching {
-                // The store, opened directly rather than only through the application
-                // object. A widget can be drawn before any activity has started — the
-                // launcher asks for content the moment the user places it — and
-                // `PiruApplication`'s database is a lazy property that only an ordinary
-                // process start-up would have touched. `PiruDatabase.open` is the same
-                // door either way, and Room allows more than one instance over one file.
-                val database = app?.database ?: PiruDatabase.open(context.applicationContext)
+                // The application's own database, and **not** a second instance opened
+                // with `PiruDatabase.open`. An earlier revision did open one, so the widget
+                // could read before any activity had started; that traded a rare empty tile
+                // for a Room builder running inside a widget-binding callback, on whatever
+                // thread and process state the launcher happens to provide — and OEM builds
+                // restrict exactly that. Opening a second connection to a WAL database from
+                // a callback the launcher has a deadline on is the kind of thing that works
+                // on an emulator and throws on a phone.
+                //
+                // The cost is bounded and the app covers it: with no database yet this
+                // returns empty, and `MedWidgetRefresh.afterWrite` runs on every launch and
+                // every dose commit, so the first frame after the app starts is the real
+                // one rather than a stale one.
+                val database = app?.database ?: return@runCatching EMPTY
                 val items = database.dailyDoseItemDao().all()
                 if (items.isEmpty()) return@runCatching EMPTY
                 // Occurrences are keyed by their due day, and the slot pass reads the
