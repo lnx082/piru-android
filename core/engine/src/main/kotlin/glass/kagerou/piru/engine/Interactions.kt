@@ -159,6 +159,18 @@ enum class DrugClass(val raw: String) {
     OTHER("other"),
     ;
 
+    /**
+     * The class as a reader sees it: the wire value with its first letter raised.
+     *
+     * A derived label rather than 27 more constants, and derived from [raw] on purpose
+     * — `raw` is what the bundled database and the rules are written against, so the
+     * two cannot drift. This is the same arrangement [InteractionSeverity.label] uses:
+     * the English label lives here and the localized one belongs with the app's
+     * resources, which is where a screen that needs a translation goes.
+     */
+    val label: String
+        get() = raw.replaceFirstChar { it.uppercase() }
+
     companion object {
         /**
          * The classes no rule mentions. Everything routed to one of these returns
