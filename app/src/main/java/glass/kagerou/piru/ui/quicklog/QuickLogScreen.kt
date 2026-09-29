@@ -28,6 +28,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -103,6 +105,11 @@ fun QuickLogSheet(
 
     val staged = remember { mutableStateListOf<StagedDose>() }
     var query by remember { mutableStateOf("") }
+    // The sheet is *called* quick log, and on a phone it opens over the journal with the
+    // user's attention already on the thing they came to type. Leaving the field unfocused
+    // meant the keyboard never appeared and the first characters went nowhere, which reads
+    // as "the substance field is empty" rather than as "nothing is listening".
+    val substanceFocus = remember { FocusRequester() }
     var results by remember { mutableStateOf<List<Substance>>(emptyList()) }
     var committing by remember { mutableStateOf(false) }
     var catalogReady by remember { mutableStateOf(false) }
@@ -111,6 +118,16 @@ fun QuickLogSheet(
     LaunchedEffect(Unit) {
         catalog.value = withContext(Dispatchers.Default) { app.catalog() }
         catalogReady = true
+    }
+
+    LaunchedEffect(catalogReady) {
+        if (!catalogReady) return@LaunchedEffect
+        // `enabled = catalogReady` below means a request made before this runs would be
+        // made against a disabled field and silently dropped, so the request waits for the
+        // same flag the field does. The `runCatching` is because a sheet dismissed in the
+        // same frame as the catalogue arriving has no node to focus any more, and that is a
+        // race to survive rather than an error to report.
+        runCatching { substanceFocus.requestFocus() }
     }
 
     LaunchedEffect(query) {
@@ -132,7 +149,7 @@ fun QuickLogSheet(
                 onValueChange = { query = it },
                 label = { Text(stringResource(R.string.shell_quicklog_substance_label)) },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().focusRequester(substanceFocus),
                 enabled = catalogReady,
             )
 
