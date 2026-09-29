@@ -2,8 +2,8 @@ package glass.kagerou.piru.widget
 
 import android.content.Context
 import android.util.Log
-import android.graphics.Color as AndroidColor
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
@@ -15,8 +15,6 @@ import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.action.actionStartActivity
-import androidx.glance.appwidget.lazy.LazyColumn
-import androidx.glance.appwidget.lazy.items
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.Alignment
@@ -344,14 +342,26 @@ private fun MedsList(state: WidgetState) {
 
         val quiet = state.quietRows
         val rows = state.loudRows
-        LazyColumn(modifier = GlanceModifier.fillMaxWidth()) {
-            items(rows.size) { index ->
-                SlotRow(rows[index], nowMinutes)
+        // A plain `Column`, not a `LazyColumn`, and the difference is not style.
+        //
+        // A `LazyColumn` makes Glance emit a list that is served by
+        // `GlanceRemoteViewsService` through a `RemoteViewsService`/`RemoteViewsFactory`
+        // pair, rather than emitting everything into the widget's own `RemoteViews`. On a
+        // Xiaomi HyperOS launcher that indirection produced "载入窗口小部件时出现问题" — the
+        // app's session completed successfully and logged nothing, while the tile showed
+        // the host's error state, which is the signature of the host failing to build the
+        // adapter-backed view rather than the app failing to compose.
+        //
+        // Scrolling was never load-bearing here anyway. The slots are today's, so the list
+        // is naturally bounded by how many times a day the user takes medication, and a
+        // widget has room for a handful — anything past that is clipped by the host just as
+        // it would be by a lazy list.
+        Column(modifier = GlanceModifier.fillMaxWidth()) {
+            for (row in rows) {
+                SlotRow(row, nowMinutes)
             }
             if (quiet.isNotEmpty()) {
-                item {
-                    QuietRow(taken = quiet.count { it.taken }, total = quiet.size)
-                }
+                QuietRow(taken = quiet.count { it.taken }, total = quiet.size)
             }
         }
     }
@@ -456,15 +466,32 @@ private fun StateDot(done: Boolean, due: Boolean) {
  * process with no composition of its own, so it cannot read the app's theme, and a
  * widget that changed colour with a skin the launcher cannot see would be a surprise.
  * The accent matches the app's, which is the part that has to be recognisable.
+ *
+ * ## `Color(...)`, never `android.graphics.Color.rgb(...)`
+ * This was the bug behind "载入窗口小部件时出现问题" on a HyperOS launcher. `ColorProvider`
+ * takes a `Color`, and `android.graphics.Color.rgb` returns a bare `Int`; the two are
+ * different types but the `Int` converts silently. A bare `Int` travelling through Glance
+ * is indistinguishable from a **resource id**, and that is how the launcher read it:
+ *
+ * ```
+ * W AppWidgetHostView: Error inflating RemoteViews
+ * android.widget.RemoteViews$ActionException:
+ *   android.content.res.Resources$NotFoundException: Resource ID #0xffffffff
+ *   at RemoteViews$ResourceReflectionAction.getParameterValue
+ * ```
+ *
+ * `0xffffffff` is what the framework calls a null resource. The AOSP launcher happened to
+ * resolve the colour anyway, which is why this only ever appeared on the one launcher that
+ * did not.
  */
 private object WidgetColors {
-    val accent = ColorProvider(AndroidColor.rgb(237, 87, 135))
-    val success = ColorProvider(AndroidColor.rgb(46, 160, 67))
-    val onSuccess = ColorProvider(AndroidColor.WHITE)
-    val track = ColorProvider(AndroidColor.argb(38, 20, 20, 22))
-    val background = ColorProvider(AndroidColor.WHITE)
-    val primary = ColorProvider(AndroidColor.rgb(20, 20, 22))
-    val secondary = ColorProvider(AndroidColor.rgb(110, 110, 115))
+    val accent = ColorProvider(Color(0xFFED5787))
+    val success = ColorProvider(Color(0xFF2EA043))
+    val onSuccess = ColorProvider(Color(0xFFFFFFFF))
+    val track = ColorProvider(Color(0x26202021))
+    val background = ColorProvider(Color(0xFFFFFFFF))
+    val primary = ColorProvider(Color(0xFF141416))
+    val secondary = ColorProvider(Color(0xFF6E6E73))
 }
 
 /** `"HH:mm"` from minutes past midnight — the shape every other time readout uses. */
