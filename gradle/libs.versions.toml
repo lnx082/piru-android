@@ -24,6 +24,10 @@ work = "2.12.0"
 # surface a user puts on their home screen and looks at without opening the app, so
 # an alpha there is not a trade worth making.
 glance = "1.1.1"
+# Robolectric, so the Compose UI specs run on the JVM and can go in CI. Pinned rather
+# than ranged: a new release adds SDK shadows, and a UI spec that suddenly runs against
+# a newer shadow reports failures that belong to Robolectric rather than to the screen.
+robolectric = "4.16"
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
@@ -37,6 +41,9 @@ compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
 compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
+# Compose UI testing. Versions come from the Compose BOM, which is why these carry none.
+compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 
 # The small core icon set. Not transitive through material3, and `extended` is a
 # few thousand vectors for the five a tab bar needs.
@@ -78,12 +85,16 @@ androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.r
 
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+# Runs the JUnit 4 specs (the Compose UI rules) on the JUnit Platform runner, so one
+# source set can hold both frameworks instead of the second call replacing the first.
+junit-vintage-engine = { module = "org.junit.vintage:junit-vintage-engine", version.ref = "junit" }
 kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
 
 # Test-only: backs the substance-database specs on the JVM so they run without an
 # emulator. Production reads the same file through the Android framework SQLite —
 # see :core:data's SubstanceDatabaseFactory.
 sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqliteJdbc" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

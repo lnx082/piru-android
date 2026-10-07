@@ -67,6 +67,27 @@ on a device. The instrumentation specs run against real SQLite, because several
 of the bugs this port has hit were engine differences that a JVM shadow cannot
 reproduce.
 
+`:app`'s JVM specs are mixed on purpose. The pure logic is JUnit 5; the screen
+specs use `createComposeRule`, which is a JUnit 4 rule, so the build runs the
+JUnit Platform with the **vintage engine** as the bridge. Two things about that
+are worth knowing before touching the runner:
+
+- `useJUnit()` alongside `useJUnitPlatform()` does not mean "both". The second
+  call replaces the runner and the JUnit 5 specs stop being collected — a smaller
+  number in a green build. After any change here, check the counts, not the exit
+  code.
+- Robolectric runs the specs against `PiruTestApplication`, not the real
+  application. `PiruApplication.onCreate` schedules WorkManager, which
+  `androidx.startup` normally initialises from the manifest and Robolectric does
+  not run — so the real application throws before any composable is reached.
+
+A screen spec is cheap and belongs here: robolectric + `createComposeRule` renders
+the real screen, so "it draws", "its labels are the shipped ones" and "its cards
+navigate" are all assertable with no emulator. Widgets are the exception —
+Glance's composables need Glance's own node applier and fail with `Invalid
+applier` under `createComposeRule`, so the widget's composition is still checked by
+placing it.
+
 ### Releasing
 
 [RELEASE.md](RELEASE.md) is the checklist. The line that matters is the one that

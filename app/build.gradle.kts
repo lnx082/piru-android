@@ -95,6 +95,15 @@ android {
             }
         }
     }
+
+    testOptions {
+        unitTests {
+            // Robolectric composes the real screens, which read their own string
+            // resources. Without the merged resources every string resolves to nothing
+            // and the specs would assert on blanks.
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 kotlin {
@@ -130,6 +139,21 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.kotest.assertions.core)
     testRuntimeOnly(libs.junit.platform.launcher)
+    // The bridge that lets the Platform run the JUnit 4 classes — `createComposeRule` is a
+    // JUnit 4 rule, and without this the UI specs are collected by nobody.
+    testRuntimeOnly(libs.junit.vintage.engine)
+
+    // The UI specs, on the JVM. `createComposeRule` + Robolectric is what makes a screen's
+    // render and its empty state assertable in CI rather than only by eye on a device —
+    // the module had no UI spec at all before this, so a screen that drew nothing, or drew
+    // the wrong empty state, was only ever caught by someone looking at it.
+    //
+    // JUnit 4, not JUnit 5: `createComposeRule` is a JUnit 4 rule, and the runner below is
+    // configured to run both frameworks in this source set for exactly that reason.
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.ext.junit)
+    debugImplementation(libs.compose.ui.test.manifest)
 
     // Device specs. The widget is the reason this module has any: what it draws is
     // decided by `WidgetState.load` reading the real store, and a JVM test cannot run
@@ -141,5 +165,11 @@ dependencies {
 }
 
 tasks.withType<Test>().configureEach {
+    // `useJUnitPlatform()` alone, because the app's JVM specs are mixed: the deep-link and
+    // findings specs are JUnit 5, and `createComposeRule` is a JUnit 4 rule. Calling
+    // `useJUnit()` as well does **not** add the other framework — it replaces the runner,
+    // and the JUnit 5 specs silently stop being collected. That failure mode is a smaller
+    // number in a green build, so the vintage engine is what actually runs both, and the
+    // test counts are worth a look after touching this.
     useJUnitPlatform()
 }
