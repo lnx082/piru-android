@@ -554,4 +554,5 @@
     <string name="shell_binding_affinity_primary">primary</string>
 
     <string name="shell_library_limited_data">Limited data</string>
+    <string name="shell_quicklog_note_hint">#hashtags become tags</string>
 </resources>

@@ -27,6 +27,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import glass.kagerou.piru.data.JsonLists
+import glass.kagerou.piru.data.entity.SessionEntity
+import glass.kagerou.piru.notifications.CheckInScheduler
 
 /**
  * The app graph, such as it is.
@@ -313,6 +316,48 @@ open class PiruApplication : Application() {
      */
     fun routineOccurrences(): RoutineOccurrenceService =
         routineOccurrences ?: RoutineOccurrenceService(database).also { routineOccurrences = it }
+
+    /**
+     * Set a session's check-in cadence, and arm or disarm its prompts.
+     *
+     * ## This is what made `CheckInScheduler` reachable
+     * The scheduler was complete and had no caller: `sync` plans fire dates from the cadence and
+     * the session's own offsets, respects quiet hours, words a medication session differently from
+     * a substance one, and cancels by prefix when the schedule shrinks. Nothing invoked any of it,
+     * and `SessionEntity.checkInIntervalMinutes` was written only by an import — so a session
+     * created in this app could never have a schedule.
+     *
+     * The two writes are ordered: the row first, because [CheckInScheduler.sync] plans from the
+     * *stored* value rather than from an argument, and syncing before the write would arm the
+     * schedule the user just left.
+     *
+     * A null cadence clears the column rather than storing a sentinel, because "no schedule" and
+     * "a cadence this build does not recognize" are different states and the scheduler reads them
+     * differently — the second one runs nothing, which is right for a value from a newer build and
+     * wrong for a user who turned prompts off.
+     */
+    suspend fun setSessionCheckInCadence(
+        session: SessionEntity,
+        cadence: CheckInScheduler.Cadence?,
+        zone: ZoneId = ZoneId.systemDefault(),
+    ) {
+        val dao = database.sessionDao()
+        val updated = session.copy(
+            checkInIntervalMinutes = cadence?.storedMinutes,
+            // A custom cadence with no offsets of its own falls back to the hourly ladder, so
+            // choosing it is never a silent no-op — `CheckInOffsets.normalized` is what owns the
+            // column's shape, so the engine's own default is asked for rather than invented here.
+            checkInOffsetsJson = if (cadence == CheckInScheduler.Cadence.CUSTOM &&
+                session.checkInOffsetMinutes.isEmpty()
+            ) {
+                JsonLists.encode(CheckInScheduler.defaultCustomOffsets())
+            } else {
+                session.checkInOffsetsJson
+            },
+        )
+        dao.update(updated)
+        CheckInScheduler.sync(this, updated, zone)
+    }
 
     /**
      * Re-derive the routine-occurrence record from the doses on file, then re-arm

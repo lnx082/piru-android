@@ -45,6 +45,10 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import glass.kagerou.piru.data.AppSettingsStore
+import androidx.compose.runtime.rememberCoroutineScope
+import glass.kagerou.piru.notifications.CheckInScheduler
+import kotlinx.coroutines.launch
+import androidx.compose.material3.FilterChip
 
 /**
  * A session: its span, its curves, and the doses inside it.
@@ -81,7 +85,11 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
     var vitals by remember(sessionId) { mutableStateOf(SessionVitals.empty) }
     var loading by remember(sessionId) { mutableStateOf(true) }
 
-    LaunchedEffect(sessionId) {
+    // Bumped by the check-in cadence card, so the screen re-reads the session after the schedule
+    // changes. A counter rather than a boolean because two changes in a row must each be a change.
+    var checkInRevision by remember(sessionId) { mutableStateOf(0) }
+
+    LaunchedEffect(sessionId, checkInRevision) {
         val id = runCatching { UUID.fromString(sessionId) }.getOrNull()
         if (id == null) {
             loading = false
@@ -142,6 +150,19 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
                         )
                     }
                 }
+            }
+
+            item {
+                // The check-in cadence, which had no writer at all.
+                //
+                // `CheckInScheduler.sync` and `shouldOffer` had zero callers, and
+                // `SessionEntity.checkInIntervalMinutes` was written only by an import — so a session
+                // created in this app could never have a check-in schedule, and the read-only
+                // display in `SessionNotesSection` could only ever be populated by a file from iOS.
+                CheckInCadenceCard(
+                    session = loaded,
+                    onChanged = { checkInRevision++ },
+                )
             }
 
             item {
@@ -307,4 +328,76 @@ private suspend fun loadSessionVitals(
     val lastDose = doses.maxOf { it.timestamp.time }.let(java.time.Instant::ofEpochMilli)
     val now = java.time.Instant.now()
     return health.read(from = start, to = if (lastDose.isAfter(now)) lastDose else now)
+}
+
+
+/**
+ * The session's check-in cadence.
+ *
+ * Ported from `SessionCheckInSection.swift` and `CheckInScheduleEditor.swift`.
+ *
+ * ## What this fixes
+ * `CheckInScheduler` was complete — it plans fire dates from the cadence and the session's own
+ * offsets, respects quiet hours, words a medication session differently from a substance one, and
+ * cancels by prefix when the schedule shrinks. **Nothing called it.** `sync` and `shouldOffer` had
+ * zero callers in `app/src/main`, and `SessionEntity.checkInIntervalMinutes` was written only by an
+ * import, so a session created in this app could never have a check-in schedule and the read-only
+ * line in `SessionNotesSection` could only ever be populated by a file from iOS.
+ *
+ * Three choices, which are the ones upstream offers: off, hourly, or the session's own times.
+ */
+@Composable
+private fun CheckInCadenceCard(
+    session: SessionEntity,
+    onChanged: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val app = context.applicationContext as PiruApplication
+    val scope = rememberCoroutineScope()
+
+    // The stored value is the cadence's own sentinel, so this is a read of what is there rather
+    // than a parallel piece of state that could disagree with it.
+    val current = CheckInScheduler.Cadence.fromStoredMinutes(session.checkInIntervalMinutes)
+
+    PiruCard(modifier = modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                stringResource(R.string.journal_check_in_title),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Text(
+                stringResource(R.string.journal_check_in_detail),
+                style = MaterialTheme.typography.bodySmall,
+                color = PiruTheme.colors.secondaryLabel,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val options: List<Pair<CheckInScheduler.Cadence?, Int>> = listOf(
+                    null to R.string.journal_check_in_off,
+                    CheckInScheduler.Cadence.EVERY_HOUR to R.string.journal_check_in_hourly,
+                    CheckInScheduler.Cadence.CUSTOM to R.string.journal_check_in_custom,
+                )
+                for (option in options) {
+                    val (cadence, labelRes) = option
+                    // Resolved here, not inside the lambda: `stringResource` is composable and an
+                    // `onClick` is not.
+                    val label = stringResource(labelRes)
+                    FilterChip(
+                        selected = current == cadence,
+                        onClick = {
+                            scope.launch {
+                                // The row is written first and the schedule synced from it, because
+                                // `CheckInScheduler.sync` plans from the stored value rather than
+                                // from an argument — syncing first would arm the cadence the user
+                                // just left.
+                                app.setSessionCheckInCadence(session, cadence)
+                                onChanged()
+                            }
+                        },
+                        label = { Text(label) },
+                    )
+                }
+            }
+        }
+    }
 }

@@ -32,6 +32,12 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Date
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.Alignment
 
 /**
  * A session's notes and check-ins.
@@ -103,6 +109,32 @@ fun SessionNotesSection(
         }
     }
 
+    /**
+     * Move a note's timestamp by [minutes].
+     *
+     * The note's time is when it was written, and a note is usually about something that happened
+     * earlier — so nudging it is the correction the user actually needs, and `SessionNoteDao.update`
+     * has supported it since the table existed with no screen calling it.
+     */
+    fun shiftNote(note: SessionNoteEntity, minutes: Long) {
+        scope.launch {
+            app.database.sessionNoteDao().update(
+                note.copy(
+                    timestamp = Date(note.timestamp.toInstant().plusSeconds(minutes * 60).toEpochMilli()),
+                ),
+            )
+            reload++
+        }
+    }
+
+    /** Remove a note. `deleteById` has existed the whole time; this is its first caller. */
+    fun deleteNote(note: SessionNoteEntity) {
+        scope.launch {
+            app.database.sessionNoteDao().deleteById(note.id)
+            reload++
+        }
+    }
+
     // A session with no notes and nothing scheduled contributes nothing to the
     // screen — an empty card headed "Notes" would be furniture.
     if (notes.isEmpty() && !composing && checkInOffsetMinutes.isEmpty()) return
@@ -145,22 +177,69 @@ fun SessionNotesSection(
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(
-                            note.timestamp.toInstant().atZone(zone)
-                                .format(DateTimeFormatter.ofPattern("HH:mm")),
-                            style = MaterialTheme.typography.labelLarge,
-                        )
-                        Text(
-                            when (SessionNoteEntity.Kind.fromWire(note.kindRaw)) {
-                                SessionNoteEntity.Kind.CHECK_IN -> stringResource(R.string.common_check_in)
-                                SessionNoteEntity.Kind.SUMMARY -> stringResource(R.string.common_summary)
-                                // An observation is the default kind and wears no label.
-                                SessionNoteEntity.Kind.OBSERVATION -> ""
-                            },
-                            style = MaterialTheme.typography.labelSmall,
-                            color = PiruTheme.colors.secondaryLabel,
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Text(
+                                note.timestamp.toInstant().atZone(zone)
+                                    .format(DateTimeFormatter.ofPattern("HH:mm")),
+                                style = MaterialTheme.typography.labelLarge,
+                            )
+                            // A note's time was fixed at the moment it was written, and the note
+                            // is often about something that happened earlier — the come-up, a
+                            // wave that passed an hour ago. `SessionNoteDao.update` existed with
+                            // no UI caller, so a mistimed note could not be corrected and the
+                            // only remedy was to delete it and retype.
+                            IconButton(
+                                onClick = { shiftNote(note, -15) },
+                                modifier = Modifier.size(28.dp),
+                            ) {
+                                Text(
+                                    "\u2212",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = PiruTheme.colors.secondaryLabel,
+                                )
+                            }
+                            Text(
+                                stringResource(R.string.journal_note_nudge),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = PiruTheme.colors.secondaryLabel,
+                            )
+                            IconButton(
+                                onClick = { shiftNote(note, 15) },
+                                modifier = Modifier.size(28.dp),
+                            ) {
+                                Text(
+                                    "+",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = PiruTheme.colors.secondaryLabel,
+                                )
+                            }
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                when (SessionNoteEntity.Kind.fromWire(note.kindRaw)) {
+                                    SessionNoteEntity.Kind.CHECK_IN -> stringResource(R.string.common_check_in)
+                                    SessionNoteEntity.Kind.SUMMARY -> stringResource(R.string.common_summary)
+                                    // An observation is the default kind and wears no label.
+                                    SessionNoteEntity.Kind.OBSERVATION -> ""
+                                },
+                                style = MaterialTheme.typography.labelSmall,
+                                color = PiruTheme.colors.secondaryLabel,
+                            )
+                            // Delete, which the DAO has always supported and no screen offered:
+                            // notes were write-only, so a note typed by mistake stayed for good.
+                            IconButton(onClick = { deleteNote(note) }) {
+                                Icon(
+                                    Icons.Filled.Delete,
+                                    contentDescription = stringResource(R.string.common_delete),
+                                    tint = PiruTheme.colors.secondaryLabel,
+                                )
+                            }
+                        }
                     }
                     if (note.text.isNotBlank()) {
                         Text(note.text, style = MaterialTheme.typography.bodyMedium)

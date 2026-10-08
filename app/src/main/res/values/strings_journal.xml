@@ -239,4 +239,10 @@
     <string name="meds_use_this_name">Use This Name</string>
     <string name="meds_recents">Recents</string>
     <string name="journal_scrub_readout_empty">Nothing at this time</string>
+    <string name="journal_note_nudge">min</string>
+    <string name="journal_check_in_title">Check in</string>
+    <string name="journal_check_in_detail">A prompt asking how it is going, measured from the last dose.</string>
+    <string name="journal_check_in_off">Off</string>
+    <string name="journal_check_in_hourly">Every hour</string>
+    <string name="journal_check_in_custom">Session times</string>
 </resources>

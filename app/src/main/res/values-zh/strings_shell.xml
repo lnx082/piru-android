@@ -520,4 +520,5 @@
     <string name="shell_binding_affinity_primary">主要</string>
 
     <string name="shell_library_limited_data">数据有限</string>
+    <string name="shell_quicklog_note_hint">#话题标签 会变成标签</string>
 </resources>

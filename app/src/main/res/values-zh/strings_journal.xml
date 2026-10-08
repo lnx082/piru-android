@@ -199,4 +199,10 @@
     <string name="meds_use_this_name">使用这个名字</string>
     <string name="meds_recents">最近</string>
     <string name="journal_scrub_readout_empty">此刻没有</string>
+    <string name="journal_note_nudge">分钟</string>
+    <string name="journal_check_in_title">中途询问</string>
+    <string name="journal_check_in_detail">从最后一剂起算，问一句现在怎么样。</string>
+    <string name="journal_check_in_off">关闭</string>
+    <string name="journal_check_in_hourly">每小时</string>
+    <string name="journal_check_in_custom">按会话时段</string>
 </resources>

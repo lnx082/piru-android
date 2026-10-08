@@ -49,6 +49,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import glass.kagerou.piru.substance.SubstanceMatch
+import glass.kagerou.piru.engine.TagExtractor
 
 /**
  * One dose, staged and not yet committed.
@@ -72,6 +73,14 @@ data class StagedDose(
      * estimated dose was stored indistinguishably from a measured one.
      */
     val isApproximate: Boolean = false,
+    /**
+     * A free-text note for the dose.
+     *
+     * New here, and it exists for the tags: upstream derives a dose's tags from hashtags in its
+     * note, so a quick log with no note field can never produce a tag. The field is the smaller
+     * half of that — the extraction is `TagExtractor`.
+     */
+    val note: String = "",
 ) {
     val amount: Double? get() = amountText.trim().toDoubleOrNull()
 
@@ -283,6 +292,12 @@ fun QuickLogSheet(
                                             // The user's own "this is a guess", carried into the
                                             // row the journal reads back as `~`.
                                             isApproximate = dose.isApproximate,
+                                            notes = dose.note.trim().ifEmpty { null },
+                                        ).withTags(
+                                            // Tags are a view over the note, not a second field:
+                                            // this is the call that made `tags_raw` writable for
+                                            // the first time on this side.
+                                            TagExtractor.extractTags(dose.note),
                                         ),
                                     )
                                     sessionRepository.assignSession(rowId)
@@ -360,6 +375,15 @@ private fun StagedDoseEditor(
                     modifier = Modifier.weight(1f),
                 )
             }
+            OutlinedTextField(
+                value = dose.note,
+                onValueChange = { onChange(dose.copy(note = it)) },
+                label = { Text(stringResource(R.string.common_note)) },
+                supportingText = {
+                    Text(stringResource(R.string.shell_quicklog_note_hint))
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 for (route in listOf(
                     RouteOfAdministration.ORAL,

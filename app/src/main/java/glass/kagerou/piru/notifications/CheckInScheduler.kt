@@ -48,6 +48,17 @@ object CheckInScheduler {
      */
     const val CATEGORY_ID = "checkIn"
 
+    /**
+     * The offsets a custom cadence starts from, when a session has none of its own.
+     *
+     * `Cadence.EVERY_HOUR`'s own ladder. Without this, choosing "the session's own times" on a
+     * session that has never carried any would store the custom sentinel with an empty column —
+     * `offsetMinutes` would return an empty list and `sync` would arm nothing, making the choice a
+     * silent no-op. A user who picks it gets a schedule they can then edit rather than a switch
+     * that appears to do nothing.
+     */
+    fun defaultCustomOffsets(): List<Int> = Cadence.EVERY_HOUR.fixedOffsetMinutes.map { it.toInt() }
+
     /** The two schedules a session can run. */
     enum class Cadence(val storedMinutes: Double) {
         /** T+1 h, T+2 h … T+8 h. */

@@ -47,6 +47,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Date
 import kotlinx.coroutines.launch
+import glass.kagerou.piru.engine.TagExtractor
 
 /**
  * One logged dose, read and edited.
@@ -259,6 +260,12 @@ fun EntryDetailScreen(
                                         route = route,
                                         notes = noteText.trim().ifEmpty { null },
                                         isUnknownDose = unknown,
+                                    ).withTags(
+                                        // Re-derived on every save rather than merged: the note
+                                        // is the source of these, so removing a hashtag from the
+                                        // text has to remove the tag. A merge would leave a tag
+                                        // the user had deleted, with nothing left to explain it.
+                                        TagExtractor.extractTags(noteText),
                                     ),
                                 )
                                 // The grouping is a reading of the log, so an edit that
