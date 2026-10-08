@@ -49,6 +49,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import glass.kagerou.piru.notifications.CheckInScheduler
 import kotlinx.coroutines.launch
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.TextButton
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import glass.kagerou.piru.ui.insights.SessionShareImage
+import glass.kagerou.piru.ui.insights.ShareImage
+import glass.kagerou.piru.ui.labels.CoreLabels
 
 /**
  * A session: its span, its curves, and the doses inside it.
@@ -84,6 +90,19 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
     var tints by remember(sessionId) { mutableStateOf<Map<String, P3Color>>(emptyMap()) }
     var vitals by remember(sessionId) { mutableStateOf(SessionVitals.empty) }
     var loading by remember(sessionId) { mutableStateOf(true) }
+
+    // A scope for the export: it is a suspend render plus a share intent.
+    val scope = rememberCoroutineScope()
+
+    // Whether an export is being made, so the button cannot be tapped twice into two share sheets.
+    var sharing by remember(sessionId) { mutableStateOf(false) }
+
+    // The route labels, resolved in the composition because a resource read is `@Composable` and the renderer is
+    // not. Built through `routeRes` rather than `CoreLabels.route`, because `route` is itself a composable and
+    // cannot be called from a `remember` block — the ids can, and `stringResource` resolves them here.
+    val routeLabels = glass.kagerou.piru.model.RouteOfAdministration.entries.associateWith { route ->
+        stringResource(CoreLabels.routeRes(route))
+    }
 
     // Bumped by the check-in cadence card, so the screen re-reads the session after the schedule
     // changes. A counter rather than a boolean because two changes in a row must each be a change.
@@ -125,6 +144,55 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
             contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = FAB_CLEARANCE),
         ) {
             item { SessionHeader(loaded, doses.size, zone) }
+
+            // The export. It renders off the data rather than capturing the screen, so it works for a session
+            // read back a week later and does not depend on what is currently scrolled into view.
+            if (doses.isNotEmpty()) {
+                // Every resource read and every context-dependent value resolved **here**, in the composition.
+                // `stringResource` cannot be called from the coroutine below, and the label map is built from a
+                // `@Composable` accessor, so both have to be hoisted before the launch.
+                val shareDateText = SessionShareImage.dateText(loaded.startDate.toInstant(), zone)
+                // The share sheet's subject: the session's own title, or its date line when it has none.
+                val shareSubject = loaded.title ?: shareDateText
+                val shareTitle = loaded.title.orEmpty()
+                val shareEntries = doses.sortedBy { it.timestamp.time }
+                val shareId = loaded.id.toString()
+                item {
+                    TextButton(
+                        enabled = !sharing,
+                        onClick = {
+                            sharing = true
+                            scope.launch {
+                                val bitmap = withContext(Dispatchers.Default) {
+                                    runCatching {
+                                        SessionShareImage.render(
+                                            context = context,
+                                            title = shareTitle,
+                                            dateText = shareDateText,
+                                            entries = shareEntries,
+                                            tintFor = { name -> tints[name.lowercase()] ?: P3Color.NEUTRAL },
+                                            routeLabelFor = { route -> routeLabels.getValue(route) },
+                                        )
+                                    }.getOrNull()
+                                }
+                                sharing = false
+                                if (bitmap != null) {
+                                    runCatching {
+                                        ShareImage.share(
+                                            context = context,
+                                            bitmap = bitmap,
+                                            name = "piru-session-$shareId",
+                                            subject = shareSubject,
+                                        )
+                                    }
+                                }
+                            }
+                        },
+                    ) {
+                        Text(stringResource(R.string.journal_session_share))
+                    }
+                }
+            }
 
             item {
                 PiruCard(modifier = Modifier.fillMaxWidth()) {

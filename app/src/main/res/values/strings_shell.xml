@@ -867,4 +867,5 @@
     <string name="shell_custom_substances_half_life">Half-life (minutes)</string>
     <string name="shell_custom_substances_half_life_note">Optional. Overrides the reference value, and gives a substance the reference has none for a decay curve.</string>
     <string name="shell_custom_substances_notes">Notes</string>
+    <string name="journal_session_share">Share this session as an image</string>
 </resources>

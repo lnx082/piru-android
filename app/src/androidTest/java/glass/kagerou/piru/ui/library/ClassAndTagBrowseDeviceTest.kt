@@ -49,20 +49,25 @@ class ClassAndTagBrowseDeviceTest {
         // Settle first, then poll: the screen opens the catalogue on a background dispatcher before it draws,
         // and a bare `waitUntil` on the first node races that read.
         //
-        // ## The timeout is for a **starved emulator**, and that was measured rather than assumed
-        // My first version of this comment claimed a "first-use cost" and sized the number for it. That was a
-        // guess. What the runs since showed:
+        // ## This spec is unreliable in a full-suite run, and the cause is not yet explained
+        // Three versions of this comment have each claimed a cause and been wrong. What is actually measured:
         //
-        //   fresh boot   load 1.34, free 459 MB   BUILD SUCCESSFUL in 55s    40/40
-        //   under load   load 7.96, free 308 MB   BUILD FAILED in 4m11s      1 failure
+        //   fresh boot, load 1.46, class alone      BUILD SUCCESSFUL in 35s    3/3, this case 1.772s
+        //   same emulator, full suite (twice)       BUILD FAILED in 2m52s / 4m54s   121s / 121s
+        //   degraded emulator, load 7.96, 308 MB    BUILD FAILED in 4m11s
         //
-        // and in a failing run this spec's three cases took 121.3s, 2.4s and 2.4s — so the slow one was starved
-        // rather than doing slow work. The product-side candidates are ruled out: the tag query is indexed
-        // (`SEARCH tags USING INDEX idx_tags_tag`), `substancesWithTag` is that query plus map lookups, and the
-        // catalogue is memoized per process so a warm run re-opens nothing.
+        // So it is **fast alone and hangs in the suite**, on a fresh emulator with a low load average — which is
+        // not the "starved machine" story, and the machine is not the whole of it. In a failing run the other 39
+        // cases take about two seconds each while this one takes 121, so it is a stall in this path rather than
+        // general slowness, and it only appears under the suite.
         //
-        // 120 s against a 55 s quiet run is generous. Raising it again would hide a starved emulator instead of
-        // fixing anything, which is why the number stays here.
+        // Ruled out, so the next person does not redo it: the tag query is indexed
+        // (`SEARCH tags USING INDEX idx_tags_tag (tag=?)`), `substancesWithTag` is that query plus map lookups, the
+        // catalogue is memoized per process, and the class passes alone.
+        //
+        // The timeout is not the fix — it already exceeds 120 s — and neither is deleting the assertion, which is
+        // the only check that a `hidden` gate has not swallowed every tag row. This comment records the state
+        // rather than pretending to resolve it.
         compose.waitForIdle()
         compose.waitUntil(timeoutMillis = 120_000) {
             compose.onAllNodesWithText("members", substring = true).fetchSemanticsNodes().isNotEmpty()
@@ -80,8 +85,8 @@ class ClassAndTagBrowseDeviceTest {
     fun aTagDrawsANonZeroCount() {
         compose.setContent { PiruTheme { TagBrowseScreen("phenethylamine", AppNavigator()) } }
 
-        // Settle first, then poll — same reason and same environment caveat as the first case in this class:
-        // the number is sized for a starved emulator, not for the work.
+        // Settle first, then poll — same reason and the same unexplained suite-only stall as the first case in
+        // this class.
         compose.waitForIdle()
         compose.waitUntil(timeoutMillis = 120_000) {
             compose.onAllNodesWithText("substances", substring = true).fetchSemanticsNodes().isNotEmpty()
@@ -102,8 +107,8 @@ class ClassAndTagBrowseDeviceTest {
             PiruTheme { TagBrowseScreen("a-tag-nothing-carries", AppNavigator()) }
         }
 
-        // Settle first, then poll — same reason and same environment caveat as the first case in this class:
-        // the number is sized for a starved emulator, not for the work.
+        // Settle first, then poll — same reason and the same unexplained suite-only stall as the first case in
+        // this class.
         compose.waitForIdle()
         compose.waitUntil(timeoutMillis = 120_000) {
             compose.onAllNodesWithText("0 substances").fetchSemanticsNodes().isNotEmpty()
