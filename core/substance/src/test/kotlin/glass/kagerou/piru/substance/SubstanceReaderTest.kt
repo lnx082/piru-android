@@ -349,20 +349,20 @@ class SubstanceReaderTest {
     }
 
     @Test
-    fun `a release window with nothing behind it never reaches the UI`() {
+    fun `a route that exists only as a release window reaches the detail screen`() {
         openBundledSubstanceDb().use { d ->
-            // Nine routes on the shipped catalog carry a duration-of-action and
-            // nothing else — no ladder, no acute duration profile, no protocol.
-            // They are all long-acting injectables: risperidone, paliperidone,
-            // fluphenazine and aripiprazole depots, liraglutide, semaglutide and
-            // dulaglutide.
+            // Ten routes on the shipped catalog carry a duration-of-action and nothing
+            // else — no ladder and no acute duration profile. They are all long-acting
+            // injectables: risperidone, paliperidone, fluphenazine and aripiprazole
+            // depots, liraglutide, semaglutide and dulaglutide, plus epitalon.
             //
-            // `attachAuxiliaryRoutes` only consults the windows for routes it is
-            // already building, and none of the three steps builds one of these,
-            // so the release window — the single most useful thing to say about a
-            // depot injection — never reaches the substance card. Pinned here so
-            // the gap is a known quantity rather than a surprise, and reported
-            // upstream.
+            // This test used to assert the opposite: that the window was in the catalog
+            // and still absent from what a detail screen renders, because
+            // `attachAuxiliaryRoutes` consulted the windows only for routes it was already
+            // building and no step built one of these. The gap was pinned here and reported
+            // upstream; it is fixed on this side now, because the release window is the
+            // single most useful thing to say about a depot injection and leaving it out
+            // left those ten pages with no route section at all.
             val cases = listOf(
                 "Aripiprazole" to "intramuscular",
                 "Dulaglutide" to "subcutaneous",
@@ -373,17 +373,26 @@ class SubstanceReaderTest {
                 "Risperidone" to "intramuscular",
                 "Semaglutide" to "oral",
                 "Semaglutide" to "subcutaneous",
+                "Epitalon" to "subcutaneous",
             )
             val reader = SubstanceReader(d, defaultOrder(d), ContentLanguage.EN)
-            val unreachable = cases.filter { (name, route) ->
+            for ((name, route) in cases) {
                 val id = substanceId(d, name)
-                // The window is in the catalog...
-                reader.durationsOfAction(id)
-                    .containsKey(RouteOfAdministration.from(route)) shouldBe true
-                // ...and still absent from what a detail screen would render.
-                reader.detailRoutes(id).none { it.route.wireValue == route }
+                val window = reader.durationsOfAction(id)[RouteOfAdministration.from(route)]
+                if (window == null) throw AssertionError("no window for $name/$route")
+
+                val shown = reader.detailRoutes(id)
+                    .firstOrNull { it.route.wireValue == route }
+                    ?: throw AssertionError("$name/$route did not reach the detail path")
+                // The window is the thing that made the route worth showing.
+                if (shown.durationOfAction != window) {
+                    throw AssertionError("$name/$route lost its window")
+                }
+                // And there is no ladder behind it, which is why it needed step 2.
+                if (shown.doses.hasAnyValue) {
+                    throw AssertionError("$name/$route unexpectedly carries a ladder")
+                }
             }
-            unreachable.size shouldBe cases.size
         }
     }
 

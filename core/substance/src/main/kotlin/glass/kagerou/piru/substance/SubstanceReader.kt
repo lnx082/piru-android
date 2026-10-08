@@ -1414,7 +1414,15 @@ class SubstanceReader(
         val name = core.string("canonical_name") ?: return null
         val idList = setOf(substanceID)
 
-        val routes = routes(idList)[substanceID].orEmpty()
+        // `detailRoutes`, not `routes`: this is the one-row path a detail screen reads, and
+        // only `detailRoutes` attaches protocol dosing and release windows and brings in the
+        // routes that exist *only* as one of those. Using `routes` here meant
+        // `SubstanceRoute.protocolDosing` and `.durationOfAction` were null for every
+        // substance in the app, so the release-window line and the peptide protocol cards
+        // could not render even where the data exists — and 45 `(substance, route)` pairs
+        // that live only in `protocol_dosing` (35) or `durations_of_action` (10) showed no
+        // route at all.
+        val routes = detailRoutes(substanceID)
             .sortedBy { it.route.ordinal }
         val tags = tags(substanceID)
         val physicochemical = Physicochemical(
@@ -2143,16 +2151,36 @@ class SubstanceReader(
 
         val haveRoutes = resolved.map { it.route }.toMutableSet()
 
-        // Duration-only routes: a release window but no ladder. The base
-        // (null-salt) duration is the one that applies.
-        for ((key, profile) in durations(setOf(substanceID)).entries.sortedBy { it.key.route }) {
-            val route = RouteOfAdministration.from(key.route)
+        // Duration-only routes: a release window or an acute duration with no ladder.
+        //
+        // The union of both key sets, not `durations()` alone. Iterating only the acute
+        // profiles skipped exactly the routes a depot has: a long-acting injectable carries
+        // `durations_of_action` and nothing else — no ladder and no acute phases, because
+        // the whole point of it is that it does not act acutely — so the single most useful
+        // fact about it, its release window, never reached the card. Ten such
+        // `(substance, route)` pairs ship in the catalogue (aripiprazole, fluphenazine,
+        // paliperidone and risperidone depots; dulaglutide, liraglutide and two semaglutide
+        // routes; epitalon) and every one of them was invisible.
+        //
+        // The two keys are different types addressing the same route strings, so the union
+        // is taken over the route values and each source is consulted for its own half:
+        // `duration` comes from the acute profile when there is one, and the window from
+        // `durationsOfAction`. A route with both gets both, which is the common case for an
+        // oral that also has a long tail.
+        val acute = durations(setOf(substanceID))
+        val windowRoutes = windows.keys + acute.keys.map { it.route }.map(RouteOfAdministration::from)
+        for (route in windowRoutes.sortedBy { it.ordinal }) {
             if (!haveRoutes.add(route)) continue
+            val acuteProfile = acute.entries
+                .firstOrNull { RouteOfAdministration.from(it.key.route) == route }
             resolved += SubstanceRoute(
                 route = route,
+                // "mg" is the placeholder a ladderless route has always reported; there is no
+                // dose to carry a unit, and the window's own minutes live in
+                // `DurationOfAction` rather than in this field.
                 unit = "mg",
                 doses = DoseRange(),
-                duration = if (key.saltForm == null && key.isomer == null) profile else null,
+                duration = acuteProfile?.value,
                 protocolDosing = protocols[route]?.dosing,
                 durationOfAction = windows[route],
             )
