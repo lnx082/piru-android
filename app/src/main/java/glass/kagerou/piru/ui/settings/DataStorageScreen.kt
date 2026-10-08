@@ -58,6 +58,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import glass.kagerou.piru.data.AppSettingsStore
+import glass.kagerou.piru.ui.nav.AppNavigator
+import glass.kagerou.piru.ui.nav.PushRoute
 
 /**
  * Everything about the user's data: what is on this device, export and import,
@@ -102,7 +104,10 @@ import glass.kagerou.piru.data.AppSettingsStore
  * would put a scarier dialog in front of the same operation.
  */
 @Composable
-fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {}) {
+fun DataStorageScreen(
+    navigator: AppNavigator,
+    modifier: Modifier = Modifier,
+    onChanged: () -> Unit = {}) {
     val context = LocalContext.current
     val app = context.applicationContext as PiruApplication
     val scope = rememberCoroutineScope()
@@ -360,7 +365,12 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
             )
         }
 
-        item { SubstanceDatabaseSection(substanceCount) }
+        item {
+                    SubstanceDatabaseSection(
+                        substanceCount = substanceCount,
+                        onOpen = { navigator.push(PushRoute.SubstanceDatabase) },
+                    )
+                }
 
         item { HowEncryptionWorksSection() }
 
@@ -697,26 +707,24 @@ private fun ExportImportSection(
 // MARK: - Substance database
 
 /**
- * A row that reports the catalog's size without pretending to open a screen.
+ * A row into the substance database screen.
  *
- * Upstream pushes `SubstanceDatabaseView`, which is where the source-priority
- * editor lives. This build browses the catalog from the Library tab and has no
- * source-priority screen, so the row names the tab and the footer says what is
- * missing rather than half-describing a screen that does not exist. A card that
- * looks tappable and is not is worse than a plain sentence.
+ * This used to carry a note saying the source-priority screen "does not exist" and that the row
+ * deliberately did not open one — "a card that looks tappable and is not is worse than a plain
+ * sentence". That was the honest thing to write while it was true. It is not true now:
+ * [SubstanceDatabaseScreen] exists and [SourcePriorityScreen] is behind it, so the row opens them and
+ * the note is gone.
  */
 @Composable
-private fun SubstanceDatabaseSection(substanceCount: Int) {
+private fun SubstanceDatabaseSection(substanceCount: Int, onOpen: () -> Unit) {
     SectionCard(
         title = stringResource(R.string.shell_data_substance_db),
         footer = stringResource(R.string.shell_data_substance_db_footer),
     ) {
         CountRow(stringResource(R.string.shell_data_substances_in_catalog), count = substanceCount)
-        Text(
-            stringResource(R.string.shell_data_browse_library),
-            style = MaterialTheme.typography.bodyMedium,
-            color = PiruTheme.colors.secondaryLabel,
-        )
+        TextButton(onClick = onOpen) {
+            Text(stringResource(R.string.shell_settings_substance_database))
+        }
     }
 }
 

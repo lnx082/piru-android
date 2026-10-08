@@ -565,4 +565,14 @@
     <string name="shell_health_grapefruit_detail">Adds a per-dose grapefruit toggle for substances whose breakdown grapefruit slows (CYP3A4), so the entry records it.</string>
     <string name="shell_health_flush">I get the alcohol flush</string>
     <string name="shell_health_flush_detail">Shows acetaldehyde buildup on alcohol entries. The ALDH2 variant slows its clearance, causing flushing.</string>
+    <string name="shell_settings_substance_database">Substance database</string>
+    <string name="shell_substance_db_footer">All substance data ships with the app. Reorder sources to choose which one wins when they disagree on a fact.</string>
+    <string name="shell_substance_db_substances">Substances</string>
+    <string name="shell_substance_db_source_priority">Source priority</string>
+    <string name="shell_substance_db_source_count">%1$d sources, ranked most to least authoritative</string>
+    <string name="shell_substance_db_reorder">Reorder</string>
+    <string name="shell_source_priority_footer">Position is priority: when two sources disagree on a fact, the higher one wins.</string>
+    <string name="shell_source_priority_up">Move up</string>
+    <string name="shell_source_priority_down">Move down</string>
+    <string name="shell_source_priority_reset">Reset to shipped order</string>
 </resources>

@@ -67,11 +67,41 @@ class AppSettingsStore(private val context: Context) {
         prefs().edit().putBoolean(KEY_STACK_REDOSES, value).apply()
     }
 
+    /**
+     * The user's source ranking, or null when they have never reordered.
+     *
+     * Null is not the same as empty: the catalogue falls back to the shipped `default_priority`
+     * column, and an empty list would rank every source equally — which is a real behaviour
+     * (`SourcePriority` yields the constant 999 so every row ties) and one nobody asked for.
+     *
+     * Stored as one comma-joined string of slugs. The slugs are the catalogue's own identifiers and
+     * contain no commas, so a separator is safe; a slug the catalogue no longer carries is still kept
+     * in the list rather than pruned, because dropping it would silently discard part of the user's
+     * ordering the next time they look at the screen.
+     */
+    fun sourceOrder(): List<String>? = prefs()
+        .getString(KEY_SOURCE_ORDER, null)
+        ?.split(',')
+        ?.filter { it.isNotBlank() }
+        ?.takeIf { it.isNotEmpty() }
+
+    /** Record a source ranking. See [sourceOrder] for why an empty list clears rather than stores. */
+    fun setSourceOrder(slugs: List<String>) {
+        prefs().edit().apply {
+            if (slugs.isEmpty()) {
+                remove(KEY_SOURCE_ORDER)
+            } else {
+                putString(KEY_SOURCE_ORDER, slugs.joinToString(","))
+            }
+        }.apply()
+    }
+
     /** An empty preferences file is the fresh-install state; nothing else needs clearing. */
     fun clearForImport() {
         prefs().edit()
             .remove(SessionDay.DAY_BOUNDARY_HOUR_KEY)
             .remove(KEY_STACK_REDOSES)
+            .remove(KEY_SOURCE_ORDER)
             .apply()
     }
 
@@ -90,5 +120,16 @@ class AppSettingsStore(private val context: Context) {
 
         /** Upstream's spelling, so a file from iOS lands here. */
         const val KEY_STACK_REDOSES: String = "stackRedoses"
+
+        /**
+         * The source ranking, in this port's own spelling.
+         *
+         * `ExportedSettings.sourcePreferences` exists on the iOS side as a list of objects — id,
+         * enabled, priority per source — and this port's export reads it as raw JSON for the settings
+         * section. Flattening it to a slug order here rather than round-tripping the objects keeps one
+         * representation of "which source wins"; the import path is where the two shapes meet, and it
+         * is deliberately not this key's business.
+         */
+        const val KEY_SOURCE_ORDER: String = "sourceOrder"
     }
 }

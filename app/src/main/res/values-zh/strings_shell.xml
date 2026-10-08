@@ -531,4 +531,14 @@
     <string name="shell_health_grapefruit_detail">对代谢会被西柚拖慢的物质（CYP3A4），在每次记录时多给一个西柚开关，这样记录里会留下这件事。</string>
     <string name="shell_health_flush">我会酒精上脸</string>
     <string name="shell_health_flush_detail">在酒精记录上显示乙醛堆积。ALDH2 变异会减慢它的清除，从而引起上脸。</string>
+    <string name="shell_settings_substance_database">物质数据库</string>
+    <string name="shell_substance_db_footer">全部物质数据随 App 一起发布。当两个来源对同一个事实说法不一致时，可以调整来源顺序决定谁说了算。</string>
+    <string name="shell_substance_db_substances">物质数量</string>
+    <string name="shell_substance_db_source_priority">来源优先级</string>
+    <string name="shell_substance_db_source_count">%1$d 个来源，按权威性从高到低排列</string>
+    <string name="shell_substance_db_reorder">调整顺序</string>
+    <string name="shell_source_priority_footer">位置就是优先级：两个来源说法不一致时，靠前的说了算。</string>
+    <string name="shell_source_priority_up">上移</string>
+    <string name="shell_source_priority_down">下移</string>
+    <string name="shell_source_priority_reset">恢复为出厂顺序</string>
 </resources>

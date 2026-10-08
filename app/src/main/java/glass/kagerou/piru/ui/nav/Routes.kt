@@ -228,6 +228,20 @@ sealed interface PushRoute {
      */
     @Serializable
     data class Effects(val name: String) : PushRoute
+
+    /**
+     * The bundled dataset: how many substances ship, and which sources win when they disagree.
+     *
+     * Reached from Data Storage, where upstream puts it — the data is not something the user
+     * configures so much as something they inspect, and "where did this fact come from" belongs
+     * beside "what is on this device".
+     */
+    @Serializable
+    data object SubstanceDatabase : PushRoute
+
+    /** Which source wins when two disagree. Reached from [SubstanceDatabase]. */
+    @Serializable
+    data object SourcePriority : PushRoute
 }
 
 /**
@@ -286,6 +300,8 @@ fun PushRoute.key(): String = when (this) {
     is PushRoute.InteractionTimeline -> "interaction:$substanceA:$substanceB"
     is PushRoute.DrugClass -> "drug-class:$className"
     is PushRoute.Effects -> "effects:$name"
+    PushRoute.SubstanceDatabase -> "substance-database"
+    PushRoute.SourcePriority -> "source-priority"
     PushRoute.MyMeds -> "my-meds"
     is PushRoute.MedDetail -> "med-detail:$rowId"
     is PushRoute.LogMedications -> "log-medications:$category"

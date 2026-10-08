@@ -121,6 +121,58 @@ class SubstanceReader(
 
     private val priorityCaseSQL: String get() = priority.priorityCaseSQL
 
+    /**
+     * A source the catalogue ships data from.
+     *
+     * `displayName` is the publisher's name ("PsychonautWiki", "PDSP Ki database") and `slug` is the
+     * stable identifier every query keys on. Both are carried because a screen needs the first to be
+     * readable and the second to refer to the same row the SQL does.
+     */
+    data class SourceInfo(
+        val slug: String,
+        val displayName: String,
+        val defaultPriority: Int,
+        val defaultEnabled: Boolean,
+    )
+
+    /**
+     * Every source, in the order this reader ranks them.
+     *
+     * Ordered by [order] rather than by `default_priority`: the whole point of the ranking is that the
+     * user can change it, and a screen that listed the shipped order would be describing a ranking the
+     * queries do not use. A slug in [order] that the table does not carry is skipped, and a slug in
+     * the table that [order] does not name is appended — the same composition the catalogue does, so
+     * this list and the SQL agree.
+     */
+    fun sources(): List<SourceInfo> {
+        val rows = db.query(
+            "SELECT slug, display_name, default_priority, default_enabled FROM sources",
+        )
+        val bySlug = rows.mapNotNull { row ->
+            val slug = row.string("slug") ?: return@mapNotNull null
+            slug to SourceInfo(
+                slug = slug,
+                displayName = row.string("display_name") ?: slug,
+                defaultPriority = (row.long("default_priority") ?: 0L).toInt(),
+                defaultEnabled = (row.long("default_enabled") ?: 1L) != 0L,
+            )
+        }.toMap()
+
+        val ranked = order.mapNotNull { bySlug[it] }
+        val unranked = bySlug.values.filterNot { it.slug in order }
+            .sortedWith(compareBy({ it.defaultPriority }, { it.slug }))
+        return ranked + unranked
+    }
+
+    /**
+     * How many substances the catalogue carries.
+     *
+     * Counted rather than held: the screen that shows it is opened rarely, and a cached count would be
+     * one more thing to keep in step with the database file.
+     */
+    fun substanceCount(): Int =
+        (db.query("SELECT COUNT(*) AS n FROM substances").firstOrNull()?.long("n") ?: 0L).toInt()
+
     // MARK: - Structured reads (fail closed)
 
     /** One dose ladder and the source it came from. */

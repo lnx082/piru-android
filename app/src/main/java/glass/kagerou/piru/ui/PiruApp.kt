@@ -300,7 +300,10 @@ private fun DefaultDestination(route: PushRoute, navigator: AppNavigator) {
         PushRoute.Settings -> SettingsScreen(navigator)
         PushRoute.HealthData -> HealthConnectScreen(onChanged = { navigator.invalidate() })
         PushRoute.NotificationSettings -> NotificationSettingsScreen()
-        PushRoute.DataStorage -> DataStorageScreen(onChanged = { navigator.invalidate() })
+        PushRoute.DataStorage -> DataStorageScreen(
+            navigator = navigator,
+            onChanged = { navigator.invalidate() },
+        )
 
         is PushRoute.InventoryItem -> InventoryItemDetailScreen(route.id, navigator)
         is PushRoute.InventoryItemForm -> InventoryItemFormScreen(route.id, route.substance, navigator)

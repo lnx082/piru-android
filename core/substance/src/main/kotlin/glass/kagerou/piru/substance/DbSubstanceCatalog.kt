@@ -378,6 +378,18 @@ class DbSubstanceCatalog private constructor(
     fun identityFacets(nameOrAlias: String): SubstanceIdentityIndex.Facets =
         index.facets(nameOrAlias)
 
+    /**
+     * The sources this catalogue was built from, in the order it ranks them.
+     *
+     * The order is the reader's, not the table's: when the user has reordered sources, what this
+     * returns is what the queries actually do. A screen that read `default_priority` here would be
+     * describing a ranking the app is not using.
+     */
+    fun sources(): List<SubstanceReader.SourceInfo> = reader.sources()
+
+    /** How many substances the catalogue carries, for the substance-database screen's count. */
+    fun count(): Int = reader.substanceCount()
+
     fun effectGroups(nameOrAlias: String): List<EffectGroup> {
         val id = index.resolve(nameOrAlias) ?: return emptyList()
         return reader.effectGroups(id)
