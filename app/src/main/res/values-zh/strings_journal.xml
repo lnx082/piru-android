@@ -205,4 +205,10 @@
     <string name="journal_check_in_off">关闭</string>
     <string name="journal_check_in_hourly">每小时</string>
     <string name="journal_check_in_custom">按会话时段</string>
+    <string name="journal_session_rename">重命名</string>
+    <string name="journal_session_title_label">会话标题</string>
+    <string name="journal_session_split">拆分</string>
+    <string name="journal_session_split_after">保留前 %1$d 剂</string>
+    <string name="journal_session_split_confirm">前 %1$d 剂留在这次会话里，新的会话从 %2$s %3$s 开始。</string>
+    <string name="journal_session_merge">合并</string>
 </resources>
