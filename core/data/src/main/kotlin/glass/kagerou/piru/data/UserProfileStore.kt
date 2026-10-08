@@ -132,8 +132,25 @@ class UserProfileStore(private val database: PiruDatabase) {
     suspend fun setGrapefruitLogging(enabled: Boolean): UserProfileRecordEntity =
         edit { it.copy(grapefruitLoggingEnabled = enabled) }
 
+    /**
+     * Whether the per-dose grapefruit toggle is offered.
+     *
+     * A getter beside the setter, which this store's metabolism half did not have: the two columns
+     * were written, exported, imported and restored while nothing could read them back, so the only
+     * way either could be set was a file from iOS.
+     */
+    fun grapefruitLogging(): Boolean = snapshot().grapefruitLoggingEnabled
+
     suspend fun setAldh2Deficient(value: Boolean): UserProfileRecordEntity =
         edit { it.copy(aldh2Deficient = value) }
+
+    /**
+     * Whether the user carries the ALDH2 loss-of-function variant.
+     *
+     * A physiological fact the user reports, not a model input: the acetaldehyde readout on alcohol
+     * entries is the only thing that consults it.
+     */
+    fun aldh2Deficient(): Boolean = snapshot().aldh2Deficient
 
     /**
      * Clear the profile after the user deletes everything.

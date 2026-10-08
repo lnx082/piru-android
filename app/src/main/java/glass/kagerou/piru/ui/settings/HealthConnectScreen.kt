@@ -320,6 +320,78 @@ fun HealthConnectScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {
                     }
                 }
 
+                // Metabolism.
+                //
+                // Both of these were stored, exported, imported and restored, and read by nothing:
+                // `UserProfileStore.setGrapefruitLogging` and `setAldh2Deficient` had no production
+                // caller at all, so the columns could only ever be set by a file from iOS. Upstream
+                // surfaces them on `YourBodyView` under the same heading.
+                item {
+                    val context = LocalContext.current
+                    val store = remember { UserProfileStore(app.database) }
+                    var grapefruit by remember { mutableStateOf(store.grapefruitLogging()) }
+                    var flush by remember { mutableStateOf(store.aldh2Deficient()) }
+
+                    PiruCard(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(
+                                stringResource(R.string.shell_health_metabolism),
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        stringResource(R.string.shell_health_grapefruit),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                    )
+                                    Text(
+                                        stringResource(R.string.shell_health_grapefruit_detail),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = PiruTheme.colors.secondaryLabel,
+                                    )
+                                }
+                                Switch(
+                                    checked = grapefruit,
+                                    onCheckedChange = { value ->
+                                        grapefruit = value
+                                        app.setGrapefruitLogging(value)
+                                        onChanged()
+                                    },
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        stringResource(R.string.shell_health_flush),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                    )
+                                    Text(
+                                        stringResource(R.string.shell_health_flush_detail),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = PiruTheme.colors.secondaryLabel,
+                                    )
+                                }
+                                Switch(
+                                    checked = flush,
+                                    onCheckedChange = { value ->
+                                        flush = value
+                                        app.setAldh2Deficient(value)
+                                        onChanged()
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // The vitals overlay's switch.
                 //
                 // `OnboardingPrefs.showSessionVitals` is read by the session screen to decide

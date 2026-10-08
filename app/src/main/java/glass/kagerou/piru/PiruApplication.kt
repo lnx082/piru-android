@@ -405,6 +405,22 @@ open class PiruApplication : Application() {
         appScope.launch { profile().setWeight(kg, source) }
     }
 
+    /**
+     * Record the grapefruit-logging choice.
+     *
+     * Application-scoped for the same reason as [setBodyWeight]: the switch lives on a settings
+     * screen that the user leaves immediately, and a coroutine tied to that screen's composition
+     * would be cancelled before the write landed.
+     */
+    fun setGrapefruitLogging(enabled: Boolean) {
+        appScope.launch { profile().setGrapefruitLogging(enabled) }
+    }
+
+    /** Record the ALDH2 answer. Application-scoped for the same reason as [setGrapefruitLogging]. */
+    fun setAldh2Deficient(value: Boolean) {
+        appScope.launch { profile().setAldh2Deficient(value) }
+    }
+
     /** Record the disclosure tier. Application-scoped for the same reason as [setBodyWeight]. */
     fun setDisclosureTier(rawValue: String) {
         appScope.launch { profile().setDisclosureTier(rawValue) }

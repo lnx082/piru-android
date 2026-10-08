@@ -48,6 +48,8 @@ import java.time.format.DateTimeFormatter
 import java.util.Date
 import kotlinx.coroutines.launch
 import glass.kagerou.piru.engine.TagExtractor
+import glass.kagerou.piru.engine.Enzyme
+import glass.kagerou.piru.engine.InteractionData
 
 /**
  * One logged dose, read and edited.
@@ -95,6 +97,24 @@ fun EntryDetailScreen(
     var editing by remember { mutableStateOf(false) }
     var saved by remember { mutableStateOf(false) }
 
+    /**
+     * Whether grapefruit was taken with this dose.
+     *
+     * Only ever shown for a substance whose clearance a major share of CYP3A4 carries, and only
+     * when the user has turned grapefruit logging on — which is what the flag's own column doc
+     * says, and what makes it a real answer rather than a toggle for every substance in the
+     * catalogue.
+     */
+    var hadGrapefruit by remember { mutableStateOf(false) }
+
+    /**
+     * Whether this screen should offer the toggle at all.
+     *
+     * The setting is a profile column and the substrate test is a metabolism read, so both are
+     * resolved once when the entry loads rather than per recomposition.
+     */
+    var offersGrapefruit by remember { mutableStateOf(false) }
+
     // The catalogue, for resolving an edited name back to an identity. Held in state
     // rather than fetched inside the save so the click does not depend on a disk read
     // having finished; null simply means the name could not be checked, and the row's
@@ -103,6 +123,17 @@ fun EntryDetailScreen(
 
     LaunchedEffect(Unit) {
         catalog = runCatching { app.catalog() }.getOrNull()
+        // The setting first, because it gates the substrate read: no reason to ask the catalogue
+        // when the user has not asked for this.
+        if (app.profile().grapefruitLogging()) {
+            val current = entry
+            val name = current?.substance
+            // majorEnzymes is on InteractionData, not SubstanceCatalog: the engine port
+            // that carries the curated enzyme graph. The concrete catalogue is both.
+            val metabolic = catalog as? InteractionData
+            offersGrapefruit = name != null &&
+                metabolic?.majorEnzymes(name)?.contains(Enzyme.CYP3A4) == true
+        }
     }
 
     fun seed(row: DoseEntryEntity) {
@@ -113,6 +144,8 @@ fun EntryDetailScreen(
         route = row.route
         noteText = row.notes.orEmpty()
         isUnknownAmount = row.isUnknownDose
+        // Tri-state on the column: null means "not recorded", which reads as off.
+        hadGrapefruit = row.hadGrapefruit == true
     }
 
     LaunchedEffect(timestampEpochMillis, idOrNull) {
@@ -211,6 +244,17 @@ fun EntryDetailScreen(
                                 label = { Text(CoreLabels.route(candidate)) },
                             )
                         }
+                        // Grapefruit, offered only where it would matter. A CYP3A4 inhibitor
+                        // taken with a substrate cleared mostly by that enzyme is a real change
+                        // to the substance's time course, and it is the one such context the app
+                        // lets a user record per dose.
+                        if (offersGrapefruit) {
+                            FilterChip(
+                                selected = hadGrapefruit,
+                                onClick = { hadGrapefruit = !hadGrapefruit },
+                                label = { Text(stringResource(R.string.journal_entry_grapefruit)) },
+                            )
+                        }
                         OutlinedTextField(
                             value = noteText,
                             onValueChange = { noteText = it },
@@ -260,6 +304,9 @@ fun EntryDetailScreen(
                                         route = route,
                                         notes = noteText.trim().ifEmpty { null },
                                         isUnknownDose = unknown,
+                                        // Left null when the toggle was not offered, so "not
+                                        // recorded" stays distinguishable from "no grapefruit".
+                                        hadGrapefruit = if (offersGrapefruit) hadGrapefruit else null,
                                     ).withTags(
                                         // Re-derived on every save rather than merged: the note
                                         // is the source of these, so removing a hashtag from the

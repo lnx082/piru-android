@@ -560,4 +560,9 @@
     <string name="shell_effects_all_empty">No effects are recorded for this substance.</string>
     <string name="shell_effects_all_uncategorised">Other</string>
     <string name="shell_effects_all_open">All %1 effects</string>
+    <string name="shell_health_metabolism">Metabolism</string>
+    <string name="shell_health_grapefruit">Grapefruit dose logging</string>
+    <string name="shell_health_grapefruit_detail">Adds a per-dose grapefruit toggle for substances whose breakdown grapefruit slows (CYP3A4), so the entry records it.</string>
+    <string name="shell_health_flush">I get the alcohol flush</string>
+    <string name="shell_health_flush_detail">Shows acetaldehyde buildup on alcohol entries. The ALDH2 variant slows its clearance, causing flushing.</string>
 </resources>

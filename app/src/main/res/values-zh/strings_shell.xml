@@ -526,4 +526,9 @@
     <string name="shell_effects_all_empty">这个物质还没有记录任何效应。</string>
     <string name="shell_effects_all_uncategorised">其他</string>
     <string name="shell_effects_all_open">全部 %1 项效应</string>
+    <string name="shell_health_metabolism">代谢</string>
+    <string name="shell_health_grapefruit">西柚记录</string>
+    <string name="shell_health_grapefruit_detail">对代谢会被西柚拖慢的物质（CYP3A4），在每次记录时多给一个西柚开关，这样记录里会留下这件事。</string>
+    <string name="shell_health_flush">我会酒精上脸</string>
+    <string name="shell_health_flush_detail">在酒精记录上显示乙醛堆积。ALDH2 变异会减慢它的清除，从而引起上脸。</string>
 </resources>
