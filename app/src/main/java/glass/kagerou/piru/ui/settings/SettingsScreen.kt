@@ -378,6 +378,25 @@ fun SettingsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         item {
             PiruCard(
                 modifier = Modifier.fillMaxWidth(),
+                onClick = { navigator.push(PushRoute.TabSettings) },
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        stringResource(R.string.shell_tabs_title),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(
+                        stringResource(R.string.shell_settings_tabs_detail),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = PiruTheme.colors.secondaryLabel,
+                    )
+                }
+            }
+        }
+
+        item {
+            PiruCard(
+                modifier = Modifier.fillMaxWidth(),
                 onClick = { navigator.push(PushRoute.About) },
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

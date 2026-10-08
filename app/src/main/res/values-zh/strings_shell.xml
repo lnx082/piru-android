@@ -803,4 +803,11 @@
     <string name="shell_substance_colours_no_match">你的日志里没有匹配的物质。</string>
     <string name="alcohol_aldh2_title">这条曲线是乙醇，不是乙醛</string>
     <string name="alcohol_aldh2_body">你记录了自己有 ALDH2 缺陷，因此乙醛的堆积快于清除。这才是潮红、头痛和恶心的来源 —— 而上面的曲线并不显示它，因为 Piru 建模的是乙醇，没有乙醛这一隔室。上升段和平台段你感到的不适会比曲线显示的更重，请把峰值当作对难受程度的下限估计。</string>
+    <string name="shell_tabs_title">标签页</string>
+    <string name="shell_settings_tabs_detail">选择底部栏显示哪些标签页，以及它们的顺序。</string>
+    <string name="shell_tabs_intro">底部栏默认显示五个标签页。把不用的隐藏起来，或把常用的移到左边。始终至少保留一个，且你当前所在的标签页无法隐藏。</string>
+    <string name="shell_tabs_selected_note">这是你当前所在的标签页，因此保持显示。</string>
+    <string name="shell_tabs_last_note">最后一个可见标签页会保留。</string>
+    <string name="shell_tabs_labels">显示标签文字</string>
+    <string name="shell_tabs_labels_detail">关闭后只显示图标，窄屏上能放下更多标签页。</string>
 </resources>

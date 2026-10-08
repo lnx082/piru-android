@@ -96,12 +96,51 @@ class AppSettingsStore(private val context: Context) {
         }.apply()
     }
 
+    /**
+     * The tabs the user has chosen to **hide**, as wire values, or null when they have never chosen.
+     *
+     * The hidden set rather than the visible one, and the reason is a bug a test found: a list of *visible* tabs
+     * cannot distinguish "deliberately hidden" from "never mentioned", and the bar appends anything never
+     * mentioned — so hiding a tab was undone on the next read. Storing what is hidden is always a complete
+     * statement, and a tab a later build adds is visible by default.
+     *
+     * Null rather than an empty list: an empty list means "hide nothing", which is a preference; null means "no
+     * preference", and the bar falls back to every tab in its declared order.
+     */
+    fun hiddenTabs(): List<String>? = prefs()
+        .getString(KEY_VISIBLE_TABS, null)
+        ?.split(",")
+        ?.map { it.trim() }
+        ?.filter { it.isNotEmpty() }
+
+    /** Stores the hidden tabs. An empty list clears the preference rather than storing "hide nothing". */
+    fun setHiddenTabs(wireValues: List<String>) {
+        prefs().edit().apply {
+            if (wireValues.isEmpty()) {
+                // An empty hidden set is the same behaviour as no preference, so store the absence instead.
+                remove(KEY_VISIBLE_TABS)
+            } else {
+                putString(KEY_VISIBLE_TABS, wireValues.joinToString(","))
+            }
+        }.apply()
+    }
+
+    /** Whether the bottom bar shows labels. Defaults to true, which is what a five-tab bar has always done. */
+    fun tabLabelsShown(): Boolean = prefs().getBoolean(KEY_TAB_LABELS, true)
+
+    fun setTabLabelsShown(value: Boolean) {
+        prefs().edit().putBoolean(KEY_TAB_LABELS, value).apply()
+    }
+
     /** An empty preferences file is the fresh-install state; nothing else needs clearing. */
     fun clearForImport() {
         prefs().edit()
             .remove(SessionDay.DAY_BOUNDARY_HOUR_KEY)
             .remove(KEY_STACK_REDOSES)
             .remove(KEY_SOURCE_ORDER)
+            // The tab preferences are user state like the rest, so an import clears them.
+            .remove(KEY_VISIBLE_TABS)
+            .remove(KEY_TAB_LABELS)
             .apply()
     }
 
@@ -131,5 +170,11 @@ class AppSettingsStore(private val context: Context) {
          * is deliberately not this key's business.
          */
         const val KEY_SOURCE_ORDER: String = "sourceOrder"
+
+    /** Which tabs the bottom bar shows, comma-joined wire values. Absent means "no preference". */
+    const val KEY_VISIBLE_TABS: String = "visibleTabs"
+
+    /** Whether the bottom bar draws its labels. */
+    const val KEY_TAB_LABELS: String = "tabLabels"
     }
 }

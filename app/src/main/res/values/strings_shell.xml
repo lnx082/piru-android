@@ -837,4 +837,11 @@
     <string name="shell_substance_colours_no_match">No substance in your log matches that.</string>
     <string name="alcohol_aldh2_title">This curve is ethanol, not acetaldehyde</string>
     <string name="alcohol_aldh2_body">You recorded an ALDH2 deficiency, so acetaldehyde builds up faster than you clear it. That is what causes flushing, headache and nausea — and it is not what the curve above shows, because Piru models ethanol and has no acetaldehyde compartment. Expect to feel worse during the rise and the plateau than this curve suggests, and treat the peak as an underestimate of how bad it gets.</string>
+    <string name="shell_tabs_title">Tabs</string>
+    <string name="shell_settings_tabs_detail">Choose which tabs the bottom bar shows, and their order.</string>
+    <string name="shell_tabs_intro">The bottom bar shows five tabs by default. Hide the ones you do not use, or move the ones you do to the left. At least one tab always stays, and the tab you are on cannot be hidden.</string>
+    <string name="shell_tabs_selected_note">This is the tab you are on, so it stays visible.</string>
+    <string name="shell_tabs_last_note">The last visible tab stays.</string>
+    <string name="shell_tabs_labels">Show tab labels</string>
+    <string name="shell_tabs_labels_detail">Turn off to show icons only, which fits more tabs on a narrow screen.</string>
 </resources>

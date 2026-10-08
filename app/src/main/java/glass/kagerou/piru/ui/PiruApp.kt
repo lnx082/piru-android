@@ -107,6 +107,9 @@ import glass.kagerou.piru.ui.tools.SolutionMathScreen
 import glass.kagerou.piru.ui.tools.PharmaTableScreen
 import glass.kagerou.piru.ui.tools.ToleranceExplainerScreen
 import glass.kagerou.piru.ui.settings.AboutScreen
+import glass.kagerou.piru.ui.settings.TabSettingsScreen
+import glass.kagerou.piru.data.AppSettingsStore
+import glass.kagerou.piru.ui.settings.TabLayout
 
 /**
  * The app shell: five tabs, a push stack per tab, and a modal above them.
@@ -186,7 +189,11 @@ fun PiruApp(
         }
 
         Scaffold(
-            bottomBar = { PiruNavigationBar(navigator) },
+            bottomBar = {
+                // A fresh store each composition: `AppSettingsStore` is a thin wrapper over `SharedPreferences`,
+                // which caches, so this is a read and not a file open.
+                PiruNavigationBar(navigator, AppSettingsStore(LocalContext.current))
+            },
             floatingActionButton = {
                 // The one action the app exists for, so it is always one tap away
                 // rather than buried in a tab.
@@ -238,16 +245,27 @@ fun PiruApp(
 }
 
 @Composable
-private fun PiruNavigationBar(navigator: AppNavigator) {
+private fun PiruNavigationBar(navigator: AppNavigator, settings: AppSettingsStore) {
     val colors = PiruTheme.colors
+    // Read here rather than at the call site so a change to the preference shows as soon as the bar redraws.
+    // `visibleTabs` applies the two guards — the last tab and the selected one cannot be hidden — which is why
+    // the bar iterates this rather than `AppTab.entries`.
+    val tabs = TabLayout.visibleTabs(settings.hiddenTabs(), navigator.selectedTab)
+    val showLabels = TabLayout.showsLabels(tabs.size, settings.tabLabelsShown())
     NavigationBar(containerColor = colors.cardBackground) {
-        for (tab in AppTab.entries) {
+        for (tab in tabs) {
             val selected = navigator.selectedTab == tab
             NavigationBarItem(
                 selected = selected,
                 onClick = { navigator.select(tab) },
                 icon = { Icon(if (selected) tab.filledIcon() else tab.outlinedIcon(), contentDescription = null) },
-                label = { Text(stringResource(tab.labelRes)) },
+                // Absent rather than blank when labels are off: an empty `Text` still reserves the label's
+                // height, so the bar would keep the tall layout and just look broken.
+                label = if (showLabels) {
+                    { Text(stringResource(tab.labelRes)) }
+                } else {
+                    null
+                },
                 // Material's default indicator is `secondaryContainer`, which this
                 // theme never sets — so the selected tab would come out framework
                 // grey while everything around it is branded. The accent is the
@@ -370,6 +388,7 @@ private fun DefaultDestination(route: PushRoute, navigator: AppNavigator) {
         is PushRoute.Effects -> EffectsListScreen(route.name)
         is PushRoute.DrugClass -> ClassWriteUpScreen(route.className, navigator)
         PushRoute.About -> AboutScreen()
+        PushRoute.TabSettings -> TabSettingsScreen(navigator)
         PushRoute.SubstanceDatabase -> SubstanceDatabaseScreen(navigator)
         PushRoute.AdvancedSearch -> AdvancedSearchScreen()
         PushRoute.ToleranceExplainer -> ToleranceExplainerScreen()

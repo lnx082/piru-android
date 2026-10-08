@@ -188,6 +188,10 @@ sealed interface PushRoute {
     @Serializable
     data object About : PushRoute
 
+    /** Which tabs the bottom bar shows, their order, and whether they carry labels. */
+    @Serializable
+    data object TabSettings : PushRoute
+
     /** One tracked supply, by its row id. */
     @Serializable
     data class InventoryItem(val id: String) : PushRoute
@@ -330,6 +334,7 @@ fun PushRoute.key(): String = when (this) {
     is PushRoute.InteractionTimeline -> "interaction:$substanceA:$substanceB"
     is PushRoute.DrugClass -> "drug-class:$className"
         PushRoute.About -> "about"
+        PushRoute.TabSettings -> "tabs"
     is PushRoute.Effects -> "effects:$name"
     PushRoute.SubstanceDatabase -> "substance-database"
     PushRoute.AdvancedSearch -> "advanced-search"
