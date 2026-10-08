@@ -233,15 +233,32 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
             busy = true
-            val bytes = withContext(Dispatchers.IO) { readBytes(context, uri) }
-            busy = false
-            if (bytes == null) {
-                report(
-                    context.getString(R.string.shell_data_import_failed),
-                    context.getString(R.string.shell_data_file_unreadable),
-                )
-                return@launch
+            // Bounded, and refused *before* the read where the provider declares a size:
+            // this used to be an unbounded `readBytes()`, so a mis-picked or corrupt file
+            // was read into memory until the process died. iOS refuses over 256 MB up
+            // front; so does `ImportFiles`.
+            val bytes = when (
+                val read = withContext(Dispatchers.IO) { ImportFiles.read(context, uri) }
+            ) {
+                is ImportFiles.Result.Bytes -> read.value
+                ImportFiles.Result.TooLarge -> {
+                    busy = false
+                    report(
+                        context.getString(R.string.shell_data_import_failed),
+                        context.getString(R.string.shell_data_file_too_large),
+                    )
+                    return@launch
+                }
+                ImportFiles.Result.Unreadable -> {
+                    busy = false
+                    report(
+                        context.getString(R.string.shell_data_import_failed),
+                        context.getString(R.string.shell_data_file_unreadable),
+                    )
+                    return@launch
+                }
             }
+            busy = false
             val asText = bytes.toString(Charsets.UTF_8)
             // An encrypted backup is decided by `BackupCrypto`, not by the JSON
             // classifier: `classify` throws `Encrypted` for the same file, but the

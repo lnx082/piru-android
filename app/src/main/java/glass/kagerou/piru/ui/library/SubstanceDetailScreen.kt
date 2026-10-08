@@ -35,6 +35,8 @@ import glass.kagerou.piru.ui.components.PiruCard
 import glass.kagerou.piru.ui.labels.CoreLabels
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.theme.PiruTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * A substance's full record.
@@ -63,8 +65,17 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
     var substance by remember(name) { mutableStateOf<Substance?>(null) }
     var failed by remember(name) { mutableStateOf(false) }
 
+    // The user's answer to "how much detail?", which until now nothing could read back.
+    // Composition, not data: the same substance is a short card at the casual tier and a
+    // reference page at the curious one, which is the whole point of asking.
+    val tier = remember(name) { app.profile().disclosureTier() }
+
     LaunchedEffect(name) {
-        val catalog = app.catalog()
+        // Off the main thread. `catalog()` copies and verifies an 18 MB asset on first run
+        // and builds the whole identity index; every other caller wraps it, and this one
+        // used to run it inline in a `LaunchedEffect`, which is the composition thread — so
+        // a cold push from the library's own search results blocked the first frame.
+        val catalog = withContext(Dispatchers.IO) { app.catalog() }
         // `resolveFull`, not `lookup`: this is the detail path, and the batch
         // projection deliberately omits the mechanism, the bindings and the
         // curated blobs that are the whole point of this screen.
@@ -106,12 +117,17 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
 
             resolved.mechanismOfAction?.let { item { MechanismCard(it) } }
 
-            if (resolved.effects.isNotEmpty()) {
-                item { EffectsCard(resolved.effects) }
-            }
+            // The reference half of the page, which the casual tier asks not to see. The
+            // distinction is the reason the tier exists: "what it is and what it does" versus
+            // "adds the pharmacology reference sections".
+            if (tier.showsReferenceSections()) {
+                if (resolved.effects.isNotEmpty()) {
+                    item { EffectsCard(resolved.effects) }
+                }
 
-            for (myth in resolved.misconceptions) {
-                item { MisconceptionCard(myth.claim, myth.correction) }
+                for (myth in resolved.misconceptions) {
+                    item { MisconceptionCard(myth.claim, myth.correction) }
+                }
             }
 
             if (resolved.combinations.isNotEmpty()) {

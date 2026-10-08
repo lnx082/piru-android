@@ -111,6 +111,24 @@ class UserProfileStore(private val database: PiruDatabase) {
     suspend fun setDisclosureTier(rawValue: String): UserProfileRecordEntity =
         edit { it.copy(disclosureTierRaw = rawValue) }
 
+    /**
+     * How much detail the user asked for.
+     *
+     * The getter this class spent a while without: onboarding collected the answer, the value
+     * was persisted, exported, imported and restored, and **nothing could read it back**, so
+     * the question had no effect and iOS's tier-driven detail composition had no counterpart.
+     * A preference with a writer and no reader is indistinguishable from a bug in the UI that
+     * offers it, which is what it was.
+     *
+     * Unknown or absent values resolve the way the read layer resolves them — see
+     * [DisclosureTier.fromWire] — so an older row or a file from a build that spelled the tiers
+     * differently still yields a usable answer rather than an error.
+     */
+    fun disclosureTier(): DisclosureTier = DisclosureTier.fromWire(snapshot().disclosureTierRaw)
+
+    /** Whether the user has ever answered the tier question, as opposed to holding the default. */
+    fun hasDisclosureTier(): Boolean = snapshot().disclosureTierRaw != null
+
     suspend fun setGrapefruitLogging(enabled: Boolean): UserProfileRecordEntity =
         edit { it.copy(grapefruitLoggingEnabled = enabled) }
 

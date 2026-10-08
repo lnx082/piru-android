@@ -37,6 +37,7 @@ import glass.kagerou.piru.data.export.DataExportImport
 import glass.kagerou.piru.ui.settings.OpenBackupDialog
 import glass.kagerou.piru.ui.settings.describeImportReport
 import glass.kagerou.piru.ui.theme.PiruTheme
+import glass.kagerou.piru.ui.settings.ImportFiles
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -57,7 +58,8 @@ import kotlinx.coroutines.withContext
  * ## What it does with each of the four shapes
  * - **Piru native, PsyLog, the early `doseEntries` dump** — imported. Nothing here
  *   chooses between them, because [DataExportImport.classify] reads the top-level
- *   keys and routes; the picker offers `application/json` and the file decides.
+ *   keys and routes; the picker offers the plain export's types and the encrypted
+ *   backup's, and the file decides which it is.
  * - **An encrypted envelope** — [BackupCrypto] recognises it and this asks for the
  *   passphrase in place. Onboarding is the one screen where bouncing the user to
  *   Data & Backup would mean finishing the flow, finding the screen, and starting
@@ -114,12 +116,26 @@ fun OnboardingImportStep(nav: OnboardingNav) {
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
             busy = true
-            val bytes = readBytes(context, uri)
-            busy = false
-            if (bytes == null) {
-                outcome = Outcome.Failed(context.getString(R.string.shell_onboarding_import_read_failed))
-                return@launch
+            val bytes = when (
+                val read = ImportFiles.read(context, uri)
+            ) {
+                is ImportFiles.Result.Bytes -> read.value
+                ImportFiles.Result.TooLarge -> {
+                    busy = false
+                    outcome = Outcome.Failed(
+                        context.getString(R.string.shell_onboarding_import_too_large),
+                    )
+                    return@launch
+                }
+                ImportFiles.Result.Unreadable -> {
+                    busy = false
+                    outcome = Outcome.Failed(
+                        context.getString(R.string.shell_onboarding_import_read_failed),
+                    )
+                    return@launch
+                }
             }
+            busy = false
             // The envelope decides first: `classify` would also throw `Encrypted`
             // for this file, but only `BackupCrypto` knows whether this build can
             // open it.
@@ -176,7 +192,22 @@ fun OnboardingImportStep(nav: OnboardingNav) {
                 stringResource(R.string.shell_onboarding_import_action)
             },
             enabled = !busy,
-            onClick = { picker.launch(arrayOf("application/json")) },
+            onClick = {
+                // The same three types the Data & Backup picker offers. This passed
+                // `application/json` alone, and `.piruenc` — the encrypted backup this app
+                // itself writes — goes out as `application/octet-stream`, so a user who had
+                // made one could not select it here and the passphrase branch below was
+                // unreachable from onboarding. `*/*` is there for the same reason it is
+                // there: a file manager may report an export as something else entirely, and
+                // `classify`/`BackupCrypto` decide what it really is.
+                picker.launch(
+                    arrayOf(
+                        "application/json",
+                        "application/octet-stream",
+                        "*/*",
+                    ),
+                )
+            },
         )
         OnboardingPillButton(
             title = stringResource(R.string.shell_start_fresh),
@@ -255,9 +286,3 @@ private fun ImportResult(outcome: Outcome) {
         Text(text, style = MaterialTheme.typography.bodySmall, color = tint)
     }
 }
-
-/** The picked document's bytes, or null when the provider could not be read. */
-private suspend fun readBytes(context: android.content.Context, uri: Uri): ByteArray? =
-    withContext(Dispatchers.IO) {
-        runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
-    }

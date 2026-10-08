@@ -165,8 +165,70 @@ open class PiruApplication : Application() {
             DbSubstanceCatalog.open(
                 db = db,
                 order = order,
-                language = ContentLanguage.EN,
+                // Derived from the user's own language rather than pinned to English. It was
+                // `ContentLanguage.EN` literally, which made the catalogue's 1,606 localized
+                // names across 605 substances unreachable: `Substance.localizedName` resolved
+                // through a null language and came back null for everything, so a Chinese
+                // reader got English titles and no way to ask for the others.
+                language = contentLanguage(),
+                usesEnglishNames = usesEnglishNames,
             ).also { catalog = it }
+        }
+    }
+
+    /**
+     * The language the catalogue's prose resolves in.
+     *
+     * The app's own locale, which is what Android's per-app language picker sets — not the
+     * device's. Someone reading a dose journal in Chinese should not have to switch their whole
+     * phone to Chinese to get Chinese substance descriptions, and `locales_config.xml` already
+     * declares both languages for that reason.
+     */
+    private fun contentLanguage(): ContentLanguage =
+        ContentLanguage.fromLocalization(
+            // `Resources` carries the per-app language override that `locales_config.xml`
+            // declares; a bare `Configuration` would not.
+            resources.configuration.locales[0]?.language ?: "en",
+        )
+
+    /**
+     * Whether substance names are shown in English regardless of the catalogue's language.
+     *
+     * Held in memory only: it is a display preference, and the catalogue has to be rebuilt when
+     * it changes anyway, so persisting it separately would create a second source of truth for
+     * the same answer. It resets to false on a cold start, which matches the shipped default.
+     */
+    var usesEnglishNames: Boolean = false
+        private set
+
+    /**
+     * Switch the name mode, and rebuild the catalogue.
+     *
+     * The rebuild is the point: `DbSubstanceCatalog` bakes the language and the name mode into
+     * every `Substance` at construction — `localizedName` and the resolved `displayTitle` are
+     * stamped once, deliberately, rather than looked up per render. So a change here has to
+     * discard the built catalogue, and the handle with it, or the switch would appear to do
+     * nothing until the next launch.
+     */
+    open suspend fun setUsesEnglishNames(value: Boolean) {
+        if (value == usesEnglishNames) return
+        usesEnglishNames = value
+        reconfigureContent()
+    }
+
+    /**
+     * Drop the built catalogue so the next ask rebuilds it with the current language and name
+     * mode.
+     *
+     * Closes the SQLite handle under the same lock the builder takes, so a caller mid-`catalog()`
+     * cannot have the file pulled out from under it — the same use-after-free that two handles
+     * over this file caused once already.
+     */
+    private suspend fun reconfigureContent() {
+        catalogMutex.withLock {
+            catalog = null
+            catalogHandle?.close()
+            catalogHandle = null
         }
     }
 

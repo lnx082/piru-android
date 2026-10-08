@@ -240,6 +240,14 @@
     <string name="shell_settings_title">Settings</string>
     <string name="shell_settings_appearance">Appearance</string>
     <string name="shell_settings_appearance_note">Piru has a light and a dark side, and follows your phone\'s setting. Alternate skins, and a mode override for choosing light or dark regardless of the phone, arrive with the appearance screen.</string>
+    <string name="shell_settings_detail_level">Detail level</string>
+    <string name="shell_settings_detail_casual">Casual</string>
+    <string name="shell_settings_detail_casual_note">The short version: what it is and what it does.</string>
+    <string name="shell_settings_detail_curious">Curious</string>
+    <string name="shell_settings_detail_curious_note">Adds the pharmacology reference sections.</string>
+    <string name="shell_settings_detail_level_footer">How much pharmacology a substance page shows by default.</string>
+    <string name="shell_settings_names_english">Substance names in English</string>
+    <string name="shell_settings_names_english_detail">Show the English name even when the descriptions are in another language.</string>
     <string name="shell_settings_substance_colours">Substance colours</string>
     <string name="shell_settings_substance_colours_detail">Every substance has a colour from its class. Set your own for the ones you log.</string>
     <string name="shell_settings_notifications">Notifications</string>
@@ -376,6 +384,8 @@
     <string name="shell_data_export_build_failed">The export could not be built.</string>
     <string name="shell_data_export_encrypted_build_failed">The encrypted backup could not be built.</string>
     <string name="shell_data_import_failed">Import Failed</string>
+    <string name="shell_data_file_too_large">That file is larger than Piru will read (256 MB). If it is a backup, check that the right file was picked.</string>
+    <string name="shell_onboarding_import_too_large">That file is larger than Piru will read (256 MB). If it is a backup, check that the right file was picked.</string>
     <string name="shell_data_file_unreadable">The file could not be read.</string>
     <string name="shell_data_device_key_title">Can\'t Open This Backup</string>
     <string name="shell_data_device_key_body">This is a device-key backup, made by the iOS app with a key kept in your iCloud Keychain. The key is not in the file, and Android has no equivalent store for it, so this build can\'t open it. Its passphrase backups open normally.</string>

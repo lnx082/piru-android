@@ -22,6 +22,20 @@ import glass.kagerou.piru.ui.components.PiruCard
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.nav.PushRoute
 import glass.kagerou.piru.ui.theme.PiruTheme
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.Role
+import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.data.DisclosureTier
+import kotlinx.coroutines.launch
 
 /**
  * Settings.
@@ -70,6 +84,118 @@ fun SettingsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
+            }
+        }
+
+        // The detail level, and the control that makes a stored preference mean something.
+        //
+        // The tier has been collected at onboarding since the port began and read by nothing:
+        // no getter on the store, no picker here, so the question had no effect on any screen.
+        // iOS puts this picker on its Settings page for exactly that reason.
+        item {
+            val app = LocalContext.current.applicationContext as PiruApplication
+            val scope = rememberCoroutineScope()
+            var tier by remember { mutableStateOf(app.profile().disclosureTier()) }
+
+            PiruCard(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        stringResource(R.string.shell_settings_detail_level),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    for (option in DisclosureTier.entries) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .selectable(
+                                    selected = option == tier,
+                                    role = Role.RadioButton,
+                                    onClick = {
+                                        tier = option
+                                        scope.launch { app.profile().setDisclosureTier(option.wireValue) }
+                                    },
+                                )
+                                .padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            RadioButton(selected = option == tier, onClick = null)
+                            Column {
+                                Text(
+                                    stringResource(
+                                        when (option) {
+                                            DisclosureTier.CASUAL ->
+                                                R.string.shell_settings_detail_casual
+                                            DisclosureTier.CURIOUS ->
+                                                R.string.shell_settings_detail_curious
+                                        },
+                                    ),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                                Text(
+                                    stringResource(
+                                        when (option) {
+                                            DisclosureTier.CASUAL ->
+                                                R.string.shell_settings_detail_casual_note
+                                            DisclosureTier.CURIOUS ->
+                                                R.string.shell_settings_detail_curious_note
+                                        },
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = PiruTheme.colors.secondaryLabel,
+                                )
+                            }
+                        }
+                    }
+                    Text(
+                        stringResource(R.string.shell_settings_detail_level_footer),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = PiruTheme.colors.secondaryLabel,
+                    )
+                }
+            }
+        }
+
+        // Substance names in English.
+        //
+        // The catalogue carries 1,606 localized names across 605 substances, and the reader
+        // supports resolving them — but the app graph passed `ContentLanguage.EN` literally, so
+        // `Substance.localizedName` was null for every substance and a Chinese reader saw
+        // English titles with no way to ask otherwise. This is the switch that reaches them;
+        // iOS only shows its counterpart when the app runs in a language that has them.
+        item {
+            val app = LocalContext.current.applicationContext as PiruApplication
+            val scope = rememberCoroutineScope()
+            var englishNames by remember { mutableStateOf(app.usesEnglishNames) }
+
+            PiruCard(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            stringResource(R.string.shell_settings_names_english),
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        Text(
+                            stringResource(R.string.shell_settings_names_english_detail),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = PiruTheme.colors.secondaryLabel,
+                        )
+                    }
+                    Switch(
+                        checked = englishNames,
+                        onCheckedChange = { value ->
+                            englishNames = value
+                            // The catalogue is built with the language and name mode baked in,
+                            // so changing either has to rebuild it — see
+                            // `PiruApplication.reconfigureContent`.
+                            scope.launch { app.setUsesEnglishNames(value) }
+                        },
+                    )
+                }
             }
         }
 

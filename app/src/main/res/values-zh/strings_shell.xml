@@ -213,6 +213,14 @@
     <string name="shell_settings_title">设置</string>
     <string name="shell_settings_appearance">外观</string>
     <string name="shell_settings_appearance_note">Piru 有明亮与深色两面，并跟随手机的设置。其他皮肤，以及在手机上强制选择明亮或深色的模式开关，会随外观界面一起到来。</string>
+    <string name="shell_settings_detail_level">详情层级</string>
+    <string name="shell_settings_detail_casual">简略</string>
+    <string name="shell_settings_detail_casual_note">只讲简要版本：它是什么、有什么作用。</string>
+    <string name="shell_settings_detail_curious">好奇</string>
+    <string name="shell_settings_detail_curious_note">加上药理学参考各节。</string>
+    <string name="shell_settings_detail_level_footer">物质页面默认展示多少药理学内容。</string>
+    <string name="shell_settings_names_english">物质名用英文</string>
+    <string name="shell_settings_names_english_detail">即使描述是其他语言，也显示英文名称。</string>
     <string name="shell_settings_substance_colours">物质颜色</string>
     <string name="shell_settings_substance_colours_detail">每种物质都有一个来自其类别的颜色。你可以为自己记录的那些设置自己的颜色。</string>
     <string name="shell_settings_notifications">通知</string>
@@ -347,6 +355,8 @@
     <string name="shell_data_export_build_failed">无法生成导出文件。</string>
     <string name="shell_data_export_encrypted_build_failed">无法生成加密备份。</string>
     <string name="shell_data_import_failed">导入失败</string>
+    <string name="shell_data_file_too_large">这个文件超过了 Piru 会读取的大小上限（256 MB）。如果是备份，请确认选对了文件。</string>
+    <string name="shell_onboarding_import_too_large">这个文件超过了 Piru 会读取的大小上限（256 MB）。如果是备份，请确认选对了文件。</string>
     <string name="shell_data_file_unreadable">无法读取该文件。</string>
     <string name="shell_data_device_key_title">无法打开此备份</string>
     <string name="shell_data_device_key_body">这是设备密钥备份，由 iOS 应用创建，密钥保存在你的 iCloud 钥匙串里。密钥不在文件中，Android 也没有对应的存储来放它，所以这个版本打不开它。它的口令备份可以正常打开。</string>
