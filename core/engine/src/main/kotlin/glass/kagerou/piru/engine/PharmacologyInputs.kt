@@ -1,6 +1,7 @@
 package glass.kagerou.piru.engine
 
 import glass.kagerou.piru.model.ConfidenceTier
+import kotlinx.serialization.Serializable
 
 /**
  * One `downstream_signalling` row: what a substance's engagement sets off beyond the receptor it binds.
@@ -71,6 +72,117 @@ data class PharmacogeneticHit(
  *
  * Ported from `BindingHit` in `SubstanceReadModel+Pharmacology.swift`.
  */
+/**
+ * One atom of a 2-D structure diagram.
+ *
+ * Ported from the `molecule_shapes` JSON. [x] and [y] are in an arbitrary box — the shipped rows span roughly 0..100
+ * — so a drawing is a scale into whatever canvas it has rather than a layout problem. [y] increases **downward**,
+ * which is the catalogue's convention and not screen space; the difference is one negation, and getting it wrong
+ * draws every molecule upside down, which is unnoticeable for a symmetric ring and obvious for anything else.
+ */
+@Serializable
+data class MoleculeAtom(
+    /** The element symbol as the catalogue writes it: `"C"`, `"O"`, `"N"`, `"Cl"`. */
+    val el: String,
+    val x: Double,
+    val y: Double,
+)
+
+/** One bond: an index into the atom list at each end, and its order. */
+@Serializable
+data class MoleculeBond(
+    val a: Int,
+    val b: Int,
+    /** `1` single, `2` double, `3` triple, and `4` for an aromatic bond in the source's convention. */
+    val order: Int = 1,
+)
+
+/**
+ * A substance's 2-D structure: the atoms, the bonds, and the box they occupy.
+ *
+ * ## Why this is validated rather than taken as given
+ * The rows are pipeline-generated JSON with no schema behind them, and a bond whose index runs past the atom list
+ * would draw a line to nowhere — a picture that looks like a molecule and is not one. [MoleculeShape.parse]
+ * returns null for a shape that does not hold together, and the section hides, which is the same call this port
+ * makes for a substance with no half-life: a wrong picture is worse than no picture.
+ */
+data class MoleculeShape(
+    val atoms: List<MoleculeAtom>,
+    val bonds: List<MoleculeBond>,
+) {
+    /**
+     * The horizontal span of the atoms, **unfloored**. Zero for a lone atom.
+     *
+     * The floor is deliberately not here. It belongs to the drawing, which needs a non-zero span to compute a
+     * scale; applying it to the box instead makes the box's geometry wrong, and the centre is derived from the box
+     * — so a floored span puts a lone atom half a floor off centre. `ShapeGeometry.place` applies
+     * [MINIMUM_SPAN] where it divides.
+     */
+    val width: Double get() = spanOf { it.x }
+
+    /** The vertical span of the atoms, unfloored. Zero for a lone atom. */
+    val height: Double get() = spanOf { it.y }
+
+    /** The true span along one axis. */
+    private fun spanOf(axis: (MoleculeAtom) -> Double): Double =
+        atoms.maxOf(axis) - atoms.minOf(axis)
+
+    /**
+     * The centre of the box the atoms occupy, which is what a drawing centres on.
+     *
+     * ## Why this is not `minX + width/2`
+     * It is the same number *only because [width] is unfloored*. When the floor lived on the span, `minX +
+     * width/2` put a lone atom's centre half a unit away from the atom, and the atom drew 42 pixels off centre.
+     *
+     * The midpoint of the true span is the right definition unconditionally: for a degenerate box it **is** the
+     * atom, which is the only reading under which a single atom draws centred.
+     */
+    val centreX: Double get() = (atoms.minOf { it.x } + atoms.maxOf { it.x }) / 2.0
+    val centreY: Double get() = (atoms.minOf { it.y } + atoms.maxOf { it.y }) / 2.0
+
+    val minX: Double get() = atoms.minOf { it.x }
+    val minY: Double get() = atoms.minOf { it.y }
+
+    /**
+     * Whether the shape is a ring rather than a chain, by atom count against bond count.
+     *
+     * A connected acyclic graph has `bonds == atoms - 1`; a ring has one more. Not used for drawing — the bonds are
+     * drawn as given — but it is the cheapest sanity property a test can assert about 958 rows, and it catches a
+     * mis-parsed bond list.
+     */
+    val looksCyclic: Boolean get() = bonds.size >= atoms.size
+
+    companion object {
+        /**
+         * The smallest span a drawing will scale by.
+         *
+         * A single-atom "molecule" has no span, and scaling by zero divides by zero. The catalogue has no such row
+         * today; the guard is here because the alternative is a crash on a row a future pipeline run could add.
+         *
+         * The explicit `: Double` is not decoration. This was written `= 1.0` without it at first, and inside a
+         * `companion object` that infers `Int` — so the floor was 2, `coerceAtLeast` silently took its `Int`
+         * overload, and the only symptom was a molecule drawn slightly too small to notice.
+         */
+        const val MINIMUM_SPAN: Double = 1.0
+
+        /**
+         * Builds a shape, or null when the JSON does not describe one.
+         *
+         * Null in four cases, each of which would otherwise draw something wrong: no atoms, a bond index outside
+         * the atom list, a blank element symbol, and JSON that does not decode. An **empty bond list is fine** —
+         * a lone atom is a legitimate drawing of a monatomic ion.
+         */
+        fun parse(atoms: List<MoleculeAtom>, bonds: List<MoleculeBond>): MoleculeShape? {
+            if (atoms.isEmpty()) return null
+            if (atoms.any { it.el.isBlank() }) return null
+            // Every bond has to land on a real atom, and on two different ones: a bond from an atom to itself is
+            // a zero-length line, which draws as nothing and hides the fact that the row is malformed.
+            if (bonds.any { it.a !in atoms.indices || it.b !in atoms.indices || it.a == it.b }) return null
+            return MoleculeShape(atoms = atoms, bonds = bonds)
+        }
+    }
+}
+
 data class BindingHit(
     val id: Long,
     val substanceName: String,

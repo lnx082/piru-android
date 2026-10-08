@@ -761,4 +761,6 @@
     <string name="shell_section_pharmacogenomics">药物基因组学</string>
     <string name="shell_section_cyp2d6">CYP2D6</string>
     <string name="shell_value_unknown">—</string>
+    <string name="shell_section_structure">结构式</string>
+    <string name="shell_structure_note">来自目录的二维结构式。碳原子是没有标注的顶点。</string>
 </resources>

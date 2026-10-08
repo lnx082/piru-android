@@ -58,6 +58,9 @@ import kotlinx.serialization.json.Json
 import glass.kagerou.piru.engine.DownstreamSignallingHit
 import glass.kagerou.piru.engine.OffTargetHit
 import glass.kagerou.piru.engine.PharmacogeneticHit
+import glass.kagerou.piru.engine.MoleculeAtom
+import glass.kagerou.piru.engine.MoleculeBond
+import glass.kagerou.piru.engine.MoleculeShape
 
 /**
  * Source-priority-aware reads over the bundled catalog.
@@ -1415,6 +1418,28 @@ class SubstanceReader(
                 pmid = row.long("pmid")?.toInt(),
             )
         }.filter { it.gene.isNotBlank() }
+    }
+
+    /**
+     * The substance's 2-D structure, or null when the catalogue has none or it does not hold together.
+     *
+     * 958 of the catalogue's 1689 substances have a row. Null is the honest answer for the other 731 and for a row
+     * whose bonds do not land on its atoms — see `MoleculeShape.parse`. The section hides on null rather than
+     * drawing an empty box.
+     *
+     * Decoded through [decodeJson], which returns null on a format break. That turns "wrong format" into "no
+     * shape", so a test asserts a **count** for a substance known to have one: `null` from a malformed row and
+     * `null` from no row are indistinguishable at the call site, and the count is what tells them apart.
+     */
+    fun moleculeShape(substanceID: Long): MoleculeShape? {
+        val row = db.queryOne(
+            "SELECT atoms_json, bonds_json FROM molecule_shapes WHERE substance_id = ?",
+            listOf(substanceID),
+        ) ?: return null
+        val atoms = decodeJson<List<MoleculeAtom>>(row.string("atoms_json")) ?: return null
+        // An absent bond list is a lone atom, not a failure; the column is nullable in practice.
+        val bonds = decodeJson<List<MoleculeBond>>(row.string("bonds_json")).orEmpty()
+        return MoleculeShape.parse(atoms, bonds)
     }
 
     /** The substance's `pk_reference` pointer, or null when it carries none. */

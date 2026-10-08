@@ -795,4 +795,6 @@
     <string name="shell_section_pharmacogenomics">Pharmacogenomics</string>
     <string name="shell_section_cyp2d6">CYP2D6</string>
     <string name="shell_value_unknown">—</string>
+    <string name="shell_section_structure">Structure</string>
+    <string name="shell_structure_note">2-D depiction from the catalogue. Carbon atoms are the unlabelled vertices.</string>
 </resources>

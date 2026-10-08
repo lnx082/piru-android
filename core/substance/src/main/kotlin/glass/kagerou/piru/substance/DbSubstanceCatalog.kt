@@ -31,6 +31,7 @@ import glass.kagerou.piru.engine.MetabolismHit
 import glass.kagerou.piru.engine.DownstreamSignallingHit
 import glass.kagerou.piru.engine.OffTargetHit
 import glass.kagerou.piru.engine.PharmacogeneticHit
+import glass.kagerou.piru.engine.MoleculeShape
 
 /**
  * The bundled catalog, seen through the engine's [SubstanceCatalog] port.
@@ -460,6 +461,16 @@ class DbSubstanceCatalog private constructor(
     fun metabolismRows(nameOrAlias: String): List<MetabolismHit> {
         val id = index.resolve(nameOrAlias) ?: return emptyList()
         return reader.metabolismRows(id)
+    }
+
+    /**
+     * The substance's 2-D structure diagram, or null when the catalogue has none.
+     *
+     * Read by nothing before this, so `molecule_shapes`' 958 rows were data with no screen.
+     */
+    fun moleculeShape(nameOrAlias: String): MoleculeShape? {
+        val id = index.resolve(nameOrAlias) ?: return null
+        return reader.moleculeShape(id)
     }
 
     /**

@@ -55,6 +55,7 @@ import glass.kagerou.piru.engine.MetabolismHit
 import glass.kagerou.piru.engine.DownstreamSignallingHit
 import glass.kagerou.piru.engine.OffTargetHit
 import glass.kagerou.piru.engine.PharmacogeneticHit
+import glass.kagerou.piru.engine.MoleculeShape
 
 /**
  * A substance's full record.
@@ -113,6 +114,7 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
     var signalling by remember { mutableStateOf<List<DownstreamSignallingHit>>(emptyList()) }
     var offTargets by remember { mutableStateOf<List<OffTargetHit>>(emptyList()) }
     var pharmacogenetics by remember { mutableStateOf<List<PharmacogeneticHit>>(emptyList()) }
+    var structure by remember { mutableStateOf<MoleculeShape?>(null) }
     var metabolism by remember(name) { mutableStateOf<List<MetabolismHit>>(emptyList()) }
 
     // The user's answer to "how much detail?", which until now nothing could read back.
@@ -159,6 +161,8 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
         signalling = runCatching { catalog.downstreamSignallingRows(canonical) }.getOrDefault(emptyList())
         offTargets = runCatching { catalog.offTargetRows(canonical) }.getOrDefault(emptyList())
         pharmacogenetics = runCatching { catalog.pharmacogeneticRows(canonical) }.getOrDefault(emptyList())
+        // 958 of the catalogue's 1689 substances have a structure; the section hides for the rest.
+        structure = runCatching { catalog.moleculeShape(canonical) }.getOrNull()
         metabolism = runCatching { catalog.metabolismRows(canonical) }.getOrDefault(emptyList())
     }
 
@@ -247,6 +251,9 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
             // The pharmacology sections, beside the binding and metabolism tables they extend. Signalling is
             // what happens *after* the receptor, off-targets are what the substance hits besides its mechanism,
             // and the two genetic sections read the same rows.
+            // The structure diagram above the pharmacology prose: it is the one section a reader
+            // recognises a substance by at a glance.
+            structure?.let { shape -> item { StructureCard(shape) } }
             item { DownstreamSignallingCard(signalling) }
             item { OffTargetCard(offTargets) }
             // CYP2D6 first, because it is the gene that most often changes an answer at the doses people take
