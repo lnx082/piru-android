@@ -46,15 +46,23 @@ class ClassAndTagBrowseDeviceTest {
     fun aClassWriteUpDrawsItsMembers() {
         compose.setContent { PiruTheme { ClassWriteUpScreen("arylcyclohexylamines", AppNavigator()) } }
 
-        // Settle first, then poll: both screens open the catalogue on a background dispatcher before they
-        // draw, and a bare `waitUntil` on the first node races that read.
+        // Settle first, then poll: the screen opens the catalogue on a background dispatcher before it draws,
+        // and a bare `waitUntil` on the first node races that read.
         //
-        // The timeout is sized for the **first-use cost**, which this spec pays and no other does.
-        // `SubstanceCatalogInstaller.install` verifies the installed copy by hashing the whole 18 MB asset, and
-        // `DbSubstanceCatalog.open` then builds the identity index over 1,689 substances and 5,727 aliases. The
-        // catalogue is memoized per process, so that happens once per run — and this test runs early
-        // alphabetically, so it is the one that waits. It timed out at 20 s and at 40 s on loaded runs and passed
-        // on every quiet one, which is what a real one-off cost looks like rather than a flake.
+        // ## The timeout is for a **starved emulator**, and that was measured rather than assumed
+        // My first version of this comment claimed a "first-use cost" and sized the number for it. That was a
+        // guess. What the runs since showed:
+        //
+        //   fresh boot   load 1.34, free 459 MB   BUILD SUCCESSFUL in 55s    40/40
+        //   under load   load 7.96, free 308 MB   BUILD FAILED in 4m11s      1 failure
+        //
+        // and in a failing run this spec's three cases took 121.3s, 2.4s and 2.4s — so the slow one was starved
+        // rather than doing slow work. The product-side candidates are ruled out: the tag query is indexed
+        // (`SEARCH tags USING INDEX idx_tags_tag`), `substancesWithTag` is that query plus map lookups, and the
+        // catalogue is memoized per process so a warm run re-opens nothing.
+        //
+        // 120 s against a 55 s quiet run is generous. Raising it again would hide a starved emulator instead of
+        // fixing anything, which is why the number stays here.
         compose.waitForIdle()
         compose.waitUntil(timeoutMillis = 120_000) {
             compose.onAllNodesWithText("members", substring = true).fetchSemanticsNodes().isNotEmpty()
@@ -72,8 +80,8 @@ class ClassAndTagBrowseDeviceTest {
     fun aTagDrawsANonZeroCount() {
         compose.setContent { PiruTheme { TagBrowseScreen("phenethylamine", AppNavigator()) } }
 
-        // Settle first, then poll: both screens open the catalogue on a background dispatcher before they
-        // draw, and a bare `waitUntil` on the first node races that read.
+        // Settle first, then poll — same reason and same environment caveat as the first case in this class:
+        // the number is sized for a starved emulator, not for the work.
         compose.waitForIdle()
         compose.waitUntil(timeoutMillis = 120_000) {
             compose.onAllNodesWithText("substances", substring = true).fetchSemanticsNodes().isNotEmpty()
@@ -94,8 +102,8 @@ class ClassAndTagBrowseDeviceTest {
             PiruTheme { TagBrowseScreen("a-tag-nothing-carries", AppNavigator()) }
         }
 
-        // Settle first, then poll: both screens open the catalogue on a background dispatcher before they
-        // draw, and a bare `waitUntil` on the first node races that read.
+        // Settle first, then poll — same reason and same environment caveat as the first case in this class:
+        // the number is sized for a starved emulator, not for the work.
         compose.waitForIdle()
         compose.waitUntil(timeoutMillis = 120_000) {
             compose.onAllNodesWithText("0 substances").fetchSemanticsNodes().isNotEmpty()
