@@ -33,6 +33,8 @@ import glass.kagerou.piru.ui.nav.PushRoute
 import glass.kagerou.piru.ui.theme.PiruTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import androidx.compose.material3.FilterChip
+import glass.kagerou.piru.substance.SubstanceReader
 
 /**
  * One category's members, pushed from the library's category grid.
@@ -51,12 +53,41 @@ fun CategoryBrowseScreen(
     val context = LocalContext.current
     val app = context.applicationContext as PiruApplication
     var substances by remember(category) { mutableStateOf<List<Substance>>(emptyList()) }
+    var families by remember(category) { mutableStateOf<List<SubstanceReader.ClassContext>>(emptyList()) }
     var ready by remember(category) { mutableStateOf(false) }
+
+    // The order, remembered per category: browsing two categories in a row should not reset the choice,
+    // and it is a display preference rather than data, so it does not belong in a store.
+    var order by remember { mutableStateOf(BrowseOrder.POPULARITY) }
 
     LaunchedEffect(category) {
         val catalog = withContext(Dispatchers.Default) { app.catalog() }
         substances = withContext(Dispatchers.Default) { catalog.substancesIn(category) }
+        // The class write-ups whose own category is this one. Read here rather than per-row: it is one
+        // query for the whole screen, and a family card needs the member list to be worth drawing.
+        families = withContext(Dispatchers.Default) {
+            catalog.classContexts().filter { it.category == category && it.siblings.isNotEmpty() }
+        }
         ready = true
+    }
+
+    // The three orders, applied to what the catalogue returned rather than re-queried: the list is already
+    // in hand and sorting it is a comparison per element.
+    val ordered = remember(substances, order) {
+        when (order) {
+            // The catalogue's own order, which is popularity then name. `substancesIn` already did it, so
+            // this is the identity rather than a re-sort that could disagree with it.
+            BrowseOrder.POPULARITY -> substances
+            BrowseOrder.NAME -> substances.sortedBy { it.displayTitle.lowercase() }
+            // Families first, then the rest alphabetically. Deliberately grouped rather than interleaved:
+            // the family cards above already say what the families are, and a reader who opened a family
+            // is looking for its members together.
+            BrowseOrder.FAMILY -> substances.sortedWith(
+                compareBy({ it.classContextSlug == null }, { it.classContextSlug ?: "" }, {
+                    it.displayTitle.lowercase()
+                }),
+            )
+        }
     }
 
     LazyColumn(
@@ -97,7 +128,65 @@ fun CategoryBrowseScreen(
             }
         }
 
-        items(substances, key = { it.id }) { substance ->
+        // The families, before the flat list. A category holds several chemical families and the
+        // catalogue's own write-ups say which is which; a reader scanning for "the arylcyclohexylamines"
+        // should not have to know the names to find them.
+        if (families.isNotEmpty()) {
+            item {
+                Column(
+                    modifier = Modifier.padding(top = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(
+                        stringResource(R.string.shell_library_families),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = PiruTheme.colors.secondaryLabel,
+                    )
+                }
+            }
+            items(families, key = { it.slug }) { family ->
+                PiruCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { navigator.push(PushRoute.DrugClass(family.slug)) },
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        Text(family.title, style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            stringResource(R.string.shell_library_family_members, family.siblings.size),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = PiruTheme.colors.secondaryLabel,
+                        )
+                    }
+                }
+            }
+            item {
+                Text(
+                    stringResource(R.string.shell_library_all_in_category),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = PiruTheme.colors.secondaryLabel,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        }
+
+        if (ready && substances.size > 1) {
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    for (candidate in BrowseOrder.entries) {
+                        FilterChip(
+                            selected = order == candidate,
+                            onClick = { order = candidate },
+                            label = { Text(stringResource(candidate.labelRes)) },
+                        )
+                    }
+                }
+            }
+        }
+
+        items(ordered, key = { it.id }) { substance ->
             PiruCard(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = { navigator.push(PushRoute.Substance(substance.name)) },
@@ -131,4 +220,22 @@ fun CategoryBrowseScreen(
             }
         }
     }
+}
+
+/**
+ * How a category list is ordered.
+ *
+ * Three, and the third is the one this port was missing: `substancesIn` sorts by popularity and then by
+ * name, which puts the long tail in an order the reader cannot predict. Someone who knows the name they
+ * want is scanning, not browsing, and alphabetical is the only order that helps them.
+ */
+enum class BrowseOrder(val labelRes: Int) {
+    /** The catalogue's own order: popularity first, then name. */
+    POPULARITY(R.string.shell_library_order_popularity),
+
+    /** Alphabetical by display title. */
+    NAME(R.string.shell_library_order_name),
+
+    /** Grouped by drug class, then alphabetical within it. */
+    FAMILY(R.string.shell_library_order_family),
 }

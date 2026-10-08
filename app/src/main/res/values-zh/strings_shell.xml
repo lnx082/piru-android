@@ -630,4 +630,10 @@
     <string name="shell_metabolism_potency">效力为母体的 %1$s（依据 %2$s，靶点 %3$s）</string>
     <string name="shell_metabolism_active">有活性</string>
     <string name="shell_metabolism_metabolite_half_life">半衰期 %1$s</string>
+    <string name="shell_library_families">族系</string>
+    <string name="shell_library_family_members">%1$d 个成员</string>
+    <string name="shell_library_all_in_category">这个类别下的全部</string>
+    <string name="shell_library_order_popularity">最常用</string>
+    <string name="shell_library_order_name">按名称</string>
+    <string name="shell_library_order_family">按类别</string>
 </resources>

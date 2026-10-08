@@ -664,4 +664,10 @@
     <string name="shell_metabolism_potency">%1$s the parent’s potency by %2$s at %3$s</string>
     <string name="shell_metabolism_active">active</string>
     <string name="shell_metabolism_metabolite_half_life">half-life %1$s</string>
+    <string name="shell_library_families">Families</string>
+    <string name="shell_library_family_members">%1$d members</string>
+    <string name="shell_library_all_in_category">Everything in this category</string>
+    <string name="shell_library_order_popularity">Most used</string>
+    <string name="shell_library_order_name">A–Z</string>
+    <string name="shell_library_order_family">By class</string>
 </resources>
