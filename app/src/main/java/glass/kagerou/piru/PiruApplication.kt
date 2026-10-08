@@ -41,10 +41,17 @@ import kotlinx.coroutines.sync.withLock
  * it cannot happen in a property initializer — a lazy `val` would run it on
  * whichever thread first touched it, which is the composition thread.
  */
-class PiruApplication : Application() {
+open class PiruApplication : Application() {
 
-    /** The user's own store. Opening it is cheap; Room connects on the first query. */
-    val database: PiruDatabase by lazy { PiruDatabase.open(this) }
+    /**
+     * The user's own store. Opening it is cheap; Room connects on the first query.
+     *
+     * `open` so a test application can hand out an in-memory store. That is the point of
+     * the seam: the JVM screen specs get the real Room, the real DAOs and the real generated
+     * SQL, with a different backing file and nothing else changed — see
+     * `PiruTestApplication`, which is the only override.
+     */
+    open val database: PiruDatabase by lazy { PiruDatabase.open(this) }
 
     private val catalogMutex = Mutex()
     private var catalog: DbSubstanceCatalog? = null
@@ -65,6 +72,11 @@ class PiruApplication : Application() {
      */
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
+    /**
+     * Left `open` for the test application, which must not boot the reminder scheduler — a
+     * Kotlin member is final by default, so an override needs saying, and a screen spec that
+     * started `WorkManager` would fail on start-up rather than on the screen.
+     */
     override fun onCreate() {
         super.onCreate()
 
@@ -136,7 +148,7 @@ class PiruApplication : Application() {
      * suspending and two screens can ask for it at once — the journal and the
      * library both do, on the first frame after launch.
      */
-    suspend fun catalog(): DbSubstanceCatalog = catalogMutex.withLock {
+    open suspend fun catalog(): DbSubstanceCatalog = catalogMutex.withLock {
         catalog ?: run {
             val file: File = SubstanceCatalogInstaller.install(this)
             val db = AndroidSubstanceDb.open(file)
