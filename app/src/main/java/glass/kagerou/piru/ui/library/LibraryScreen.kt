@@ -142,6 +142,12 @@ fun LibraryScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
             )
         } else if (query.isBlank()) {
             CategoryGrid(categories, navigator)
+        } else if (CrisisKeywords.matches(query)) {
+            // Shown **instead of** the results, not above them. Someone who typed "overdose" into the
+            // substance box does not want naloxone's pharmacology, and a panel below a list of compounds
+            // is a panel they will not reach. The check runs before the empty-results branch too, so
+            // "bad trip" gets help rather than "No matches for bad trip".
+            CrisisPanel(modifier = Modifier.padding(top = 16.dp))
         } else if (results.isEmpty()) {
             Text(
                 stringResource(R.string.shell_library_no_matches, query),

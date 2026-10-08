@@ -642,4 +642,19 @@
     <string name="shell_inventory_amount">%1$s %2$s</string>
     <string name="shell_also_active_note">From your own log, over each substance’s longest recorded duration. It says what has not cleared yet, not what is still being felt.</string>
     <string name="shell_no_dose_data">The catalogue carries no dose data for this substance. It is kept for name resolution, so that logging or importing its name does not lose the entry.</string>
+    <string name="shell_descriptor_primary_targets">Targets</string>
+    <string name="shell_crisis_breathe">Take a breath.</string>
+    <string name="shell_crisis_alone">You don’t have to do this alone. Help is one tap away.</string>
+    <string name="shell_crisis_right_now">If you need help right now:</string>
+    <string name="shell_crisis_emergency">Emergency services</string>
+    <string name="shell_crisis_emergency_detail">Call 911, or your local emergency number</string>
+    <string name="shell_crisis_poison">Poison control</string>
+    <string name="shell_crisis_poison_detail">1-800-222-1222</string>
+    <string name="shell_crisis_988">988 Suicide &amp; Crisis Lifeline</string>
+    <string name="shell_crisis_988_detail">Call or text 988</string>
+    <string name="shell_crisis_text">Crisis Text Line</string>
+    <string name="shell_crisis_text_detail">Text HOME to 741741</string>
+    <string name="shell_crisis_samhsa">SAMHSA helpline</string>
+    <string name="shell_crisis_samhsa_detail">1-800-662-4357 · free, confidential, 24/7</string>
+    <string name="shell_crisis_us_only">These are United States numbers. Elsewhere, search for your local emergency number or poison centre.</string>
 </resources>

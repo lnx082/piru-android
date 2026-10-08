@@ -49,6 +49,7 @@ import androidx.compose.foundation.layout.FlowRow
 import glass.kagerou.piru.data.entity.InventoryItemEntity
 import glass.kagerou.piru.engine.SubstanceCatalog
 import java.time.Instant
+import androidx.compose.foundation.layout.width
 
 /**
  * A substance's full record.
@@ -410,6 +411,37 @@ private fun MechanismCard(mechanism: MechanismOfAction) {
             SectionTitle(stringResource(R.string.shell_section_mechanism))
             if (mechanism.summary.isNotEmpty()) {
                 Text(mechanism.summary, style = MaterialTheme.typography.bodyMedium)
+            }
+            // The prose detail, which had no reader: the card drew the one-line summary and then the
+            // binding table, so the catalogue's own explanation of *how* was dropped. It is the same
+            // field upstream's card body carries.
+            if (mechanism.description.isNotEmpty() && mechanism.description != mechanism.summary) {
+                Text(
+                    mechanism.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = PiruTheme.colors.secondaryLabel,
+                )
+            }
+            // The targets, named above the table. `effectivePrimaryTargets` falls back to the bindings'
+            // own targets when the curated list is empty, which is upstream's invariant, so a substance
+            // with bindings always gets a target line rather than an empty one.
+            val targets = mechanism.effectivePrimaryTargets
+            if (targets.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(
+                        stringResource(R.string.shell_descriptor_primary_targets),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = PiruTheme.colors.secondaryLabel,
+                        modifier = Modifier.width(112.dp),
+                    )
+                    Text(
+                        targets.joinToString(", "),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
             }
             for (binding in mechanism.bindings) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

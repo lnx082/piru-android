@@ -608,4 +608,19 @@
     <string name="shell_inventory_amount">%1$s %2$s</string>
     <string name="shell_also_active_note">来自你自己的记录，按各物质已记录的最长时长计算。它说明的是还没代谢完，不是现在还能感觉到。</string>
     <string name="shell_no_dose_data">目录没有收录这个物质的剂量数据。保留它是为了名称解析，这样记录或导入它的名字时不会丢掉这一条。</string>
+    <string name="shell_descriptor_primary_targets">靶点</string>
+    <string name="shell_crisis_breathe">先深呼吸。</string>
+    <string name="shell_crisis_alone">你不必一个人扛。求助只有一次点击的距离。</string>
+    <string name="shell_crisis_right_now">如果你现在就需要帮助：</string>
+    <string name="shell_crisis_emergency">急救</string>
+    <string name="shell_crisis_emergency_detail">拨打 911，或你当地的急救电话</string>
+    <string name="shell_crisis_poison">中毒控制中心</string>
+    <string name="shell_crisis_poison_detail">1-800-222-1222</string>
+    <string name="shell_crisis_988">988 自杀与危机生命线</string>
+    <string name="shell_crisis_988_detail">拨打或发送短信至 988</string>
+    <string name="shell_crisis_text">危机短信热线</string>
+    <string name="shell_crisis_text_detail">发送 HOME 至 741741</string>
+    <string name="shell_crisis_samhsa">SAMHSA 求助热线</string>
+    <string name="shell_crisis_samhsa_detail">1-800-662-4357 · 免费、保密、全天候</string>
+    <string name="shell_crisis_us_only">以上是美国号码。在其他地区，请搜索你当地的急救电话或中毒控制中心。</string>
 </resources>
