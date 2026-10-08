@@ -26,6 +26,8 @@ import glass.kagerou.piru.model.CompoundDisplayClass
 import glass.kagerou.piru.model.SubstanceCategory
 import glass.kagerou.piru.model.EffectGroup
 import glass.kagerou.piru.model.SubjectiveEffect
+import glass.kagerou.piru.engine.BindingHit
+import glass.kagerou.piru.engine.MetabolismHit
 
 /**
  * The bundled catalog, seen through the engine's [SubstanceCatalog] port.
@@ -396,6 +398,30 @@ class DbSubstanceCatalog private constructor(
      */
     fun identityFacets(nameOrAlias: String): SubstanceIdentityIndex.Facets =
         index.facets(nameOrAlias)
+
+    /**
+     * The curated receptor-affinity rows for a substance: target, action, and whichever of Ki / EC50 /
+     * IC50 its source measured, with the assay species and the citation.
+     *
+     * Distinct from `Substance.mechanismOfAction.bindings`, which is the *summary* — a target, an action
+     * and a coarse affinity tier. These are the measurements, and they had no reader: the only thing
+     * that asked was `pharmacologyParameters`, which folds them into the engine's modelling inputs.
+     */
+    fun bindingRows(nameOrAlias: String): List<BindingHit> {
+        val id = index.resolve(nameOrAlias) ?: return emptyList()
+        return reader.bindingRows(id)
+    }
+
+    /**
+     * How a substance is cleared: each enzyme's share, and what becomes of the parent.
+     *
+     * Read for the engine's metabolite model and by nothing else, so the one table that answers "what
+     * does my body turn this into" had no screen.
+     */
+    fun metabolismRows(nameOrAlias: String): List<MetabolismHit> {
+        val id = index.resolve(nameOrAlias) ?: return emptyList()
+        return reader.metabolismRows(id)
+    }
 
     /**
      * The sources this catalogue was built from, in the order it ranks them.

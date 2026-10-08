@@ -623,4 +623,11 @@
     <string name="shell_crisis_samhsa">SAMHSA 求助热线</string>
     <string name="shell_crisis_samhsa_detail">1-800-662-4357 · 免费、保密、全天候</string>
     <string name="shell_crisis_us_only">以上是美国号码。在其他地区，请搜索你当地的急救电话或中毒控制中心。</string>
+    <string name="shell_section_receptor_data">受体数据</string>
+    <string name="shell_section_metabolism">代谢</string>
+    <string name="shell_metabolism_share">占清除的 %1$s</string>
+    <string name="shell_metabolism_becomes">生成 %1$s</string>
+    <string name="shell_metabolism_potency">效力为母体的 %1$s（依据 %2$s，靶点 %3$s）</string>
+    <string name="shell_metabolism_active">有活性</string>
+    <string name="shell_metabolism_metabolite_half_life">半衰期 %1$s</string>
 </resources>

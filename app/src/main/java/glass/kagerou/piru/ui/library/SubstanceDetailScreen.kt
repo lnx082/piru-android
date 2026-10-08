@@ -50,6 +50,8 @@ import glass.kagerou.piru.data.entity.InventoryItemEntity
 import glass.kagerou.piru.engine.SubstanceCatalog
 import java.time.Instant
 import androidx.compose.foundation.layout.width
+import glass.kagerou.piru.engine.BindingHit
+import glass.kagerou.piru.engine.MetabolismHit
 
 /**
  * A substance's full record.
@@ -96,6 +98,17 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
      */
     var activeNow by remember(name) { mutableStateOf<List<String>>(emptyList()) }
 
+    /**
+     * The receptor-affinity measurements and the clearance table.
+     *
+     * Held as the engine's own row types rather than folded onto `Substance`, because `:core:model` cannot
+     * see `:core:engine` — the dependency runs the other way, so the fields would be a cycle. They come
+     * through the catalogue's accessors, which is the pattern `classContexts` and `effectGroups` already
+     * use.
+     */
+    var bindings by remember(name) { mutableStateOf<List<BindingHit>>(emptyList()) }
+    var metabolism by remember(name) { mutableStateOf<List<MetabolismHit>>(emptyList()) }
+
     // The user's answer to "how much detail?", which until now nothing could read back.
     // Composition, not data: the same substance is a short card at the casual tier and a
     // reference page at the curious one, which is the whole point of asking.
@@ -130,6 +143,12 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
         // the window arithmetic — which needs the catalogue, the log and the current time — lives in one
         // place; the card draws a list of names and nothing more.
         activeNow = runCatching { activeSubstanceNames(app, catalog, name) }.getOrDefault(emptyList())
+
+        // The receptor literature and the clearance table. Resolved on the canonical name, because an
+        // alias would miss a join keyed on the substance row.
+        val canonical = catalog.lookup(name)?.name ?: name
+        bindings = runCatching { catalog.bindingRows(canonical) }.getOrDefault(emptyList())
+        metabolism = runCatching { catalog.metabolismRows(canonical) }.getOrDefault(emptyList())
     }
 
     val resolved = substance
@@ -213,6 +232,10 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
             }
 
             item { ReferencesCard(resolved.references) }
+
+            item { BindingTableCard(bindings) }
+
+            item { MetabolismCard(metabolism) }
 
             // The two sections that describe the *user* rather than the compound. Both take a value
             // rather than reading one, so neither card needs the store or the catalogue.

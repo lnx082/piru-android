@@ -23,6 +23,8 @@ import glass.kagerou.piru.model.SubstanceOverview
 import glass.kagerou.piru.model.ToleranceInfo
 import glass.kagerou.piru.model.Citation
 import glass.kagerou.piru.data.entity.InventoryItemEntity
+import glass.kagerou.piru.engine.BindingHit
+import glass.kagerou.piru.engine.MetabolismHit
 
 /**
  * The substance page's own sections, split out of the screen that composes them.
@@ -550,6 +552,165 @@ fun LimitedDataCard() {
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
+    }
+}
+
+/**
+ * The receptor-affinity measurements, one row per assay.
+ *
+ * ## Why this is not the mechanism card
+ * The mechanism card draws `MechanismOfAction.bindings` — the *summary*, which is a target, an action and
+ * a coarse tier like "significant". This draws the measurements those tiers were derived from: the Ki,
+ * EC50 or IC50 in nanomolar, the assay species, and the source. That is the difference between "binds
+ * this receptor" and a number a reader can check.
+ *
+ * ## The three affinities, and why whichever exists is printed
+ * A row carries at most one of Ki (binding), EC50 (activation) or IC50 (inhibition), and they are not
+ * interchangeable — a Ki is an affinity, an EC50 is a potency, and printing one in the other's place
+ * would be a wrong number rather than a missing one. Each is labelled with its own symbol.
+ */
+@Composable
+fun BindingTableCard(bindings: List<BindingHit>) {
+    if (bindings.isEmpty()) return
+    PiruCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SectionTitle(stringResource(R.string.shell_section_receptor_data))
+            for (binding in bindings) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(binding.target, style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            // The action, localised through the same vocabulary the mechanism card uses
+                            // — it is the same engine enum, so the two cards cannot disagree about what
+                            // "reuptakeInhibitor" is called.
+                            binding.action,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = PiruTheme.colors.secondaryLabel,
+                        )
+                    }
+                    Text(
+                        bindingAffinityText(binding),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = PiruTheme.colors.secondaryLabel,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * A binding row's numbers as one line: whichever affinity exists, the species, and the source.
+ *
+ * A row with none of the three affinities still prints its species and source, because the row's existence
+ * is information — the catalogue recorded that this target was measured, even where it did not record
+ * what the measurement was.
+ */
+fun bindingAffinityText(binding: BindingHit): String = listOfNotNull(
+    binding.kiNm?.let { "Ki ${formatNm(it)}" },
+    binding.ec50Nm?.let { "EC50 ${formatNm(it)}" },
+    binding.ic50Nm?.let { "IC50 ${formatNm(it)}" },
+    binding.species?.takeIf { it.isNotBlank() },
+    binding.sourceSlug.takeIf { it.isNotBlank() },
+).joinToString(" · ")
+
+/**
+ * A nanomolar figure.
+ *
+ * Affinities span picomolar to micromolar, so the unit scales with the magnitude: 0.4 nM would print as
+ * "0 nM" at whole numbers, and 12000 nM reads better as "12 µM".
+ */
+fun formatNm(value: Double): String {
+    val safe = value.coerceAtLeast(0.0)
+    return when {
+        safe < 1.0 -> String.format(Locale.ROOT, "%.2f nM", safe)
+        safe < 1000.0 -> String.format(Locale.ROOT, "%.0f nM", safe)
+        else -> String.format(Locale.ROOT, "%.1f µM", safe / 1000.0)
+    }
+}
+
+/**
+ * How the substance is cleared.
+ *
+ * ## Why the enzyme share is the interesting column
+ * `fractionOfClearancePct` is the enzyme's share of the *parent's* clearance — not how much metabolite
+ * appears, which is a different number and the field's own doc says so. It is what tells a reader whether
+ * an interaction matters: an enzyme carrying 5% of clearance is not where a competitive inhibitor will
+ * change anything, and one carrying 80% is.
+ *
+ * ## Why the metabolite's potency carries its basis
+ * `metabolitePotencyVsParentPct` has been measured two ways — clinical potency and receptor affinity — and
+ * the field's doc gives the case where they diverge wildly: tramadol to M1 reads 20000% from a "~200× MOR
+ * affinity" source. Printing the percentage without the basis would present that as a clinical figure. So
+ * the basis and its target are printed beside it, and a row with no basis prints no percentage.
+ */
+@Composable
+fun MetabolismCard(metabolism: List<MetabolismHit>) {
+    if (metabolism.isEmpty()) return
+    PiruCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SectionTitle(stringResource(R.string.shell_section_metabolism))
+            for (hit in metabolism) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(hit.enzyme, style = MaterialTheme.typography.bodyMedium)
+                        hit.fractionOfClearancePct?.let {
+                            Text(
+                                stringResource(R.string.shell_metabolism_share, formatPercent(it)),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = PiruTheme.colors.secondaryLabel,
+                            )
+                        }
+                    }
+                    hit.metaboliteName?.takeIf { it.isNotBlank() }?.let { metabolite ->
+                        val potency = hit.metabolitePotencyVsParentPct
+                        val basis = hit.metabolitePotencyBasis
+                        // The basis is what licenses the percentage, so both or neither. Bound to a local
+                        // because a cross-module property cannot be smart-cast in place.
+                        val potencyText = if (potency != null && basis != null) {
+                            stringResource(
+                                R.string.shell_metabolism_potency,
+                                formatPercent(potency),
+                                basis.wireValue,
+                                hit.metabolitePotencyTarget.orEmpty(),
+                            )
+                        } else {
+                            null
+                        }
+                        Text(
+                            listOfNotNull(
+                                stringResource(R.string.shell_metabolism_becomes, metabolite),
+                                potencyText,
+                                hit.metaboliteActive?.takeIf { it }?.let {
+                                    stringResource(R.string.shell_metabolism_active)
+                                },
+                                hit.metaboliteHalfLifeMinutes?.let {
+                                    stringResource(R.string.shell_metabolism_metabolite_half_life, formatHalfLife(it))
+                                },
+                            ).joinToString(" · "),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = PiruTheme.colors.secondaryLabel,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** A percentage without a trailing `.0`, which the columns carry as `Doubles`. */
+fun formatPercent(value: Double): String {
+    val rounded = Math.round(value * 10.0) / 10.0
+    return if (rounded == rounded.toLong().toDouble()) {
+        "${rounded.toLong()}%"
+    } else {
+        String.format(Locale.ROOT, "%.1f%%", rounded)
     }
 }
 
