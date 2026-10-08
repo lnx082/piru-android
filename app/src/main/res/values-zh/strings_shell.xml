@@ -820,4 +820,17 @@
     <string name="launch_discord_join">打开 Discord</string>
     <string name="shell_close">关闭</string>
     <string name="shell_notif_type_routine">服药提醒</string>
+    <string name="shell_custom_substances_title">你的物质</string>
+    <string name="shell_custom_substances_intro">你自创的物质，以及你对参考资料中已有物质的自定义修改。名称与目录中某物质一致时成为对它的修改；其他名称则新建一种。</string>
+    <string name="shell_custom_substances_add">添加物质</string>
+    <string name="shell_custom_substances_empty">还没有你自己的物质。</string>
+    <string name="shell_custom_substances_logged_as">记录名 %1</string>
+    <string name="shell_custom_substances_editor">物质</string>
+    <string name="shell_custom_substances_name">名称</string>
+    <string name="shell_custom_substances_name_note">你记录时使用的名字，也是与参考资料匹配的依据。它是身份标识，之后再改会打断已有的剂量记录。</string>
+    <string name="shell_custom_substances_label">显示为</string>
+    <string name="shell_custom_substances_label_note">可选。该物质的个人标签。日志仍保留上面的名称，因此已有记录不受影响。</string>
+    <string name="shell_custom_substances_half_life">半衰期（分钟）</string>
+    <string name="shell_custom_substances_half_life_note">可选。覆盖参考值；对于参考中没有该值的物质，这会让它有衰减曲线。</string>
+    <string name="shell_custom_substances_notes">备注</string>
 </resources>

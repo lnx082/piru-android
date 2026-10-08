@@ -88,6 +88,18 @@ data class CustomSubstanceRecordEntity(
     /** The stored category, or null when the value is one this build predates. */
     val category: SubstanceCategory? get() = SubstanceCategory.fromWire(categoryRaw)
 
+    /**
+     * The entry's default route, typed.
+     *
+     * The counterpart of [category], and it exists for the same reason: the overlay has to know **which** route a
+     * personal ladder belongs to, and reading the raw wire string at that point would spread the parsing.
+     *
+     * An unrecognised value becomes `OTHER` rather than failing, which is the parser's own rule — the route
+     * vocabulary is open-ended and a new spelling must not drop a substance.
+     */
+    val defaultRoute: glass.kagerou.piru.model.RouteOfAdministration
+        get() = glass.kagerou.piru.model.RouteOfAdministration.from(defaultRouteRaw)
+
     /** The stored dose ladder, or null when absent or unreadable. */
     val doses: DoseRange? get() = decode(dosesJson)
 

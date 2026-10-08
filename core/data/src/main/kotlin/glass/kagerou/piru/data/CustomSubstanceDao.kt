@@ -51,6 +51,16 @@ interface CustomSubstanceDao {
     @Upsert
     suspend fun upsert(row: CustomSubstanceRecordEntity)
 
+    /**
+     * Removes one entry.
+     *
+     * Added because the screen that edits entries had only [deleteAll] to work with, and removing one row by
+     * re-inserting the others **loses their `row_id`s** — they come back as new rows — as well as writing the whole
+     * table to delete a single entry.
+     */
+    @Query("DELETE FROM custom_substances WHERE id = :id")
+    suspend fun deleteById(id: UUID)
+
     @Query("DELETE FROM custom_substances")
     suspend fun deleteAll()
 }

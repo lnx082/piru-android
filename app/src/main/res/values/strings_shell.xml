@@ -854,4 +854,17 @@
     <string name="launch_discord_join">Open Discord</string>
     <string name="shell_close">Close</string>
     <string name="shell_notif_type_routine">Med reminders</string>
+    <string name="shell_custom_substances_title">Your substances</string>
+    <string name="shell_custom_substances_intro">Substances you invented, and your own edits to ones the reference already has. A name matching a catalogue substance becomes an edit of it; any other name is a new one.</string>
+    <string name="shell_custom_substances_add">Add a substance</string>
+    <string name="shell_custom_substances_empty">Nothing of your own yet.</string>
+    <string name="shell_custom_substances_logged_as">logged as %1</string>
+    <string name="shell_custom_substances_editor">Substance</string>
+    <string name="shell_custom_substances_name">Name</string>
+    <string name="shell_custom_substances_name_note">What you log it under, and how it matches the reference. This is the identity and cannot be changed later without breaking your dose history.</string>
+    <string name="shell_custom_substances_label">Show it as</string>
+    <string name="shell_custom_substances_label_note">Optional. A personal label for this substance. Your log keeps the name above, so existing doses are unaffected.</string>
+    <string name="shell_custom_substances_half_life">Half-life (minutes)</string>
+    <string name="shell_custom_substances_half_life_note">Optional. Overrides the reference value, and gives a substance the reference has none for a decay curve.</string>
+    <string name="shell_custom_substances_notes">Notes</string>
 </resources>

@@ -188,6 +188,14 @@ sealed interface PushRoute {
     @Serializable
     data object About : PushRoute
 
+    /**
+     * The user's own substances, and their edits to the catalogue's.
+     *
+     * A destination rather than an inline list, because it is a section with an editor behind every row.
+     */
+    @Serializable
+    data object CustomSubstances : PushRoute
+
     /** Which tabs the bottom bar shows, their order, and whether they carry labels. */
     @Serializable
     data object TabSettings : PushRoute
@@ -335,6 +343,7 @@ fun PushRoute.key(): String = when (this) {
     is PushRoute.DrugClass -> "drug-class:$className"
         PushRoute.About -> "about"
         PushRoute.TabSettings -> "tabs"
+        PushRoute.CustomSubstances -> "custom-substances"
     is PushRoute.Effects -> "effects:$name"
     PushRoute.SubstanceDatabase -> "substance-database"
     PushRoute.AdvancedSearch -> "advanced-search"
