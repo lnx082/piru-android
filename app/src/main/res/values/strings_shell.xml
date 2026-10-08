@@ -245,6 +245,12 @@
     <string name="shell_settings_title">Settings</string>
     <string name="shell_settings_appearance">Appearance</string>
     <string name="shell_settings_appearance_note">Piru has a light and a dark side, and follows your phone\'s setting. Alternate skins, and a mode override for choosing light or dark regardless of the phone, arrive with the appearance screen.</string>
+    <string name="shell_settings_journal">Journal</string>
+    <string name="shell_settings_day_boundary">Day starts at</string>
+    <string name="shell_settings_day_boundary_value">%1$d:00</string>
+    <string name="shell_settings_day_boundary_footer">A session that runs past midnight belongs to the day it started. This is the hour that boundary falls on.</string>
+    <string name="shell_settings_stack_redoses">Stack repeated doses</string>
+    <string name="shell_settings_stack_redoses_detail">Draw one curve for a substance taken more than once, rather than one per dose.</string>
     <string name="shell_settings_detail_level">Detail level</string>
     <string name="shell_settings_detail_casual">Casual</string>
     <string name="shell_settings_detail_casual_note">The short version: what it is and what it does.</string>

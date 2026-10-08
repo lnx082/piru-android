@@ -77,7 +77,9 @@ internal object ReportPdfExport {
 
     /** The resolved snapshot, with every store lookup already made. */
     private suspend fun snapshot(
-        context: Context,
+        // Not named `context`: inside a lambda argument that name resolves the Kotlin DSL
+        // function rather than this parameter, which is a confusing way to fail.
+        androidContext: Context,
         app: PiruApplication,
         entries: List<DoseEntryEntity>,
         dailyDoseItems: List<DailyDoseItemEntity>,
@@ -111,7 +113,7 @@ internal object ReportPdfExport {
             )
         }
 
-        val summary = buildSummary(app, inWindow, catalog, start, end)
+        val summary = buildSummary(androidContext, app, inWindow, catalog, start, end)
         val interactions = compressInteractions(interactionRows(inWindow, catalog))
         val substanceStats = substanceSummary(entrySnapshots)
 
@@ -132,7 +134,7 @@ internal object ReportPdfExport {
                     interactions = interactions,
                     // The unit's name is copy, so it is resolved here where a
                     // `Context` exists rather than reached for from the renderer.
-                    unitLabel = UnitLabel { res -> context.getString(res) },
+                    unitLabel = UnitLabel { res -> androidContext.getString(res) },
                 )
             }.orEmpty(),
             interactions = interactions,
@@ -143,7 +145,7 @@ internal object ReportPdfExport {
             end = end,
             generatedAt = now,
             zone = zone,
-            copy = copy(context),
+            copy = copy(androidContext),
         )
     }
 
@@ -158,6 +160,7 @@ internal object ReportPdfExport {
      * clinician than the app shows the user.
      */
     private suspend fun buildSummary(
+        androidContext: Context,
         app: PiruApplication,
         entries: List<DoseEntryEntity>,
         catalog: DbSubstanceCatalog?,
@@ -180,7 +183,13 @@ internal object ReportPdfExport {
             doses = doses,
             start = start,
             end = end,
-            calendar = InsightsCalendar.ambient(null),
+            // The user's own day boundary, not the engine default. This passed `null`, which
+            // meant a report's session days were computed from 4 AM whatever the setting said —
+            // so a reader who set their day to run at 2 AM would get days the app itself does
+            // not use, in the one artefact they hand to somebody else.
+            calendar = InsightsCalendar.ambient(
+                glass.kagerou.piru.data.AppSettingsStore(androidContext).storedDayBoundaryHour(),
+            ),
         )
     }
 

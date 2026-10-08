@@ -42,6 +42,7 @@ import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.theme.PiruTheme
 import java.time.Instant
+import glass.kagerou.piru.data.AppSettingsStore
 
 /**
  * The record-and-model view: days used against days off, cumulative exposure in
@@ -76,7 +77,12 @@ fun PatternsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     var loaded by remember { mutableStateOf(false) }
     var failure by remember { mutableStateOf<String?>(null) }
 
-    val calendar = remember { InsightsCalendar.ambient(null) }
+    val calendar = remember {
+        // The user's own day boundary. This passed `null`, which meant these screens
+        // computed every session day from 4 AM whatever the setting said — so even a
+        // written preference would not have reached them.
+        InsightsCalendar.ambient(AppSettingsStore(context).storedDayBoundaryHour())
+    }
 
     LaunchedEffect(navigator.dataVersion, range) {
         loaded = false

@@ -44,6 +44,7 @@ import java.time.Duration
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.UUID
+import glass.kagerou.piru.data.AppSettingsStore
 
 /**
  * A session: its span, its curves, and the doses inside it.
@@ -66,6 +67,12 @@ import java.util.UUID
 fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val app = context.applicationContext as PiruApplication
+
+    // The journal preference, read once. This screen and the day view draw with the same
+    // stacking rule, and this used to be a literal `true` here while the setting existed and
+    // wrote to nothing that read it — so the preference reached one graph and not the other.
+    val stackRedoses = remember { AppSettingsStore(context).stackRedoses() }
+
     var session by remember(sessionId) { mutableStateOf<SessionEntity?>(null) }
     var doses by remember(sessionId) { mutableStateOf<List<DoseEntryEntity>>(emptyList()) }
     var states by remember(sessionId) { mutableStateOf<List<ActiveSubstanceState>>(emptyList()) }
@@ -123,8 +130,10 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
                             currentTime = loaded.lastDoseDate?.toInstant()
                                 ?: loaded.startDate.toInstant(),
                             // The session graph keeps distinct routes separate and
-                            // merges redoses —the same rule the day view uses.
-                            stackRedoses = true,
+                            // merges redoses — the same rule the day view uses, and now the
+                            // same *setting*: this was hardcoded `true`, so the journal
+                            // preference reached the day view and not this one.
+                            stackRedoses = stackRedoses,
                             dayBounded = false,
                             // The only graph that carries the cardio lane. The day
                             // view shows today's doses, and a session is the unit a

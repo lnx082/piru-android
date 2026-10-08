@@ -36,6 +36,9 @@ import androidx.compose.ui.semantics.Role
 import glass.kagerou.piru.PiruApplication
 import glass.kagerou.piru.data.DisclosureTier
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material3.OutlinedButton
+import glass.kagerou.piru.data.AppSettingsStore
 
 /**
  * Settings.
@@ -60,6 +63,19 @@ import kotlinx.coroutines.launch
  * search for a drug they have never taken — which is not necessarily a screen
  * they arrived at through Settings.
  */
+/** The bounds the engine's own `SessionDay.boundaryHour` clamps to. */
+private const val MIN_DAY_BOUNDARY_HOUR = 0
+private const val MAX_DAY_BOUNDARY_HOUR = 12
+
+/** A small square button for a bounded integer. Text rather than an icon: the core
+ * icon set has no minus, and a `+`/`-` pair reads the same in every language. */
+@Composable
+private fun StepperButton(label: String, enabled: Boolean, onClick: () -> Unit) {
+    OutlinedButton(onClick = onClick, enabled = enabled, contentPadding = PaddingValues(0.dp)) {
+        Text(label, style = MaterialTheme.typography.titleMedium)
+    }
+}
+
 @Composable
 fun SettingsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -195,6 +211,90 @@ fun SettingsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                             scope.launch { app.setUsesEnglishNames(value) }
                         },
                     )
+                }
+            }
+        }
+
+        // Journal preferences.
+        //
+        // The day boundary is the one the audit named: `SessionDay.DAY_BOUNDARY_HOUR_KEY` was read
+        // by one screen and written by nothing, so it was permanently the engine's 4 AM — and
+        // three other calendar call sites did not even read it. It needed a writer before it could
+        // mean anything, and this is it. Upstream's control is a 0…12 stepper in
+        // `JournalSettingsView`.
+        item {
+            val context = LocalContext.current
+            val settings = remember { AppSettingsStore(context) }
+            var boundary by remember { mutableStateOf(settings.dayBoundaryHour()) }
+            var stackRedoses by remember { mutableStateOf(settings.stackRedoses()) }
+
+            PiruCard(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        stringResource(R.string.shell_settings_journal),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(
+                        stringResource(R.string.shell_settings_day_boundary),
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Text(
+                            stringResource(R.string.shell_settings_day_boundary_value, boundary),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = PiruTheme.colors.secondaryLabel,
+                            modifier = Modifier.weight(1f),
+                        )
+                        StepperButton(
+                            label = "\u2212",
+                            enabled = boundary > MIN_DAY_BOUNDARY_HOUR,
+                            onClick = {
+                                boundary -= 1
+                                settings.setDayBoundaryHour(boundary)
+                            },
+                        )
+                        StepperButton(
+                            label = "+",
+                            enabled = boundary < MAX_DAY_BOUNDARY_HOUR,
+                            onClick = {
+                                boundary += 1
+                                settings.setDayBoundaryHour(boundary)
+                            },
+                        )
+                    }
+                    Text(
+                        stringResource(R.string.shell_settings_day_boundary_footer),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = PiruTheme.colors.secondaryLabel,
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                stringResource(R.string.shell_settings_stack_redoses),
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                            Text(
+                                stringResource(R.string.shell_settings_stack_redoses_detail),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = PiruTheme.colors.secondaryLabel,
+                            )
+                        }
+                        Switch(
+                            checked = stackRedoses,
+                            onCheckedChange = { value ->
+                                stackRedoses = value
+                                settings.setStackRedoses(value)
+                            },
+                        )
+                    }
                 }
             }
         }

@@ -41,6 +41,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import glass.kagerou.piru.data.AppSettingsStore
 
 /**
  * The journal's root: the day's curves, then the day's doses.
@@ -60,6 +61,9 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun JournalScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     val context = LocalContext.current
+    // The journal preference. Read here rather than defaulted, so the setting reaches the
+    // graph it names.
+    val stackRedoses = remember { AppSettingsStore(context).stackRedoses() }
     val app = context.applicationContext as PiruApplication
 
     var entries by remember { mutableStateOf<List<DoseEntryEntity>>(emptyList()) }
@@ -208,6 +212,11 @@ fun JournalScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                             states = states,
                             markers = markers.filter { it.timestamp in dayStart..dayEnd },
                             currentTime = Instant.now(),
+                            // The journal preference. This took the default `true` before, which
+                            // happened to match the setting's own default — so the switch worked
+                            // only in the direction of turning stacking *off*, and only on the
+                            // session screen, which read it.
+                            stackRedoses = stackRedoses,
                         )
                     }
                 }

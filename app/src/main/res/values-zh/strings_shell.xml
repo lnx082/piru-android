@@ -218,6 +218,12 @@
     <string name="shell_settings_title">设置</string>
     <string name="shell_settings_appearance">外观</string>
     <string name="shell_settings_appearance_note">Piru 有明亮与深色两面，并跟随手机的设置。其他皮肤，以及在手机上强制选择明亮或深色的模式开关，会随外观界面一起到来。</string>
+    <string name="shell_settings_journal">日记</string>
+    <string name="shell_settings_day_boundary">一天的起点</string>
+    <string name="shell_settings_day_boundary_value">%1$d:00</string>
+    <string name="shell_settings_day_boundary_footer">跨过午夜的一次会话属于它开始的那一天。这里设置这条分界线落在几点。</string>
+    <string name="shell_settings_stack_redoses">合并重复服药</string>
+    <string name="shell_settings_stack_redoses_detail">同一物质服用了多次时只画一条曲线，而不是每次一条。</string>
     <string name="shell_settings_detail_level">详情层级</string>
     <string name="shell_settings_detail_casual">简略</string>
     <string name="shell_settings_detail_casual_note">只讲简要版本：它是什么、有什么作用。</string>

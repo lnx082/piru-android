@@ -148,6 +148,14 @@ object DataExportImport {
         val medsAdded: Int = 0,
         val favoritesAdded: Int = 0,
         val unsupported: List<UnsupportedSection> = emptyList(),
+        /**
+         * The preferences the file carried, for the app to apply.
+         *
+         * Returned rather than written, because this module cannot reach the preferences: they are
+         * a `SharedPreferences` file and its writer lives in the app. Null when the file had no
+         * `settings` section at all, which is not the same as a section whose keys are all unset.
+         */
+        val settings: PiruSettingsData? = null,
     )
 
     // MARK: - Naming and identity
@@ -310,9 +318,20 @@ object DataExportImport {
         now: Instant = Instant.now(),
         zone: ZoneId = ZoneId.systemDefault(),
         dayBoundaryHour: Int = SessionDay.DEFAULT_BOUNDARY_HOUR,
+    /**
+     * The preferences section, or null to omit it.
+     *
+     * A parameter rather than a read, because this module has no `Context` — the preferences live
+     * in `SharedPreferences`, which is the app's. Null omits the section entirely, which is what
+     * the export did unconditionally before the section was modelled.
+     */
+    settings: PiruSettingsData? = null,
     ): String = when (format) {
         ExportFormat.PIRU -> FoundationJSON.write(
-            wireJson.encodeToJsonElement(PiruFile.serializer(), makePiruFile(db, appVersion, now)),
+            wireJson.encodeToJsonElement(
+                PiruFile.serializer(),
+                makePiruFile(db, appVersion, now, settings),
+            ),
         )
         ExportFormat.PSY_LOG -> FoundationJSON.write(makePsyLogFile(db, zone, dayBoundaryHour))
     }
@@ -439,6 +458,7 @@ object DataExportImport {
         db: PiruDatabase,
         appVersion: String,
         now: Instant,
+        settings: PiruSettingsData? = null,
     ): PiruFile {
         val entries = db.doseEntryDao().all()
         val sessions = db.sessionDao().all()
@@ -624,7 +644,7 @@ object DataExportImport {
             routineOccurrences = routineOccurrences,
             profile = profile,
             notificationPreferences = preferences,
-            settings = null,
+            settings = settings,
         )
     }
 

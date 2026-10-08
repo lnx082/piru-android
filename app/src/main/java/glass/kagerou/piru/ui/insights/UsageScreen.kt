@@ -79,6 +79,7 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import glass.kagerou.piru.data.AppSettingsStore
 
 /**
  * What the log looks like over time.
@@ -133,17 +134,11 @@ fun UsageScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     var failure by remember { mutableStateOf<String?>(null) }
 
     val calendar = remember {
-        // The stored day-boundary hour lives in preferences under the key the
-        // engine names, and `InsightsCalendar.ambient` validates it. Nothing
-        // writes it yet — the settings screen has not landed — so this reads
-        // whatever is there and falls back to 4 AM.
-        val prefs = context.getSharedPreferences("piru_settings", android.content.Context.MODE_PRIVATE)
-        val stored = if (prefs.contains(SessionDay.DAY_BOUNDARY_HOUR_KEY)) {
-            prefs.getInt(SessionDay.DAY_BOUNDARY_HOUR_KEY, SessionDay.DEFAULT_BOUNDARY_HOUR)
-        } else {
-            null
-        }
-        InsightsCalendar.ambient(stored)
+        // Through the store, which owns the null-versus-default distinction. This used to
+        // re-derive it here from a `contains` check, with a comment explaining that "nothing
+        // writes it yet" — which stayed true because nothing did: there was no writer, no
+        // export and no setting. `AppSettingsStore` is the writer.
+        InsightsCalendar.ambient(AppSettingsStore(context).storedDayBoundaryHour())
     }
 
     LaunchedEffect(navigator.dataVersion) {

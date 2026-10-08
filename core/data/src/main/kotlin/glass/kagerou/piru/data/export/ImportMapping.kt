@@ -265,6 +265,9 @@ internal object NativeImport {
             medsAdded = medsAdded,
             favoritesAdded = favoritesAdded,
             unsupported = unsupportedSections(file),
+            // Handed back rather than applied: the preferences are a `SharedPreferences` file
+            // and this module has no `Context`. See `ImportReport.settings`.
+            settings = file.settings,
         )
     }
 
@@ -592,11 +595,6 @@ internal object NativeImport {
             }
             file.drinkPresets?.takeIf { it.isNotEmpty() }?.let {
                 add(DataExportImport.UnsupportedSection("drinkPresets", it.size))
-            }
-            if (file.settings != null) {
-                // A section rather than a list of rows: it is one blob of app
-                // preferences, and the count is meaningless.
-                add(DataExportImport.UnsupportedSection("settings", 0))
             }
         }
 

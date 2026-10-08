@@ -45,6 +45,7 @@ import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
+import glass.kagerou.piru.data.AppSettingsStore
 
 /**
  * What the "did it work?" answers line up with.
@@ -87,7 +88,12 @@ fun FeltPatternsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     var loaded by remember { mutableStateOf(false) }
     var failure by remember { mutableStateOf<String?>(null) }
 
-    val calendar = remember { InsightsCalendar.ambient(null) }
+    val calendar = remember {
+        // The user's own day boundary. This passed `null`, which meant these screens
+        // computed every session day from 4 AM whatever the setting said — so even a
+        // written preference would not have reached them.
+        InsightsCalendar.ambient(AppSettingsStore(context).storedDayBoundaryHour())
+    }
 
     LaunchedEffect(navigator.dataVersion) {
         loaded = false

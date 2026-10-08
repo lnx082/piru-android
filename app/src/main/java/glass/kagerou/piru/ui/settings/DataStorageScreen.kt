@@ -57,6 +57,7 @@ import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import glass.kagerou.piru.data.AppSettingsStore
 
 /**
  * Everything about the user's data: what is on this device, export and import,
@@ -303,6 +304,10 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
                     db = app.database,
                     catalog = runCatching { app.catalog() }.getOrNull(),
                 )
+                // The preferences the file carried. Applied before the stores refresh, so
+                // the journal that redraws reads the restored day boundary rather than the
+                // previous one — otherwise the first frame after a restore shows old days.
+                SettingsSection.apply(report.settings, AppSettingsStore(context))
                 app.refreshLiveStores()
                 onChanged()
                 reload++
@@ -402,6 +407,9 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
                                         ExportFormat.PIRU,
                                         app.database,
                                         appVersion(),
+                                        settings = SettingsSection.read(
+                                            AppSettingsStore(context),
+                                        ),
                                     )
                                 }
                             }.getOrNull()
@@ -476,6 +484,10 @@ fun DataStorageScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {})
                                 ExportFormat.PIRU,
                                 app.database,
                                 appVersion(),
+                                // The backup carries the preferences too. A restore that
+                                // brought back every dose and lost the day boundary is
+                                // the same bug in a different wrapper.
+                                settings = SettingsSection.read(AppSettingsStore(context)),
                             ).toByteArray(Charsets.UTF_8)
                             BackupCrypto.encrypt(plaintext, passphrase, appVersion())
                         }
@@ -1139,7 +1151,14 @@ private fun appVersion(): String = "Piru ${BuildConfig.VERSION_NAME} (${BuildCon
 /** A snapshot of the store as it stands, returning the file it landed in. */
 private suspend fun snapshotNow(app: PiruApplication, reason: String): File? {
     val text = runCatching {
-        DataExportImport.exportJSON(ExportFormat.PIRU, app.database, appVersion())
+        DataExportImport.exportJSON(
+            ExportFormat.PIRU,
+            app.database,
+            appVersion(),
+            // The store's own context: this function is called from a worker path with no
+            // composable above it, so it takes the context from the application it was given.
+            settings = SettingsSection.read(AppSettingsStore(app.applicationContext)),
+        )
     }.getOrNull() ?: return null
     return StoreRecovery.forContext(app.applicationContext).snapshotStore(reason, text)
 }

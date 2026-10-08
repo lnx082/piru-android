@@ -83,15 +83,18 @@ data class PiruFile(
     val profile: PiruProfileData? = null,
     val notificationPreferences: PiruNotificationPreferencesData? = null,
     /**
-     * App preferences that live outside the store — skins, dock, tab layout,
-     * journal grouping and the like.
+     * App preferences that live outside the store — the day boundary, the redose-stacking
+     * toggle, and upstream's other `@AppStorage` keys.
      *
-     * Deliberately an opaque [JsonElement]: none of the keys upstream exports
-     * exist in this build (there are no skins, no dock and no tab layout here),
-     * so there is nothing to read them into. Keeping the element means a file
-     * carrying the section still imports rather than failing on an unknown shape.
+     * ## This used to be an opaque element that nothing wrote and the import refused
+     * The reasoning was that none of upstream's keys exist in this build. Two of them did — the
+     * day boundary and `stackRedoses` — and the cost was that a restore from iOS left the day
+     * boundary at the engine's 4 AM for good, while this build's own exports could not carry
+     * either. It is a modelled section now, and it writes **only** the keys this build carries,
+     * which is the same semantic upstream gives an absent key: something the exporting build did
+     * not know, which an import leaves alone.
      */
-    val settings: JsonElement? = null,
+    val settings: PiruSettingsData? = null,
 )
 
 @Serializable
