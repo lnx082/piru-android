@@ -76,6 +76,9 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.launch
 import glass.kagerou.piru.ui.theme.toComposeColor
+import androidx.compose.material3.AlertDialog
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 
 /**
  * The inventory manager: a searchable, sortable list of everything tracked,
@@ -523,6 +526,7 @@ fun InventoryScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     // on why these are local rather than routes.
     var detailId by remember { mutableStateOf<String?>(null) }
     var formRequest by remember { mutableStateOf<FormRequest?>(null) }
+    var showingPackDialog by remember { mutableStateOf(false) }
     var showClassOrder by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { catalog = app.catalog() }
@@ -558,11 +562,29 @@ fun InventoryScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         return
     }
 
+    if (showingPackDialog) {
+        PackPrefillDialog(
+            onDismiss = { showingPackDialog = false },
+            onConfirm = { substance, prefill ->
+                showingPackDialog = false
+                // Straight into the add form, opened on the prefill. The form is what owns the
+                // count x strength shape and the pieces shape, so the dialog collects and the form
+                // decides — the same division a scan would have.
+                formRequest = FormRequest(
+                    itemId = null,
+                    prefillSubstance = substance,
+                    prefill = prefill,
+                )
+            },
+        )
+    }
+
     val request = formRequest
     if (request != null) {
         InventoryItemFormScreen(
             itemId = request.itemId,
             prefillSubstance = request.prefillSubstance,
+            prefill = request.prefill,
             navigator = navigator,
             modifier = modifier,
             onDismiss = { formRequest = null },
@@ -592,6 +614,9 @@ fun InventoryScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                 model = model,
                 categories = model.availableCategories(items, catalog),
                 onAdd = { formRequest = FormRequest(itemId = null, prefillSubstance = null) },
+        // The manual pack path: the same shape a scan would open, with the three numbers typed
+        // from the box instead of read off it.
+        onAddFromPack = { showingPackDialog = true },
                 onArrangeClasses = { showClassOrder = true },
             )
         }
@@ -674,7 +699,18 @@ fun InventoryScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
 }
 
 /** A request to open the add/restock form. */
-private data class FormRequest(val itemId: String?, val prefillSubstance: String?)
+private data class FormRequest(
+    val itemId: String?,
+    val prefillSubstance: String?,
+    /**
+     * What a box stated, when the user typed it rather than scanned it.
+     *
+     * `InventoryItemFormScreen` has accepted this since the form was written and nothing could
+     * construct one — the scanner, which is what produces it upstream, is not ported. The form it
+     * opens needs no camera, so the manual path reaches the same shape.
+     */
+    val prefill: InventoryPrefill? = null,
+)
 
 /**
  * [items] with [item] moved [delta] places, or [items] unchanged when the move
@@ -706,6 +742,7 @@ private fun ManagerHeader(
     model: InventoryListModel,
     categories: List<SubstanceCategory>,
     onAdd: () -> Unit,
+    onAddFromPack: () -> Unit,
     onArrangeClasses: () -> Unit,
 ) {
     Row(
@@ -720,10 +757,125 @@ private fun ManagerHeader(
         if (showMenu) {
             InventoryOptionsMenu(model = model, categories = categories, onArrangeClasses = onArrangeClasses)
         }
-        IconButton(onClick = onAdd) {
-            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.toolsb_inventory_add_item))
+        // Two ways in, because they ask for different things. The plain add asks for a substance
+        // and an amount; "from a pack" asks the three numbers a box carries, which is the shape
+        // `InventoryPrefill` exists to hold and which nothing could construct before this.
+        var addMenuOpen by remember { mutableStateOf(false) }
+        Box {
+            IconButton(onClick = { addMenuOpen = true }) {
+                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.toolsb_inventory_add_item))
+            }
+            DropdownMenu(expanded = addMenuOpen, onDismissRequest = { addMenuOpen = false }) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.toolsb_inventory_add_item)) },
+                    onClick = {
+                        addMenuOpen = false
+                        onAdd()
+                    },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.toolsb_inventory_add_from_pack)) },
+                    onClick = {
+                        addMenuOpen = false
+                        onAddFromPack()
+                    },
+                )
+            }
         }
     }
+}
+
+/**
+ * The three numbers a box prints, typed rather than scanned.
+ *
+ * `InventoryPrefill` is what a scan produces, and the add form has accepted one since it was
+ * written — with nothing in the app able to construct one, because the scanner is not ported. The
+ * *form* a prefill opens needs no camera: a user reading a box can supply the same three values.
+ * Until the scanner lands this is the only way `strengthMG`, the count×strength shape and the
+ * pieces shape are reachable at all.
+ */
+@Composable
+private fun PackPrefillDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (substance: String, prefill: InventoryPrefill) -> Unit,
+) {
+    var substance by remember { mutableStateOf("") }
+    var count by remember { mutableStateOf("") }
+    var unit by remember { mutableStateOf("") }
+    var strength by remember { mutableStateOf("") }
+    var note by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.toolsb_inventory_add_from_pack)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    stringResource(R.string.toolsb_inventory_pack_body),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = PiruTheme.colors.secondaryLabel,
+                )
+                OutlinedTextField(
+                    value = substance,
+                    onValueChange = { substance = it },
+                    label = { Text(stringResource(R.string.common_substance)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = count,
+                    onValueChange = { count = it },
+                    label = { Text(stringResource(R.string.toolsb_inventory_pack_count)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = unit,
+                    onValueChange = { unit = it },
+                    label = { Text(stringResource(R.string.toolsb_inventory_pack_unit)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = strength,
+                    onValueChange = { strength = it },
+                    label = { Text(stringResource(R.string.toolsb_inventory_pack_strength)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = note,
+                    onValueChange = { note = it },
+                    label = { Text(stringResource(R.string.common_note)) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = substance.isNotBlank(),
+                onClick = {
+                    onConfirm(
+                        substance.trim(),
+                        InventoryPrefill(
+                            // Blank fields stay null rather than becoming zero: "the box did not
+                            // say" is a different answer from "the box said none", and the draft
+                            // treats them differently.
+                            count = count.trim().toDoubleOrNull()?.takeIf { it > 0 },
+                            unit = unit.trim().ifEmpty { null },
+                            strengthMG = strength.trim().toDoubleOrNull()?.takeIf { it > 0 },
+                            note = note.trim().ifEmpty { null },
+                        ),
+                    )
+                },
+            ) { Text(stringResource(R.string.common_done)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
+        },
+    )
 }
 
 // MARK: - Empty states

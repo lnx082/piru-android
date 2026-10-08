@@ -578,4 +578,9 @@
     <string name="toolsb_ssproj_days_to_steady">~%1$d 天</string>
     <string name="toolsb_ssproj_summary_accumulates">稳定在约 %1$s，为单次剂量的 %2$s 倍，在 %3$s 内达到</string>
     <string name="toolsb_ssproj_summary_clears">两次用药之间清除；每次峰值约 %1$s</string>
+    <string name="toolsb_inventory_add_from_pack">从一盒添加</string>
+    <string name="toolsb_inventory_pack_body">照着盒子填。盒子上没印的留空即可。</string>
+    <string name="toolsb_inventory_pack_count">一盒几片</string>
+    <string name="toolsb_inventory_pack_unit">盒子上的单位</string>
+    <string name="toolsb_inventory_pack_strength">每片含量</string>
 </resources>

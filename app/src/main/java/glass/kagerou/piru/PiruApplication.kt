@@ -30,6 +30,7 @@ import kotlinx.coroutines.sync.withLock
 import glass.kagerou.piru.data.JsonLists
 import glass.kagerou.piru.data.entity.SessionEntity
 import glass.kagerou.piru.notifications.CheckInScheduler
+import glass.kagerou.piru.data.SubstanceColorStore
 
 /**
  * The app graph, such as it is.
@@ -98,13 +99,22 @@ open class PiruApplication : Application() {
         // preference row on a fresh install, which is otherwise created lazily by
         // whichever screen happens to open first — and may never be.
         appScope.launch {
-            // Before anything computes: `weightKgOrDefault` answers from the cache
-            // this fills, and every PK figure in the app is scaled by it.
-            // The lab results that were JSON in a preferences file before v3, moved
-            // into their table. Runs before any screen can read labs, and is a no-op
-            // once it has run: it clears the file as it reads it.
+            // The lab results that were JSON in a preferences file before v3, moved into their
+            // table. Runs before any screen can read labs, and is a no-op once it has run: it
+            // clears the file as it reads it.
             runCatching { LabMeasurementStore(database).importLegacyRows(this@PiruApplication) }
                 .onFailure { Log.w(TAG, "Lab-measurement backfill failed", it) }
+            // Recompute the generated substance colours so they follow the current generator.
+            //
+            // `refreshDefaults` documents itself as the launch pass — "the common case, a generator
+            // that has not moved since last launch, costs one read" — and nothing ever ran it, so a
+            // generator change would leave every substance on the colour the previous build picked.
+            // It leaves custom rows and legacy rows alone, which is what makes running it
+            // unconditionally safe.
+            runCatching { SubstanceColorStore(database, catalog()).refreshDefaults() }
+                .onFailure { Log.w(TAG, "Substance-colour refresh failed", it) }
+            // Before anything computes: `weightKgOrDefault` answers from the cache this fills, and
+            // every PK figure in the app is scaled by it.
             profile().load()
             notificationPreferences().load()
             // After the profile, never before: the sync below decides whether a

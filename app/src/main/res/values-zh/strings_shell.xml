@@ -521,4 +521,5 @@
 
     <string name="shell_library_limited_data">数据有限</string>
     <string name="shell_quicklog_note_hint">#话题标签 会变成标签</string>
+    <string name="shell_substance_colours_reset_all">全部恢复为类别颜色</string>
 </resources>

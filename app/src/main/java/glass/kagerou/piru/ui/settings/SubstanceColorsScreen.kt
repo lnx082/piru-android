@@ -37,6 +37,8 @@ import glass.kagerou.piru.ui.components.PiruCard
 import glass.kagerou.piru.ui.theme.PiruTheme
 import glass.kagerou.piru.ui.theme.toComposeColor
 import kotlinx.coroutines.launch
+import glass.kagerou.piru.data.SubstanceColorStore
+import glass.kagerou.piru.engine.SubstanceCatalog
 
 /**
  * The user's substance colours.
@@ -68,9 +70,14 @@ fun SubstanceColorsScreen(
     var rows by remember { mutableStateOf<List<ColourRow>>(emptyList()) }
     var editing by remember { mutableStateOf<ColourRow?>(null) }
     var reload by remember { mutableStateOf(0) }
+    // Held outside the effect because the reset action below needs the same instance: a colour
+    // store resolves a substance's class colour through the catalogue, so it cannot be built
+    // without one.
+    var catalog by remember { mutableStateOf<SubstanceCatalog?>(null) }
 
     LaunchedEffect(reload) {
-        val catalog = app.catalog()
+        val loaded = app.catalog()
+        catalog = loaded
         val palette = app.palette()
         // The substances in the log, each with the colour it is drawn in now.
         val names = app.database.doseEntryDao().all().map { it.substance }.distinct()
@@ -82,7 +89,7 @@ fun SubstanceColorsScreen(
                 name = name,
                 tint = tints[name.lowercase()] ?: P3Color.NEUTRAL,
                 usesDefault = entry?.usesDefault ?: true,
-                defaultTint = catalog.lookup(name)?.let { substance ->
+                defaultTint = loaded.lookup(name)?.let { substance ->
                     SubstanceColorGenerator.displayP3(
                         substance.category,
                         substance.substanceUID ?: substance.name.lowercase(),
@@ -162,6 +169,30 @@ fun SubstanceColorsScreen(
                 color = PiruTheme.colors.secondaryLabel,
                 modifier = Modifier.padding(bottom = 8.dp),
             )
+        }
+        // Reset every colour to its class default.
+        //
+        // `SubstanceColorStore.resetAll` has existed since the store was written with no caller, so
+        // a colour the user picked could be changed one at a time and never undone — the only way
+        // back was to find each substance and set it again. This is the caller.
+        if (rows.isNotEmpty()) {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    TextButton(
+                        onClick = {
+                            scope.launch {
+                                catalog?.let { SubstanceColorStore(app.database, it).resetAll() }
+                                reload++
+                            }
+                        },
+                    ) {
+                        Text(stringResource(R.string.shell_substance_colours_reset_all))
+                    }
+                }
+            }
         }
         if (rows.isEmpty()) {
             item {

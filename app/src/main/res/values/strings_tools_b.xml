@@ -583,4 +583,9 @@
     <string name="toolsb_ssproj_days_to_steady">~%1$d days</string>
     <string name="toolsb_ssproj_summary_accumulates">Plateaus around %1$s, %2$s× one dose, reached in %3$s</string>
     <string name="toolsb_ssproj_summary_clears">Clears between doses; each peaks around %1$s</string>
+    <string name="toolsb_inventory_add_from_pack">From a pack</string>
+    <string name="toolsb_inventory_pack_body">What the box says. Leave a field blank if it does not print it.</string>
+    <string name="toolsb_inventory_pack_count">Pieces in the pack</string>
+    <string name="toolsb_inventory_pack_unit">Unit the box prints</string>
+    <string name="toolsb_inventory_pack_strength">Strength per piece</string>
 </resources>
