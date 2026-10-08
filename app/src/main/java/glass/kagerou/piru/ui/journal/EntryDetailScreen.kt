@@ -107,6 +107,13 @@ fun EntryDetailScreen(
     var location by remember { mutableStateOf<PickedLocation?>(null) }
     var pickingLocation by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf(false) }
+
+    // The doses around this one, and whether their overlap could be judged at all. Built after the entry loads,
+    // beside the catalogue read the grapefruit check already does.
+    //
+    // Named `nearby` rather than `context`, because `context` is already this screen's `Context` — a shadowing
+    // name here silently changed which object every `context.applicationContext` below referred to.
+    var nearby by remember { mutableStateOf(EntryContext.Result(emptyList(), judged = false)) }
     var saved by remember { mutableStateOf(false) }
 
     /**
@@ -176,6 +183,41 @@ fun EntryDetailScreen(
             .minByOrNull { kotlin.math.abs(it.timestamp.time - timestampEpochMillis) }
         row?.let { seed(it) }
         loaded = true
+
+        // What else was going on, built here rather than during composition because it reads the day's log.
+        nearby = runCatching {
+            if (row == null) return@runCatching EntryContext.Result(emptyList(), judged = false)
+            val mine = row.timestamp.time / 60_000L
+            // The window is the entry's own route's duration: a duration is per route, so comparing an oral dose
+            // against an insufflated course would move the window and change which rows are marked.
+            // The duration is on the **route row**, not on the catalogue: a substance's routes carry their own
+            // profiles, which is what makes the per-route rule above true rather than aspirational.
+            val window = catalog?.lookup(row.substance)
+                ?.routes
+                ?.firstOrNull { it.route == row.route }
+                ?.duration
+                // `estimatedTotalMinutes` and not `total?.midpoint`: the profile's own accessor is the figure the PK
+                // curve is drawn over, so a window built from anything else would disagree with the graph on the
+                // same page. A profile with no `total` still has a phase sum, which is what the accessor falls
+                // back to.
+                ?.estimatedTotalMinutes
+            val around = app.database.doseEntryDao().all().filter { other ->
+                other.rowId != row.rowId &&
+                    kotlin.math.abs(other.timestamp.time - row.timestamp.time) <= 24L * 3_600_000L
+            }
+            EntryContext.neighbours(
+                entrySubstance = row.substance,
+                windowMinutes = window,
+                candidates = around.map { other ->
+                    EntryContext.Candidate(
+                        rowId = other.rowId,
+                        substance = other.substance,
+                        offsetMinutes = other.timestamp.time / 60_000L - mine,
+                        sameSession = other.sessionId != null && other.sessionId == row.sessionId,
+                    )
+                },
+            )
+        }.getOrDefault(EntryContext.Result(emptyList(), judged = false))
     }
 
     // The picker takes the screen while it is up. It is a whole surface rather than a dialog body:
@@ -440,6 +482,24 @@ fun EntryDetailScreen(
                         }
                     }
                 }
+
+                // What else was going on. Before the unknown-dose note, because it is about the dose rather
+                // than about a gap in the data.
+                EntryContextCard(
+                    result = nearby,
+                    // A neighbour opens its own entry page, which is where its own context lives. The read is
+                    // suspend, so it happens in the screen's scope rather than on the click.
+                    onOpen = { rowId ->
+                        scope.launch {
+                            val other = runCatching {
+                                app.database.doseEntryDao().all().firstOrNull { it.rowId == rowId }
+                            }.getOrNull()
+                            if (other != null) {
+                                navigator.push(PushRoute.Entry(other.timestamp.time, other.id.toString()))
+                            }
+                        }
+                    },
+                )
 
                 if (current.isUnknownDose) {
                     PiruCard(modifier = Modifier.fillMaxWidth()) {

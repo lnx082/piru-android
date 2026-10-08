@@ -839,4 +839,9 @@
     <string name="journal_session_summary_hint">用一句话描述这次记录</string>
     <string name="journal_session_summary_limit">最多 %1$d 个字符</string>
     <string name="shell_edit">编辑</string>
+    <string name="journal_entry_context">这次剂量前后</string>
+    <string name="journal_entry_context_unjudged">参考资料里没有该物质的时长，因此无法判断其中哪些与它重叠。以下按时间排列。</string>
+    <string name="journal_entry_context_same_session">同一次记录</string>
+    <string name="journal_entry_context_overlaps">有重叠</string>
+    <string name="journal_entry_context_open">打开</string>
 </resources>

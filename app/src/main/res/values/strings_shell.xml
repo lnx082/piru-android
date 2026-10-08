@@ -873,4 +873,9 @@
     <string name="journal_session_summary_hint">A sentence about the session</string>
     <string name="journal_session_summary_limit">Up to %1$d characters</string>
     <string name="shell_edit">Edit</string>
+    <string name="journal_entry_context">Around this dose</string>
+    <string name="journal_entry_context_unjudged">This substance has no duration in the reference, so nothing can be said about which of these overlapped it. They are listed by time.</string>
+    <string name="journal_entry_context_same_session">same session</string>
+    <string name="journal_entry_context_overlaps">overlapping</string>
+    <string name="journal_entry_context_open">Open</string>
 </resources>
