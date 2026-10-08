@@ -70,7 +70,7 @@ class SubstanceDatabaseDeviceTest {
      */
     @Test
     fun thePriorityScreenListsRankedSources() {
-        compose.setContent { PiruTheme { SourcePriorityScreen(AppNavigator()) } }
+        compose.setContent { PiruTheme { SourcePriorityOrderScreen(AppNavigator()) } }
 
         compose.waitUntil(timeoutMillis = 20_000) {
             compose.onAllNodesWithText("1").fetchSemanticsNodes().isNotEmpty()
@@ -92,7 +92,7 @@ class SubstanceDatabaseDeviceTest {
         settings.setSourceOrder(emptyList())
         settings.sourceOrder() shouldBe null
 
-        compose.setContent { PiruTheme { SourcePriorityScreen(AppNavigator()) } }
+        compose.setContent { PiruTheme { SourcePriorityOrderScreen(AppNavigator()) } }
         compose.waitUntil(timeoutMillis = 20_000) {
             compose.onAllNodesWithContentDescription("Move down").fetchSemanticsNodes().isNotEmpty()
         }

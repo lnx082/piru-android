@@ -212,6 +212,25 @@ class DbSubstanceCatalog private constructor(
                     .thenBy { it.displayTitle.lowercase() },
             )
 
+    /**
+     * Every substance carrying [tag], most popular first.
+     *
+     * A second browse axis beside the category grid, and one the grid cannot express: a substance has
+     * one category and several tags, and tags are how the catalogue says "these are related" without
+     * claiming a receptor class.
+     *
+     * The same two gates `substancesIn` applies — `surfacesInBrowse` and the popularity sort — so the
+     * two browse axes agree about what belongs in a list and in what order.
+     */
+    fun substancesWithTag(tag: String): List<Substance> =
+        reader.substanceIDsForTag(tag)
+            .mapNotNull { byID[it] }
+            .filter { it.displayClass.surfacesInBrowse }
+            .sortedWith(
+                compareByDescending<Substance> { it.popularity }
+                    .thenBy { it.displayTitle.lowercase() },
+            )
+
     // MARK: - Pharmacology
 
     /**
@@ -631,6 +650,9 @@ class DbSubstanceCatalog private constructor(
                     isStub = info?.isStub ?: false,
                     durationImplausible = info?.durationImplausible ?: false,
                     extraBrowseCategories = info?.extraBrowseCategories.orEmpty(),
+                    // From the browse metadata, not the shell: `SubstanceShell` is the timeline's
+                    // four-field input and deliberately carries no browse columns.
+                    classContextSlug = info?.classContextSlug,
                 ),
             )
         }

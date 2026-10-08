@@ -575,4 +575,15 @@
     <string name="shell_source_priority_up">Move up</string>
     <string name="shell_source_priority_down">Move down</string>
     <string name="shell_source_priority_reset">Reset to shipped order</string>
+    <string name="shell_class_loading">Drug class</string>
+    <string name="shell_class_gone">This drug class is not in the catalogue.</string>
+    <string name="shell_class_mechanism">Shared mechanism</string>
+    <string name="shell_class_pharmacokinetics">Shared pharmacokinetics</string>
+    <string name="shell_class_safety">Shared safety</string>
+    <string name="shell_class_sar">Structure-activity</string>
+    <string name="shell_class_members">%1$d members</string>
+    <string name="shell_class_references">References</string>
+    <string name="shell_class_open">About this class</string>
+    <string name="shell_tag_count">%1$d substances</string>
+    <string name="shell_tag_loading">Loading…</string>
 </resources>

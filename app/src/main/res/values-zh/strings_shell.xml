@@ -541,4 +541,15 @@
     <string name="shell_source_priority_up">上移</string>
     <string name="shell_source_priority_down">下移</string>
     <string name="shell_source_priority_reset">恢复为出厂顺序</string>
+    <string name="shell_class_loading">药物类别</string>
+    <string name="shell_class_gone">目录里没有这个药物类别。</string>
+    <string name="shell_class_mechanism">共同机制</string>
+    <string name="shell_class_pharmacokinetics">共同药代动力学</string>
+    <string name="shell_class_safety">共同安全性</string>
+    <string name="shell_class_sar">构效关系</string>
+    <string name="shell_class_members">%1$d 个成员</string>
+    <string name="shell_class_references">参考文献</string>
+    <string name="shell_class_open">关于这个类别</string>
+    <string name="shell_tag_count">%1$d 个物质</string>
+    <string name="shell_tag_loading">载入中…</string>
 </resources>

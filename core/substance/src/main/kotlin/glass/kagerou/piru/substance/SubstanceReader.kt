@@ -170,6 +170,23 @@ class SubstanceReader(
      * Counted rather than held: the screen that shows it is opened rarely, and a cached count would be
      * one more thing to keep in step with the database file.
      */
+    /**
+     * The ids of every substance carrying [tag].
+     *
+     * Empty for a tag nothing carries, which is not an error: a tag is a string a route can hold, and
+     * a stale link should answer nothing rather than throw. Hidden rows are excluded here so no
+     * caller can forget to.
+     */
+    fun substanceIDsForTag(tag: String): List<Long> = db.query(
+        """
+        SELECT DISTINCT substance_id AS id
+        FROM tags
+        WHERE LOWER(tag) = LOWER(?)
+        AND COALESCE(hidden, 0) = 0
+        """,
+        listOf(tag.trim()),
+    ).mapNotNull { it.long("id") }
+
     fun substanceCount(): Int =
         (db.query("SELECT COUNT(*) AS n FROM substances").firstOrNull()?.long("n") ?: 0L).toInt()
 
@@ -475,6 +492,15 @@ class SubstanceReader(
         val durationImplausible: Boolean,
         /** Curated extra browse homes beyond the substance's primary category. */
         val extraBrowseCategories: List<SubstanceCategory>,
+        /**
+         * The drug-class write-up this substance belongs to, or null.
+         *
+         * The slug rather than the title: it is what a route carries and it cannot be mistranslated.
+         * Carried on the browse metadata because it belongs to the same per-substance row set as the
+         * rest of it — the substance page needs it on first paint to decide whether the class name is
+         * tappable, which is exactly what this map is for.
+         */
+        val classContextSlug: String? = null,
     )
 
     /**
@@ -504,6 +530,22 @@ class SubstanceReader(
             )
         }.toMap()
 
+        // The class each substance belongs to, read in one statement for the same reason as the
+        // extras: the substance page asks about one substance, and the browse list asks about all of
+        // them, so a per-substance query would be the wrong shape for half its callers.
+        val classSlugs = mutableMapOf<Long, String>()
+        for (row in db.query(
+            """
+            SELECT sc.substance_id AS substance_id, c.slug AS slug
+            FROM substance_classes sc
+            JOIN class_contexts c ON c.id = sc.class_context_id
+            """,
+        )) {
+            val id = row.long("substance_id") ?: continue
+            val slug = row.string("slug") ?: continue
+            classSlugs.putIfAbsent(id, slug)
+        }
+
         // The curated extra homes, merged in. A category string this build does not know
         // is skipped rather than mapped to `OTHER`: an unrecognised home is not the same
         // claim as "this belongs in Other", and iOS skips it too.
@@ -515,9 +557,14 @@ class SubstanceReader(
             extras.getOrPut(id) { mutableListOf() }.add(category)
         }
 
-        if (extras.isEmpty()) return scalars
+        // Both merges in one pass. isEmpty is deliberately not used as an early exit any more:
+        // the class slugs are a second map, and returning early on one of them being empty would drop
+        // the other. The map is built once either way.
         return scalars.mapValues { (id, info) ->
-            extras[id]?.let { info.copy(extraBrowseCategories = it.toList()) } ?: info
+            var merged = info
+            extras[id]?.let { merged = merged.copy(extraBrowseCategories = it.toList()) }
+            classSlugs[id]?.let { merged = merged.copy(classContextSlug = it) }
+            merged
         }
     }
 

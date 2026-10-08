@@ -71,6 +71,15 @@ data class Substance(
     /** Additional browse homes for a curated multi-class compound (an empathogen that is also a stimulant). Empty for most. */
     val extraBrowseCategories: List<SubstanceCategory> = emptyList(),
 
+    /**
+     * The drug-class write-up this substance belongs to, or null when it belongs to none.
+     *
+     * The slug rather than the title: a slug cannot be mistranslated, and `PushRoute.DrugClass`
+     * carries this value. The catalogue's `substance_classes` table already held the mapping —
+     * nothing read it, so a substance page could name its class and had no way to open it.
+     */
+    val classContextSlug: String? = null,
+
     val defaultRoute: RouteOfAdministration,
     val routes: List<SubstanceRoute>,
 

@@ -44,6 +44,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import glass.kagerou.piru.model.P3Color
 import glass.kagerou.piru.ui.theme.toComposeColor
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.FlowRow
 
 /**
  * A substance's full record.
@@ -113,7 +115,7 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = FAB_CLEARANCE),
         ) {
-            item { Header(resolved, tint) }
+            item { Header(resolved, tint, navigator) }
 
             if (resolved.displayClass.showsDoseLadder) {
                 item { DoseLadderCard(resolved) }
@@ -169,7 +171,7 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
 }
 
 @Composable
-private fun Header(substance: Substance, tint: P3Color) {
+private fun Header(substance: Substance, tint: P3Color, navigator: AppNavigator) {
     Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         val (title, pictograph) = substance.titleAndPictograph
         Row(
@@ -199,14 +201,43 @@ private fun Header(substance: Substance, tint: P3Color) {
         // Hoisted: `CoreLabels.category` is a composable read and `buildString`'s
         // lambda is not composable.
         val category = CoreLabels.category(substance.category)
-        Text(
-            buildString {
-                append(category)
-                substance.tags.firstOrNull()?.let { append(" · $it") }
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            color = PiruTheme.colors.secondaryLabel,
-        )
+        // The category, linked to the class write-up when the catalogue places this substance in one.
+        // `classContextSlug` is the curated mapping; a substance outside every class keeps plain text
+        // rather than a link to a screen that would answer "not in the catalogue".
+        val classSlug = substance.classContextSlug
+        if (classSlug != null) {
+            Text(
+                category,
+                style = MaterialTheme.typography.bodyMedium,
+                color = PiruTheme.colors.accent,
+                modifier = Modifier.clickable {
+                    navigator.push(PushRoute.DrugClass(classSlug))
+                },
+            )
+        } else {
+            Text(
+                category,
+                style = MaterialTheme.typography.bodyMedium,
+                color = PiruTheme.colors.secondaryLabel,
+            )
+        }
+        // Every tag as its own link. This used to be `tags.firstOrNull()` appended to the category
+        // with a separator — one arbitrary tag out of however many the catalogue curated, shown as
+        // decoration, and the other tags invisible.
+        if (substance.tags.isNotEmpty()) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                for (tag in substance.tags) {
+                    Text(
+                        tag,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = PiruTheme.colors.accent,
+                        modifier = Modifier
+                            .clickable { navigator.push(PushRoute.LibraryTag(tag)) }
+                            .padding(vertical = 2.dp),
+                    )
+                }
+            }
+        }
         // The chemical identity line, when the catalog carries any of it. The
         // formula, the mass and the CAS number are the catalog's data; only the
         // two labels around them are copy.

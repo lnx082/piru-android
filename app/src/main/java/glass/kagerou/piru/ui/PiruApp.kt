@@ -97,6 +97,10 @@ import glass.kagerou.piru.ui.nav.key
 import glass.kagerou.piru.ui.theme.PiruTheme
 import glass.kagerou.piru.ui.library.LibraryFavoritesScreen
 import glass.kagerou.piru.ui.library.EffectsListScreen
+import glass.kagerou.piru.ui.library.ClassWriteUpScreen
+import glass.kagerou.piru.ui.library.TagBrowseScreen
+import glass.kagerou.piru.ui.settings.SubstanceDatabaseScreen
+import glass.kagerou.piru.ui.settings.SourcePriorityOrderScreen
 
 /**
  * The app shell: five tabs, a push stack per tab, and a modal above them.
@@ -356,11 +360,20 @@ private fun DefaultDestination(route: PushRoute, navigator: AppNavigator) {
         is PushRoute.LibraryCategory -> CategoryBrowseScreen(route.category, navigator)
         PushRoute.LibraryFavorites -> LibraryFavoritesScreen(navigator)
         is PushRoute.Effects -> EffectsListScreen(route.name)
+        is PushRoute.DrugClass -> ClassWriteUpScreen(route.className, navigator)
+        PushRoute.SubstanceDatabase -> SubstanceDatabaseScreen(navigator)
+        PushRoute.SourcePriority -> SourcePriorityOrderScreen(navigator)
+        is PushRoute.LibraryTag -> TagBrowseScreen(route.tag, navigator)
 
-        // The remaining library browse routes — the tag row, favorites and the
-        // user's own substances — read user data (Room) rather than the read-only
-        // catalog, so they name themselves here rather than pretending to have a
-        // destination.
+        // The remaining library browse routes — the user's own substances — read
+        // user data (Room) rather than the read-only catalog, so they name
+        // themselves here rather than pretending to have a destination.
+        //
+        // **This arm is why a missing destination is invisible.** It makes the
+        // `when` exhaustive, so a new route compiles and silently lands here.
+        // Adding the three routes above and *believing* they were wired cost a
+        // round: the build stayed green while every one of them was unreachable.
+        // Nothing warns about it; the check is reading this list.
         else -> NotPortedYet(null, "Not ported yet", route.key())
     }
 }

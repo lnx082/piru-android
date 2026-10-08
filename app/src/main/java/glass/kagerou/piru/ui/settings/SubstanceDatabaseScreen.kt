@@ -145,7 +145,7 @@ fun SubstanceDatabaseScreen(navigator: glass.kagerou.piru.ui.nav.AppNavigator) {
  * hide the sources that still participate.
  */
 @Composable
-fun SourcePriorityScreen(navigator: glass.kagerou.piru.ui.nav.AppNavigator) {
+fun SourcePriorityOrderScreen(navigator: glass.kagerou.piru.ui.nav.AppNavigator) {
     val context = LocalContext.current
     val app = context.applicationContext as PiruApplication
     val settings = remember { AppSettingsStore(context) }
