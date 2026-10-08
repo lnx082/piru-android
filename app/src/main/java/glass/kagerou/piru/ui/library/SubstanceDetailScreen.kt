@@ -163,6 +163,22 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
                 item { CombinationsCard(resolved) }
             }
 
+            // The sections below were all populated by the catalogue and read by nothing: the page
+            // showed a substance's chemistry only as a formula line, and its identity only as an
+            // alias list that existed for searching. Each card owns its own presence check, so a
+            // substance the catalogue does not describe loses a card rather than gaining an empty one.
+            resolved.overview?.let { item { OverviewCard(it) } }
+
+            resolved.toleranceInfo?.let { item { ToleranceCard(it) } }
+
+            resolved.peptideProfile?.let { item { PeptideCard(it) } }
+
+            resolved.physicochemical?.let { item { PhysicochemicalCard(it) } }
+
+            item { IdentityCard(resolved) }
+
+            resolved.halfLifeMinutes?.let { item { HalfLifeCard(it) } }
+
             resolved.waterHeat?.let { item { WaterHeatCard(it.headline, it.body) } }
 
             item { Footer(resolved) }
@@ -475,7 +491,7 @@ private fun Footer(substance: Substance) {
 }
 
 @Composable
-private fun SectionTitle(text: String) {
+internal fun SectionTitle(text: String) {
     Text(text, style = MaterialTheme.typography.titleSmall)
 }
 
