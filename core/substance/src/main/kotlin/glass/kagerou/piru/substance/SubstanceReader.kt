@@ -399,6 +399,77 @@ class SubstanceReader(
     )
 
     /**
+     * The columns the browse list needs and the shell does not carry.
+     *
+     * Read in one query rather than per substance, because every one of these is used
+     * by `substancesIn`/`categorySummary` for *all* substances on every browse render.
+     *
+     * They exist separately from [SubstanceShell] because the shell is the timeline's
+     * input — it is built on every curve rebuild and needs four fields, not nine — and
+     * folding browse metadata into it would make the hot path read columns it never
+     * looks at.
+     */
+    data class BrowseInfo(
+        /** The upstream browse sort. Zero for the long tail, which sorts last. */
+        val popularity: Double,
+        val displayClass: CompoundDisplayClass,
+        val isStub: Boolean,
+        /**
+         * Whether the substance's own duration data is known to be wrong.
+         *
+         * The OTC-only extra gate on the duration card consults this; see
+         * `CompoundDisplayClass.showsDuration`.
+         */
+        val durationImplausible: Boolean,
+        /** Curated extra browse homes beyond the substance's primary category. */
+        val extraBrowseCategories: List<SubstanceCategory>,
+    )
+
+    /**
+     * Browse metadata for every substance, in two queries.
+     *
+     * The batch twin of the fields `fullSubstance` stamps one row at a time. Without it
+     * the catalogue's browse path silently used the entity defaults: `popularity` was
+     * `0.0` for all 1,689 substances (so "popularity first" was pure alphabetical),
+     * `displayClass` was `RECREATIONAL` for all of them (so the documented
+     * non-recreational browse exclusion could not be expressed), and
+     * `extraBrowseCategories` was always empty.
+     */
+    fun browseInfo(): Map<Long, BrowseInfo> {
+        val scalars = db.query(
+            """
+            SELECT id, popularity, display_class, is_stub, duration_implausible
+              FROM substances
+            """,
+        ).mapNotNull { row ->
+            val id = row.long("id") ?: return@mapNotNull null
+            id to BrowseInfo(
+                popularity = row.double("popularity") ?: 0.0,
+                displayClass = CompoundDisplayClass.fromWire(row.string("display_class")),
+                isStub = (row.long("is_stub") ?: 0L) != 0L,
+                durationImplausible = (row.long("duration_implausible") ?: 0L) != 0L,
+                extraBrowseCategories = emptyList(),
+            )
+        }.toMap()
+
+        // The curated extra homes, merged in. A category string this build does not know
+        // is skipped rather than mapped to `OTHER`: an unrecognised home is not the same
+        // claim as "this belongs in Other", and iOS skips it too.
+        val extras = mutableMapOf<Long, MutableList<SubstanceCategory>>()
+        for (row in db.query("SELECT substance_id, category FROM browse_extra_categories")) {
+            val id = row.long("substance_id") ?: continue
+            val raw = row.string("category") ?: continue
+            val category = SubstanceCategory.fromWire(raw) ?: continue
+            extras.getOrPut(id) { mutableListOf() }.add(category)
+        }
+
+        if (extras.isEmpty()) return scalars
+        return scalars.mapValues { (id, info) ->
+            extras[id]?.let { info.copy(extraBrowseCategories = it.toList()) } ?: info
+        }
+    }
+
+    /**
      * Every substance's shell, `COLLATE NOCASE` ordered — the same order upstream
      * reads, so the first-wins outcomes that depend on row order (a duplicate
      * casing of one name) are defined rather than incidental.

@@ -380,9 +380,14 @@ object DataExportImport {
      * Remove every user-data row and commit.
      *
      * Upstream's `PiruSchema.deleteAll` walks all seventeen models. This build has
-     * fourteen tables and this deletes all of them — the three that differ are the
-     * three with no table here (see the class note), not a shorter list by
-     * oversight.
+     * **fifteen** tables and this deletes all of them — the two that differ are the
+     * two with no table here (see the class note), not a shorter list by oversight.
+     *
+     * "All of them" was not true when it was written: `dose_routines` had been in the
+     * schema since v1 with no DAO, so it was the one table this could not address. And
+     * `lab_measurements` did not exist yet, because those rows were in a preferences
+     * file outside every one of these paths. Both are covered now, and the count is
+     * checked against `PiruDatabase`'s `entities` list rather than maintained by hand.
      *
      * The per-table order the *screen* uses before calling this is a separate,
      * load-bearing thing; see `DataStorageScreen`.
@@ -402,6 +407,10 @@ object DataExportImport {
         db.quickLogDoseDao().deleteAll()
         db.inventoryDao().deleteAll()
         db.labMeasurementDao().deleteAll()
+        // Was the one user-data table the wipe could not reach: it had no DAO, so
+        // neither this function nor any screen could address it. Harmless only for as
+        // long as nothing wrote to it.
+        db.doseRoutineDao().deleteAll()
     }
 
     /**

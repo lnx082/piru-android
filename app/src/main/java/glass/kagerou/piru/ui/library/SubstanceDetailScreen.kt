@@ -29,6 +29,7 @@ import glass.kagerou.piru.model.Combination
 import glass.kagerou.piru.model.CompoundDisplayClass
 import glass.kagerou.piru.model.MechanismOfAction
 import glass.kagerou.piru.model.Substance
+import glass.kagerou.piru.model.DurationRange
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
 import glass.kagerou.piru.ui.labels.CoreLabels
@@ -88,7 +89,18 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
                 item { WithheldCard(resolved) }
             }
 
-            if (resolved.displayClass.showsDuration && !resolved.durationImplausible) {
+            // The plausibility gate is **OTC-only**, which is what the model documents:
+            // "OTC additionally requires a plausible duration — gate on
+            // `Substance.durationImplausible` at the call site". Applying it to every
+            // class, as this line did, silently dropped the duration card for the 32
+            // substances flagged implausible outside OTC — 31 recreational and 1
+            // dual-use — whose durations iOS renders. It is the same condition
+            // `DoseDurationSection.swift` states:
+            //
+            //     !(displayClass == .otc && substance.durationImplausible)
+            val showDuration = resolved.displayClass.showsDuration &&
+                !(resolved.displayClass == CompoundDisplayClass.OTC && resolved.durationImplausible)
+            if (showDuration) {
                 item { DurationsCard(resolved) }
             }
 
@@ -218,14 +230,21 @@ private fun DurationsCard(substance: Substance) {
                 val profile = route.duration!!
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(CoreLabels.route(route.route), style = MaterialTheme.typography.labelLarge)
-                    val boundaries = profile.phaseBoundaries
+                    // Read the profile's own phases rather than its cumulative boundaries.
+                    //
+                    // `phaseBoundaries` substitutes `0.0` for every phase the data does not
+                    // carry, which is right for drawing a curve and wrong for reporting one:
+                    // 80 route-groups in the shipped catalogue have `total` as their only
+                    // phase, and this line told the reader "Onset 0 m · Come-up to 0 m · Peak
+                    // to 0 m" about three phases that are simply absent. iOS prints an em
+                    // dash for an absent phase and falls back the same way — Peak from
+                    // come-up, Total from the offset phase.
                     Text(
                         stringResource(
-                            R.string.shell_duration_line,
-                            minutes(context, boundaries.onsetEnd),
-                            minutes(context, boundaries.comeupEnd),
-                            minutes(context, boundaries.peakEnd),
-                            minutes(context, profile.estimatedTotalMinutes),
+                            R.string.shell_duration_trio,
+                            phaseSpan(context, profile.onset),
+                            phaseSpan(context, profile.peak ?: profile.comeup),
+                            phaseSpan(context, profile.total ?: profile.offset),
                         ),
                         style = MaterialTheme.typography.bodyMedium,
                     )
@@ -376,6 +395,21 @@ private fun format(value: Double): String =
  * `stringResource` argument list, where a nested composable call would be legal
  * but would read four resources to build one sentence.
  */
+/**
+ * A phase's span, or an em dash when the profile does not carry that phase.
+ *
+ * Null rather than `0.0` is the distinction that matters: a phase the data omits is not a
+ * phase of zero length, and printing one as the other states something about the substance
+ * that the catalogue does not say.
+ */
+@Composable
+private fun phaseSpan(context: android.content.Context, range: DurationRange?): String =
+    if (range == null) {
+        stringResource(R.string.shell_duration_absent)
+    } else {
+        minutes(context, range.midpoint)
+    }
+
 private fun minutes(context: android.content.Context, value: Double): String {
     val total = value.toLong()
     val hours = total / 60

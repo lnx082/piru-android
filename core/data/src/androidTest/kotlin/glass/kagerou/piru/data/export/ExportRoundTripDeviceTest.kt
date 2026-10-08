@@ -331,6 +331,10 @@ class ExportRoundTripDeviceTest {
                     inputUnit = "pg/mL",
                 ),
             )
+            // The table that used to survive every wipe, because it had no DAO.
+            source.doseRoutineDao().insert(
+                glass.kagerou.piru.data.entity.DoseRoutineEntity(name = "Night"),
+            )
 
             DataExportImport.deleteAll(source)
 
@@ -346,6 +350,7 @@ class ExportRoundTripDeviceTest {
             assertTrue(source.quickLogDoseDao().all().isEmpty())
             assertTrue(source.inventoryDao().all().isEmpty())
             assertTrue(source.labMeasurementDao().all().isEmpty())
+            assertTrue(source.doseRoutineDao().all().isEmpty())
         }
     }
 

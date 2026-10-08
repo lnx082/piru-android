@@ -22,6 +22,7 @@ import glass.kagerou.piru.model.ByVolumeDosing
 import glass.kagerou.piru.model.DurationProfile
 import glass.kagerou.piru.model.RouteOfAdministration
 import glass.kagerou.piru.model.Substance
+import glass.kagerou.piru.model.CompoundDisplayClass
 import glass.kagerou.piru.model.SubstanceCategory
 
 /**
@@ -171,6 +172,10 @@ class DbSubstanceCatalog private constructor(
     fun categorySummary(): List<Pair<SubstanceCategory, Int>> {
         val counts = mutableMapOf<SubstanceCategory, Int>()
         for (substance in byID.values) {
+            // Only substances that surface in the browse. Without this the badge counts
+            // included the non-recreational compounds the grid itself excludes, so every
+            // card claimed more members than it listed.
+            if (!substance.displayClass.surfacesInBrowse) continue
             counts[substance.category] = (counts[substance.category] ?: 0) + 1
             for (extra in substance.extraBrowseCategories) {
                 counts[extra] = (counts[extra] ?: 0) + 1
@@ -189,9 +194,16 @@ class DbSubstanceCatalog private constructor(
      * A curated multi-class compound is listed under each of its browse homes, not
      * only its primary category. Popularity first is the upstream browse sort — the
      * long tail (score 0) falls to the end, then alphabetical.
+     *
+     * Non-recreational compounds are excluded: `CompoundDisplayClass.surfacesInBrowse`
+     * documents them as "searchable, for medication tracking, but not surfaced in the
+     * browse grid". That filter could not be expressed before `build` started reading
+     * `display_class`, because every substance carried the `RECREATIONAL` default — so
+     * 26 prescription-only compounds were listed in category browsing.
      */
     fun substancesIn(category: SubstanceCategory): List<Substance> =
         byID.values
+            .filter { it.displayClass.surfacesInBrowse }
             .filter { it.category == category || category in it.extraBrowseCategories }
             .sortedWith(
                 compareByDescending<Substance> { it.popularity }
@@ -527,6 +539,13 @@ class DbSubstanceCatalog private constructor(
         val categories = reader.categories(ids)
         val halfLives = reader.halfLives(ids)
         val aliases = reader.displayAliases(ids)
+        // The presentation fields. Absent here until v0.5.4, which meant every
+        // substance carried the entity defaults: `popularity` 0.0 for all of them (so
+        // `substancesIn`'s "popularity first" sorted nothing and every category list was
+        // alphabetical), `displayClass` RECREATIONAL for all of them (so
+        // `surfacesInBrowse` could never exclude the non-recreational compounds, which
+        // then appeared in the browse grid), and no extra browse homes at all.
+        val browse = reader.browseInfo()
 
         return shells.associate { shell ->
             // Sorted into the route enum's own order, so `defaultRoute` is the
@@ -534,6 +553,7 @@ class DbSubstanceCatalog private constructor(
             // rather than whichever route the read happened to emit first. Without
             // this a substance like Diazepam would default to IV instead of oral.
             val substanceRoutes = routes[shell.id].orEmpty().sortedBy { it.route.ordinal }
+            val info = browse[shell.id]
             // Titles are stamped here rather than looked up at every render — the
             // deliberate divergence `Substance.localizedName` documents. The two are
             // resolved in the order `displayTitle` consults them, so the field
@@ -551,6 +571,11 @@ class DbSubstanceCatalog private constructor(
                     routes = substanceRoutes,
                     halfLifeMinutes = halfLives[shell.id],
                     substanceUID = shell.substanceUID,
+                    popularity = info?.popularity ?: 0.0,
+                    displayClass = info?.displayClass ?: CompoundDisplayClass.RECREATIONAL,
+                    isStub = info?.isStub ?: false,
+                    durationImplausible = info?.durationImplausible ?: false,
+                    extraBrowseCategories = info?.extraBrowseCategories.orEmpty(),
                 ),
             )
         }

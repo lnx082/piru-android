@@ -201,6 +201,8 @@
     <string name="shell_dose_tier_heavy">大剂量</string>
     <string name="shell_dose_withheld_rx">这是处方药。Piru 展示它做什么、需要留意什么，把具体数字留给你处方上写的剂量。</string>
     <string name="shell_dose_withheld_other">目录没有收录这个化合物的娱乐性用药剂量区间，所以这里不显示任何数字。</string>
+    <string name="shell_duration_trio">起效 %1$s · 峰值 %2$s · 总计 %3$s</string>
+    <string name="shell_duration_absent">—</string>
     <string name="shell_duration_line">起效 %1$s · 上升至 %2$s · 峰值至 %3$s · 总计 %4$s</string>
     <string name="shell_duration_hours_minutes">%1$d 小时 %2$d 分钟</string>
     <string name="shell_duration_hours">%1$d 小时</string>

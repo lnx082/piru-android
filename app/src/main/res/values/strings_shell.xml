@@ -228,6 +228,8 @@
     <string name="shell_dose_tier_heavy">Heavy</string>
     <string name="shell_dose_withheld_rx">This is a prescription medicine. Piru shows what it does and what to watch for, and leaves the numbers to the label your prescriber gave you.</string>
     <string name="shell_dose_withheld_other">The catalog carries no recreational dosing frame for this compound, so none is shown.</string>
+    <string name="shell_duration_trio">Onset %1$s · Peak %2$s · Total %3$s</string>
+    <string name="shell_duration_absent">—</string>
     <string name="shell_duration_line">Onset %1$s · Come-up to %2$s · Peak to %3$s · Total %4$s</string>
     <string name="shell_duration_hours_minutes">%1$d h %2$d m</string>
     <string name="shell_duration_hours">%1$d h</string>

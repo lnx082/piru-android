@@ -92,6 +92,12 @@ abstract class PiruDatabase : RoomDatabase() {
     abstract fun inventoryDao(): InventoryDao
     abstract fun userProfileDao(): UserProfileDao
     abstract fun dailyDoseItemDao(): DailyDoseItemDao
+
+    /**
+     * The user's routines. The table is v1; the DAO arrived with deleteAll, which
+     * could not clear a table it had no way to address.
+     */
+    abstract fun doseRoutineDao(): DoseRoutineDao
     abstract fun routineOccurrenceDao(): RoutineOccurrenceDao
     abstract fun notificationPreferencesDao(): NotificationPreferencesDao
 
