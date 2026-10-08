@@ -179,6 +179,15 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
 
             resolved.halfLifeMinutes?.let { item { HalfLifeCard(it) } }
 
+            item {
+                FormsCard(
+                    availableSaltForms = resolved.availableSaltForms,
+                    availableIsomers = resolved.availableIsomers,
+                )
+            }
+
+            item { ReferencesCard(resolved.references) }
+
             resolved.waterHeat?.let { item { WaterHeatCard(it.headline, it.body) } }
 
             item { Footer(resolved) }

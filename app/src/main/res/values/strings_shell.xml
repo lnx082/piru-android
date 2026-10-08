@@ -627,4 +627,10 @@
     <string name="shell_descriptor_storage">Storage</string>
     <string name="shell_storage_light">keep out of light</string>
     <string name="shell_storage_stability">stable %1 once reconstituted</string>
+    <string name="shell_section_forms">Forms</string>
+    <string name="shell_section_references">References</string>
+    <string name="shell_descriptor_salts">Salts</string>
+    <string name="shell_descriptor_isomers">Isomers</string>
+    <string name="shell_forms_note">The catalogue carries a separate dose ladder per salt and per isomer. The dose figures above are the highest-priority ladder for each route, not a sum of these.</string>
+    <string name="shell_reference_untitled">Untitled reference</string>
 </resources>

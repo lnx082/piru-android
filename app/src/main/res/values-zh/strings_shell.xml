@@ -593,4 +593,10 @@
     <string name="shell_descriptor_storage">储存</string>
     <string name="shell_storage_light">避光</string>
     <string name="shell_storage_stability">复溶后可稳定 %1</string>
+    <string name="shell_section_forms">形态</string>
+    <string name="shell_section_references">参考文献</string>
+    <string name="shell_descriptor_salts">盐型</string>
+    <string name="shell_descriptor_isomers">异构体</string>
+    <string name="shell_forms_note">目录为每种盐型和每种异构体分别保存剂量阶梯。上面的剂量是各途径优先级最高的那一份，不是这些的总和。</string>
+    <string name="shell_reference_untitled">无标题参考文献</string>
 </resources>

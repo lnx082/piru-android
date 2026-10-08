@@ -21,6 +21,7 @@ import java.util.Locale
 import glass.kagerou.piru.model.PeptideProfile
 import glass.kagerou.piru.model.SubstanceOverview
 import glass.kagerou.piru.model.ToleranceInfo
+import glass.kagerou.piru.model.Citation
 
 /**
  * The substance page's own sections, split out of the screen that composes them.
@@ -355,6 +356,83 @@ fun PeptideCard(profile: PeptideProfile) {
                     }
                 }
                 DescriptorRow(stringResource(R.string.shell_descriptor_storage), parts.joinToString(", "))
+            }
+        }
+    }
+}
+
+/**
+ * The salt and isomer forms the catalogue carries ladders for.
+ *
+ * ## Why this exists
+ * A dose ladder is keyed by `(substance, route, salt, isomer)` — a salt and an isomer are different
+ * ladders, which the reader's own doc says. The substance page collapsed every ladder for a route into
+ * one list, so a compound with a hydrochloride and a free base showed one set of numbers with no
+ * indication that the other exists, and an isomer's separate ladder was simply invisible.
+ *
+ * The lists are computed by the model from the ladders themselves, so this card cannot disagree with
+ * what the dose card draws — it names what is there rather than asserting what should be.
+ */
+@Composable
+fun FormsCard(availableSaltForms: List<String>, availableIsomers: List<String>) {
+    if (availableSaltForms.isEmpty() && availableIsomers.isEmpty()) return
+    PiruCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            SectionTitle(stringResource(R.string.shell_section_forms))
+            if (availableSaltForms.isNotEmpty()) {
+                DescriptorRow(
+                    stringResource(R.string.shell_descriptor_salts),
+                    availableSaltForms.joinToString(", "),
+                )
+            }
+            if (availableIsomers.isNotEmpty()) {
+                DescriptorRow(
+                    stringResource(R.string.shell_descriptor_isomers),
+                    availableIsomers.joinToString(", "),
+                )
+            }
+            // Said plainly, because a reader who has just seen two ladders collapsed into one dose
+            // card will assume the numbers above already account for the difference.
+            Text(
+                stringResource(R.string.shell_forms_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = PiruTheme.colors.secondaryLabel,
+            )
+        }
+    }
+}
+
+/**
+ * The references behind the catalogue's facts.
+ *
+ * ## Why the source names in the footer are not this
+ * The footer prints `substance.sources` — the *publishers* (PsychonautWiki, PDSP, DailyMed) — which says
+ * where a fact came from at the level of a database. A citation is the paper, and `Substance.references`
+ * had no reader at all, so the one thing a reader could check a number against was unreachable.
+ *
+ * A reference with no identifier is drawn as its title alone: `Citation.resolvedUrl` returns null for
+ * the free-text labels the catalogue stores without a scheme, and those are still worth printing.
+ */
+@Composable
+fun ReferencesCard(references: List<Citation>) {
+    if (references.isEmpty()) return
+    PiruCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            SectionTitle(stringResource(R.string.shell_section_references))
+            for (citation in references) {
+                Text(
+                    // The title, then whichever identifier exists. An entry with none of the three is
+                    // possible — the catalogue has free-text labels — so the fallback keeps the row
+                    // from rendering as an empty line.
+                    listOfNotNull(
+                        citation.title,
+                        citation.doi,
+                        citation.pmid?.let { "PMID $it" },
+                        citation.url?.takeIf { citation.title == null && citation.doi == null },
+                    ).joinToString(" · ").ifBlank { stringResource(R.string.shell_reference_untitled) },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = PiruTheme.colors.secondaryLabel,
+                )
             }
         }
     }
