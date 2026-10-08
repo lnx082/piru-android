@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The widget in dark mode.
+
+    A Mica surface is not the light one inverted: it is a dark, slightly warm grey that keeps
+    the wallpaper visible, and text on it is white at reduced opacity rather than pure white.
+    Pure white on a photo is the one value that reads as a hole in the wallpaper.
+
+    These resolve through the launcher, because the widget's colours are resource ids — see
+    the light file's note on why that is the mechanism rather than an implementation detail.
+-->
+<resources>
+    <color name="widget_surface">#D91C1C1F</color>
+    <color name="widget_stroke">#24FFFFFF</color>
+
+    <color name="widget_text_primary">#E4FFFFFF</color>
+    <color name="widget_text_secondary">#99FFFFFF</color>
+    <color name="widget_text_tertiary">#61FFFFFF</color>
+
+    <color name="widget_accent">#FFF06A9A</color>
+    <color name="widget_success">#FF3FB950</color>
+    <color name="widget_on_success">#FF0D1117</color>
+    <color name="widget_track">#24FFFFFF</color>
+</resources>

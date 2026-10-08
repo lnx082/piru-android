@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    The home-screen widget's palette.
+
+    ## Why these are colour resources rather than literals in Kotlin
+    Two reasons, and the first one cost a released build.
+
+    `ColorProvider` takes a Compose `Color`. An earlier revision passed
+    `android.graphics.Color.rgb(...)`, which returns a bare `Int`; the two types are
+    different but the conversion is silent, and a bare `Int` travelling through Glance is
+    read as a **resource id**. The launcher resolved it, found nothing, and refused the whole
+    `RemoteViews`:
+
+        Resources$NotFoundException: Resource ID #0xffffffff
+          at RemoteViews$ResourceReflectionAction.getParameterValue
+
+    A resource is therefore what the framework actually wants here — and it is also how the
+    widget gets light and dark without any code: the launcher resolves the value through the
+    app's resources under the current night mode, which is the same mechanism the rest of the
+    app uses.
+
+    ## What these values are, and what they are not
+    Windows 11's Mica samples the desktop wallpaper and tints a translucent surface with it;
+    Acrylic does the same with a blur. Neither is available to an Android widget: a
+    `RemoteViews` is inflated in the launcher's process and cannot host a blur, and sampling
+    the wallpaper would mean reading the host's bitmap, which is not something a widget may
+    do. What is available is alpha, and that is what is used — a translucent surface that
+    lets the wallpaper through, which is the part of Mica a person actually sees.
+
+    The light values are deliberately not pure white: a Mica surface is a very light warm
+    grey, and pure white on a photo reads as a hole cut in the wallpaper rather than as a
+    surface lying on it.
+-->
+<resources>
+    <!-- The card. `e6` is 90% — enough to keep small text legible over any wallpaper
+         while still showing the colour behind it. -->
+    <color name="widget_surface">#E6F7F7FA</color>
+    <!-- A hairline, one pixel of the surface raised rather than a drawn border. -->
+    <color name="widget_stroke">#1F000000</color>
+
+    <color name="widget_text_primary">#E4000000</color>
+    <color name="widget_text_secondary">#99000000</color>
+    <color name="widget_text_tertiary">#61000000</color>
+
+    <color name="widget_accent">#FFED5787</color>
+    <color name="widget_success">#FF2EA043</color>
+    <color name="widget_on_success">#FFFFFFFF</color>
+    <!-- The ring around an untaken slot, and the track a filled one sits on. -->
+    <color name="widget_track">#1F000000</color>
+</resources>

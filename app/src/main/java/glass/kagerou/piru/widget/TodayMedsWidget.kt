@@ -14,6 +14,7 @@ import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
+import androidx.glance.appwidget.cornerRadius
 import androidx.glance.action.actionStartActivity
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
@@ -269,13 +270,27 @@ private fun widgetString(resId: Int): String = LocalContext.current.getString(re
 
 // MARK: - The surface
 
+/**
+ * The card.
+ *
+ * ## The shape of the surface
+ * A translucent panel with the wallpaper visible through it and a generous corner, which is
+ * the part of a Mica surface that survives the platform: `RemoteViews` cannot host a blur and
+ * a widget may not sample the wallpaper, so alpha is what is left, and alpha is what a person
+ * actually sees when they look at Mica. The padding is inside the surface rather than around
+ * it, so the panel reaches the widget's own edge and the launcher's frame is the only border.
+ *
+ * The click is on the whole card rather than on rows: the rows are not buttons here (see the
+ * class note), so the entire tile is one target that opens the app.
+ */
 @Composable
 private fun TodayMedsContent(state: WidgetState) {
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
-            .background(WidgetColors.background)
-            .padding(12.dp)
+            .background(WidgetColors.surface)
+            .cornerRadius(18.dp)
+            .padding(horizontal = 16.dp, vertical = 14.dp)
             .clickable(actionStartActivity<MainActivity>()),
     ) {
         if (state.isEmpty) {
@@ -318,11 +333,15 @@ private fun MedsList(state: WidgetState) {
             Text(
                 text = widgetString(R.string.widget_todays_meds),
                 style = TextStyle(
-                    color = WidgetColors.secondary,
-                    fontSize = 13.sp,
+                    // The title is the one line at full strength; everything else in the card
+                    // steps down from it. Fluent's type ramp is mostly this — one primary line
+                    // and a clear step to the secondary colour.
+                    color = WidgetColors.primary,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                 ),
                 modifier = GlanceModifier.defaultWeight(),
+                maxLines = 1,
             )
             Text(
                 text = if (state.allTaken) {
@@ -387,6 +406,17 @@ private fun SlotRow(row: WidgetState.Row, nowMinutes: Int) {
             modifier = GlanceModifier.defaultWeight(),
             maxLines = 1,
         )
+        // The dose sits between the name and the time, in the quietest colour: it is
+        // reference rather than a thing to act on, and Fluent reads by weight before it
+        // reads by position.
+        row.doseText.takeIf { it.isNotBlank() }?.let { dose ->
+            Spacer(modifier = GlanceModifier.width(6.dp))
+            Text(
+                text = dose,
+                style = TextStyle(color = WidgetColors.tertiary, fontSize = 11.sp),
+                maxLines = 1,
+            )
+        }
         Spacer(modifier = GlanceModifier.width(6.dp))
         row.timeMinutes?.let { minutes ->
             Text(
@@ -460,38 +490,36 @@ private fun StateDot(done: Boolean, due: Boolean) {
 }
 
 /**
- * The widget's palette.
+ * The widget's palette: resource ids, which is both what the framework wants and how the
+ * widget gets a dark mode.
  *
- * Fixed values rather than the app's `PiruColors`: a widget is drawn by the launcher's
- * process with no composition of its own, so it cannot read the app's theme, and a
- * widget that changed colour with a skin the launcher cannot see would be a surprise.
- * The accent matches the app's, which is the part that has to be recognisable.
- *
- * ## `Color(...)`, never `android.graphics.Color.rgb(...)`
- * This was the bug behind "载入窗口小部件时出现问题" on a HyperOS launcher. `ColorProvider`
- * takes a `Color`, and `android.graphics.Color.rgb` returns a bare `Int`; the two are
- * different types but the `Int` converts silently. A bare `Int` travelling through Glance
- * is indistinguishable from a **resource id**, and that is how the launcher read it:
+ * ## Why `R.color.…` and not `Color(0xFF…)`
+ * `ColorProvider` has two overloads that accept a number: one takes a Compose `Color` and one
+ * takes a colour **resource id**. Passing a literal colour is what shipped the bug behind
+ * "载入窗口小部件时出现问题" on a HyperOS launcher — `android.graphics.Color.rgb` returns a bare
+ * `Int`, and a bare `Int` travelling through Glance is read as a resource id, which the
+ * launcher then failed to resolve:
  *
  * ```
  * W AppWidgetHostView: Error inflating RemoteViews
- * android.widget.RemoteViews$ActionException:
  *   android.content.res.Resources$NotFoundException: Resource ID #0xffffffff
  *   at RemoteViews$ResourceReflectionAction.getParameterValue
  * ```
  *
- * `0xffffffff` is what the framework calls a null resource. The AOSP launcher happened to
- * resolve the colour anyway, which is why this only ever appeared on the one launcher that
- * did not.
+ * Resolving through resources also means the widget follows the system's light and dark
+ * without any code here: the launcher resolves these under the current night mode, which is
+ * the same mechanism the rest of the app uses. See `res/values/colors_widget.xml` for what the
+ * values are and what of Windows 11's Mica is and is not reproducible in a widget.
  */
 private object WidgetColors {
-    val accent = ColorProvider(Color(0xFFED5787))
-    val success = ColorProvider(Color(0xFF2EA043))
-    val onSuccess = ColorProvider(Color(0xFFFFFFFF))
-    val track = ColorProvider(Color(0x26202021))
-    val background = ColorProvider(Color(0xFFFFFFFF))
-    val primary = ColorProvider(Color(0xFF141416))
-    val secondary = ColorProvider(Color(0xFF6E6E73))
+    val surface = ColorProvider(R.color.widget_surface)
+    val accent = ColorProvider(R.color.widget_accent)
+    val success = ColorProvider(R.color.widget_success)
+    val onSuccess = ColorProvider(R.color.widget_on_success)
+    val track = ColorProvider(R.color.widget_track)
+    val primary = ColorProvider(R.color.widget_text_primary)
+    val secondary = ColorProvider(R.color.widget_text_secondary)
+    val tertiary = ColorProvider(R.color.widget_text_tertiary)
 }
 
 /** `"HH:mm"` from minutes past midnight — the shape every other time readout uses. */
