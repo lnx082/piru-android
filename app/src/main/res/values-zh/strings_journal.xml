@@ -219,4 +219,7 @@
     <string name="journal_timeline_title">时间轴</string>
     <string name="journal_timeline_loading">载入中…</string>
     <string name="journal_timeline_count">%1$d 条记录</string>
+    <string name="journal_active_now">当前生效</string>
+    <string name="journal_active_now_count">%1 种物质</string>
+    <string name="journal_active_now_dose">%1 %2 · %3</string>
 </resources>

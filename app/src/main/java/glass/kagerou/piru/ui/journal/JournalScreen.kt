@@ -166,6 +166,26 @@ fun JournalScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
             )
         }
 
+        // The state surface, between the plan above and the log below — the order upstream's own comment
+        // describes: plan → state → log. It draws nothing when nothing is active, so it costs nothing on the
+        // days it has nothing to say, and it is placed before the loading branch because "what is in effect"
+        // is the one reading that does not depend on today having entries.
+        item {
+            ActiveNowCard(
+                states = states,
+                onOpen = {
+                    // Today's session, which is what the card is a reading of. `Timeline` is the continuous log,
+                    // so the card opens the session rather than the day view it is already sitting in.
+                    val today = entries.firstOrNull { it.sessionId != null }?.sessionId
+                    if (today != null) {
+                        navigator.push(PushRoute.Session(today.toString()))
+                    } else {
+                        navigator.push(PushRoute.Timeline)
+                    }
+                },
+            )
+        }
+
         if (loading) {
             item { Centered(stringResource(R.string.journal_loading)) }
         } else if (entries.isEmpty()) {

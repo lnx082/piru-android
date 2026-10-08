@@ -259,4 +259,7 @@
     <string name="journal_timeline_title">Timeline</string>
     <string name="journal_timeline_loading">Loading…</string>
     <string name="journal_timeline_count">%1$d doses</string>
+    <string name="journal_active_now">Active now</string>
+    <string name="journal_active_now_count">%1 substances</string>
+    <string name="journal_active_now_dose">%1 %2 · %3</string>
 </resources>
