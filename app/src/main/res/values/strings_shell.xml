@@ -556,4 +556,8 @@
     <string name="shell_library_limited_data">Limited data</string>
     <string name="shell_quicklog_note_hint">#hashtags become tags</string>
     <string name="shell_substance_colours_reset_all">Reset all to class colours</string>
+    <string name="shell_effects_all_subtitle">Every effect reported for this substance, grouped by category.</string>
+    <string name="shell_effects_all_empty">No effects are recorded for this substance.</string>
+    <string name="shell_effects_all_uncategorised">Other</string>
+    <string name="shell_effects_all_open">All %1 effects</string>
 </resources>

@@ -24,6 +24,8 @@ import glass.kagerou.piru.model.RouteOfAdministration
 import glass.kagerou.piru.model.Substance
 import glass.kagerou.piru.model.CompoundDisplayClass
 import glass.kagerou.piru.model.SubstanceCategory
+import glass.kagerou.piru.model.EffectGroup
+import glass.kagerou.piru.model.SubjectiveEffect
 
 /**
  * The bundled catalog, seen through the engine's [SubstanceCatalog] port.
@@ -350,6 +352,33 @@ class DbSubstanceCatalog private constructor(
 
     /** Every substance that accepts a by-volume input, keyed as above — for the editor's capability probe. */
     val byVolumeCapabilities: Map<String, ByVolumeDosing> by lazy { reader.byVolumeCapabilities() }
+
+    /**
+     * The substance's effects grouped by PsychonautWiki category.
+     *
+     * `SubstanceReader.effectGroups` documents itself as feeding "the 'All effects' screen, which is
+     * the only caller" — and it had **no caller at all** in this port, because the screen did not
+     * exist and there was no way to reach the reader from the catalogue. This is that way.
+     *
+     * Not on [SubstanceCatalog]: the engine reads the flat [Substance.effects] union for browse and
+     * search, and has no notion of a category. It answers a question about presentation, and the
+     * caller is the screen that presents it.
+     */
+    fun effectGroups(nameOrAlias: String): List<EffectGroup> {
+        val id = index.resolve(nameOrAlias) ?: return emptyList()
+        return reader.effectGroups(id)
+    }
+
+    /**
+     * The substance's effects with their own descriptions, as the "All effects" screen lists them.
+     *
+     * Distinct from [Substance.effects], which is the flat label union: this carries the sentence
+     * that says what the effect is, which is the reason to open a page about it.
+     */
+    fun subjectiveEffects(nameOrAlias: String): List<SubjectiveEffect> {
+        val id = index.resolve(nameOrAlias) ?: return emptyList()
+        return reader.subjectiveEffects(id)
+    }
 
     /**
      * The substance's stored zero-order elimination parameters before weight

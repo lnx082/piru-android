@@ -96,6 +96,7 @@ import glass.kagerou.piru.ui.nav.parseDeepLink
 import glass.kagerou.piru.ui.nav.key
 import glass.kagerou.piru.ui.theme.PiruTheme
 import glass.kagerou.piru.ui.library.LibraryFavoritesScreen
+import glass.kagerou.piru.ui.library.EffectsListScreen
 
 /**
  * The app shell: five tabs, a push stack per tab, and a modal above them.
@@ -351,6 +352,7 @@ private fun DefaultDestination(route: PushRoute, navigator: AppNavigator) {
 
         is PushRoute.LibraryCategory -> CategoryBrowseScreen(route.category, navigator)
         PushRoute.LibraryFavorites -> LibraryFavoritesScreen(navigator)
+        is PushRoute.Effects -> EffectsListScreen(route.name)
 
         // The remaining library browse routes — the tag row, favorites and the
         // user's own substances — read user data (Room) rather than the read-only

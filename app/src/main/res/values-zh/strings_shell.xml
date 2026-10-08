@@ -522,4 +522,8 @@
     <string name="shell_library_limited_data">数据有限</string>
     <string name="shell_quicklog_note_hint">#话题标签 会变成标签</string>
     <string name="shell_substance_colours_reset_all">全部恢复为类别颜色</string>
+    <string name="shell_effects_all_subtitle">这个物质被记录的全部效应，按类别分组。</string>
+    <string name="shell_effects_all_empty">这个物质还没有记录任何效应。</string>
+    <string name="shell_effects_all_uncategorised">其他</string>
+    <string name="shell_effects_all_open">全部 %1 项效应</string>
 </resources>

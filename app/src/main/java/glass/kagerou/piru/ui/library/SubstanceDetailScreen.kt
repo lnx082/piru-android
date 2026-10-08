@@ -37,6 +37,8 @@ import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.theme.PiruTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import androidx.compose.material3.TextButton
+import glass.kagerou.piru.ui.nav.PushRoute
 
 /**
  * A substance's full record.
@@ -122,7 +124,13 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
             // "adds the pharmacology reference sections".
             if (tier.showsReferenceSections()) {
                 if (resolved.effects.isNotEmpty()) {
-                    item { EffectsCard(resolved.effects) }
+                    item {
+                    EffectsCard(
+                        effects = resolved.effects,
+                        substanceName = resolved.name,
+                        navigator = navigator,
+                    )
+                }
                 }
 
                 for (myth in resolved.misconceptions) {
@@ -299,14 +307,36 @@ private fun MechanismCard(mechanism: MechanismOfAction) {
 }
 
 @Composable
-private fun EffectsCard(effects: List<String>) {
+private fun EffectsCard(
+    effects: List<String>,
+    substanceName: String,
+    navigator: AppNavigator,
+) {
     PiruCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             SectionTitle(stringResource(R.string.shell_section_effects))
-            Text(effects.joinToString(" · "), style = MaterialTheme.typography.bodyMedium)
+            // A preview, not the whole list. It used to be `joinToString(" · ")` over the entire
+            // union, which for the heaviest substances is forty-odd labels in one paragraph — a wall
+            // with no way to tell a come-up effect from a side effect. The full page groups them.
+            Text(
+                effects.take(EFFECT_PREVIEW_COUNT).joinToString(" · "),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            if (effects.size > EFFECT_PREVIEW_COUNT) {
+                TextButton(onClick = { navigator.push(PushRoute.Effects(substanceName)) }) {
+                    Text(stringResource(R.string.shell_effects_all_open, effects.size))
+                }
+            }
         }
     }
 }
+
+/**
+ * How many labels the substance page previews.
+ *
+ * Enough to characterise the substance at a glance, few enough to stay one line or two on a phone.
+ */
+private const val EFFECT_PREVIEW_COUNT = 12
 
 @Composable
 private fun MisconceptionCard(claim: String, correction: String) {

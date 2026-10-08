@@ -218,6 +218,16 @@ sealed interface PushRoute {
     /** A receptor class's write-up and members, from the drug-class browser. */
     @Serializable
     data class DrugClass(val className: String) : PushRoute
+
+    /**
+     * Every effect a substance is reported to produce, grouped by category.
+     *
+     * Keyed by name rather than by id because that is what the substance page has: it resolved the
+     * page by name, and an id would have to be carried through the whole browse path to be useful
+     * here.
+     */
+    @Serializable
+    data class Effects(val name: String) : PushRoute
 }
 
 /**
@@ -275,6 +285,7 @@ fun PushRoute.key(): String = when (this) {
     is PushRoute.InventoryItemForm -> "inventory-form:${id ?: "new"}"
     is PushRoute.InteractionTimeline -> "interaction:$substanceA:$substanceB"
     is PushRoute.DrugClass -> "drug-class:$className"
+    is PushRoute.Effects -> "effects:$name"
     PushRoute.MyMeds -> "my-meds"
     is PushRoute.MedDetail -> "med-detail:$rowId"
     is PushRoute.LogMedications -> "log-medications:$category"
