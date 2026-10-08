@@ -599,4 +599,13 @@
     <string name="shell_descriptor_isomers">异构体</string>
     <string name="shell_forms_note">目录为每种盐型和每种异构体分别保存剂量阶梯。上面的剂量是各途径优先级最高的那一份，不是这些的总和。</string>
     <string name="shell_reference_untitled">无标题参考文献</string>
+    <string name="shell_section_inventory">你的库存</string>
+    <string name="shell_section_also_active">同时仍在生效</string>
+    <string name="shell_section_data_status">数据状态</string>
+    <string name="shell_inventory_on_hand">现有</string>
+    <string name="shell_inventory_dose_size">单次用量</string>
+    <string name="shell_inventory_threshold">低库存阈值</string>
+    <string name="shell_inventory_amount">%1$s %2$s</string>
+    <string name="shell_also_active_note">来自你自己的记录，按各物质已记录的最长时长计算。它说明的是还没代谢完，不是现在还能感觉到。</string>
+    <string name="shell_no_dose_data">目录没有收录这个物质的剂量数据。保留它是为了名称解析，这样记录或导入它的名字时不会丢掉这一条。</string>
 </resources>

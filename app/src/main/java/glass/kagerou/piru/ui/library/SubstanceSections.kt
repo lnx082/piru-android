@@ -22,6 +22,7 @@ import glass.kagerou.piru.model.PeptideProfile
 import glass.kagerou.piru.model.SubstanceOverview
 import glass.kagerou.piru.model.ToleranceInfo
 import glass.kagerou.piru.model.Citation
+import glass.kagerou.piru.data.entity.InventoryItemEntity
 
 /**
  * The substance page's own sections, split out of the screen that composes them.
@@ -434,6 +435,120 @@ fun ReferencesCard(references: List<Citation>) {
                     color = PiruTheme.colors.secondaryLabel,
                 )
             }
+        }
+    }
+}
+
+/**
+ * What the user has on hand for this substance.
+ *
+ * ## Why this is worth a card on a reference page
+ * A substance page answers "what is this"; the question a reader arrives with when they have a stash is
+ * "do I have any". Upstream puts the inventory row here for that reason, and this port's item DAO
+ * already had `byIdentity` — nothing asked it.
+ *
+ * ## What it deliberately does not say
+ * No restock advice and no warning: the low-stock notification is the place for that, and it needs the
+ * threshold *and* the reorder history that only the inventory screen holds. This card reports a number
+ * and nothing else.
+ */
+@Composable
+fun InventoryCard(item: InventoryItemEntity) {
+    PiruCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            SectionTitle(stringResource(R.string.shell_section_inventory))
+            DescriptorRow(
+                stringResource(R.string.shell_inventory_on_hand),
+                // Formatted rather than printed raw: `currentQuantity` is a `Double` that the restock
+                // arithmetic accumulates, so it arrives as 8.999999 often enough to matter.
+                stringResource(
+                    R.string.shell_inventory_amount,
+                    formatQuantity(item.currentQuantity),
+                    item.unit,
+                ),
+            )
+            item.doseSize?.let {
+                DescriptorRow(
+                    stringResource(R.string.shell_inventory_dose_size),
+                    stringResource(R.string.shell_inventory_amount, formatQuantity(it), item.unit),
+                )
+            }
+            item.lowStockThreshold?.let {
+                DescriptorRow(
+                    stringResource(R.string.shell_inventory_threshold),
+                    stringResource(R.string.shell_inventory_amount, formatQuantity(it), item.unit),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * A quantity to at most one decimal, without a trailing zero.
+ *
+ * The restock arithmetic adds and subtracts `Double`s, so a stash of nine 1 mg doses reads as
+ * `8.999999999`. Two decimals would still show `9.0`; one significant figure past the point is what a
+ * person would write.
+ */
+fun formatQuantity(value: Double): String {
+    // Clamped, because the restock arithmetic can go below zero when a dose is logged against an empty
+    // stash, and "-3 mg on hand" is not a fact about a shelf.
+    val rounded = Math.round(value.coerceAtLeast(0.0) * 10.0) / 10.0
+    return if (rounded == rounded.toLong().toDouble()) {
+        rounded.toLong().toString()
+    } else {
+        String.format(Locale.ROOT, "%.1f", rounded)
+    }
+}
+
+/**
+ * What else is still in the body, from the log.
+ *
+ * ## Why the page says this
+ * A substance page is read *while deciding*, and the decision depends on what is already active —
+ * which is the one fact about the user that a reference page can honestly carry. Upstream draws the same
+ * idea on a session; here it is derived from the log and the catalogue's own durations.
+ *
+ * ## Why it takes names rather than a query result
+ * The caller has already read the log for its own purposes on some paths and has not on others, so the
+ * set is a parameter: this draws what it is given and does not decide what is active. That keeps the
+ * window arithmetic — which needs the catalogue and the user's weight — in one place rather than in a
+ * card.
+ */
+@Composable
+fun AlsoActiveCard(activeNames: List<String>) {
+    if (activeNames.isEmpty()) return
+    PiruCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            SectionTitle(stringResource(R.string.shell_section_also_active))
+            Text(activeNames.joinToString(", "), style = MaterialTheme.typography.bodyMedium)
+            Text(
+                stringResource(R.string.shell_also_active_note),
+                style = MaterialTheme.typography.bodySmall,
+                color = PiruTheme.colors.secondaryLabel,
+            )
+        }
+    }
+}
+
+/**
+ * Whether the catalogue has dose data for this compound at all.
+ *
+ * ## Why a card rather than the absence of one
+ * `hasNoDoseData` is true for a substance whose row exists but carries no ladder — a metabolite, a
+ * research chemical nobody has assayed, a stub the catalogue keeps for name resolution. The page
+ * already withheld the ladder card for those, but said nothing, so a reader saw a page missing its most
+ * important section and no explanation. This says which it is.
+ */
+@Composable
+fun LimitedDataCard() {
+    PiruCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            SectionTitle(stringResource(R.string.shell_section_data_status))
+            Text(
+                stringResource(R.string.shell_no_dose_data),
+                style = MaterialTheme.typography.bodyMedium,
+            )
         }
     }
 }

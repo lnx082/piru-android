@@ -633,4 +633,13 @@
     <string name="shell_descriptor_isomers">Isomers</string>
     <string name="shell_forms_note">The catalogue carries a separate dose ladder per salt and per isomer. The dose figures above are the highest-priority ladder for each route, not a sum of these.</string>
     <string name="shell_reference_untitled">Untitled reference</string>
+    <string name="shell_section_inventory">Your inventory</string>
+    <string name="shell_section_also_active">Also active</string>
+    <string name="shell_section_data_status">Data status</string>
+    <string name="shell_inventory_on_hand">On hand</string>
+    <string name="shell_inventory_dose_size">Dose size</string>
+    <string name="shell_inventory_threshold">Low-stock at</string>
+    <string name="shell_inventory_amount">%1$s %2$s</string>
+    <string name="shell_also_active_note">From your own log, over each substance’s longest recorded duration. It says what has not cleared yet, not what is still being felt.</string>
+    <string name="shell_no_dose_data">The catalogue carries no dose data for this substance. It is kept for name resolution, so that logging or importing its name does not lose the entry.</string>
 </resources>
