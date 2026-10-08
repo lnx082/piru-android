@@ -35,6 +35,7 @@ import glass.kagerou.piru.model.SubstanceColorGenerator
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
 import glass.kagerou.piru.ui.components.PiruCard
 import glass.kagerou.piru.ui.theme.PiruTheme
+import glass.kagerou.piru.ui.theme.toComposeColor
 import kotlinx.coroutines.launch
 
 /**
@@ -183,14 +184,10 @@ fun SubstanceColorsScreen(
                 ) {
                     Box(modifier = Modifier.size(28.dp)) {
                         Canvas(Modifier.fillMaxSize()) {
-                            drawCircle(
-                                color = Color(
-                                    row.tint.red.toFloat(),
-                                    row.tint.green.toFloat(),
-                                    row.tint.blue.toFloat(),
-                                    1f,
-                                ),
-                            )
+                            // Through the shared helper rather than built inline: the swatch
+                            // has to be the same colour as the chart it is choosing for, and
+                            // an inline sRGB `Color(...)` here is how that stopped being true.
+                            drawCircle(color = row.tint.toComposeColor())
                         }
                     }
                     Column(modifier = Modifier.weight(1f)) {

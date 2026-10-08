@@ -112,7 +112,7 @@ object PiruTheme {
  * screen and the same colour it is on iOS.
  */
 internal fun P3Color.toComposeColor(): Color =
-    Color(red.toFloat(), green.toFloat(), blue.toFloat(), 1f)
+    Color(red.toFloat(), green.toFloat(), blue.toFloat(), 1f, ColorSpaces.DisplayP3)
 
 private val AccentLight = p3(0.898, 0.497, 0.591)
 private val AccentDark = p3(0.920, 0.268, 0.441)

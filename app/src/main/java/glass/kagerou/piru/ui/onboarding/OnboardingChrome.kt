@@ -52,6 +52,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.ui.components.PiruCard
 import glass.kagerou.piru.ui.theme.PiruTheme
+import glass.kagerou.piru.notifications.NotificationPreferencesStore
+import glass.kagerou.piru.notifications.NotificationType
 
 /**
  * The onboarding flow's shared scaffolding.
@@ -628,6 +630,15 @@ object OnboardingPrefs {
      * a system fact the Notifications screen reports, and the user's choice is a
      * separate fact that must survive a denial so a later re-grant does not
      * silently re-enable a group they declined.
+     *
+     * ## These three keys are the record, not the gate
+     * They are what the step asked, kept so the answer is auditable and so a
+     * re-run of onboarding does not lose it. What actually turns a notification
+     * on is [applyReminderChoices], which writes the same answer into
+     * [NotificationPreferencesStore] — the store every scheduler reads through
+     * `NotificationPreferencesStore.allows`. For a long time only this function
+     * existed, so declining "A safety net" recorded a refusal nothing consulted
+     * and the cumulative and low-stock alerts carried on arriving.
      */
     fun writeReminderChoices(
         context: Context,
@@ -640,6 +651,64 @@ object OnboardingPrefs {
             .putBoolean(KEY_SESSION_ALERTS, sessionAlerts)
             .putBoolean(KEY_SAFETY_NET, safetyNet)
             .apply()
+    }
+
+    /**
+     * Which notification types each onboarding group stands for.
+     *
+     * The groups are the Notifications screen's own groups, so a user who turns
+     * "During a session" off here finds exactly that group off there. The rows are
+     * worded off the same copy the screen uses — hydration, wind-down and timing
+     * cues; heavy-range and low-stock heads-ups — rather than chosen to make the
+     * arithmetic convenient.
+     */
+    private val reminderGroupTypes: Map<String, List<NotificationType>> = mapOf(
+        KEY_DOSE_REMINDERS to listOf(
+            NotificationType.ROUTINE,
+            NotificationType.ROUTINE_FOLLOW_UP,
+        ),
+        KEY_SESSION_ALERTS to listOf(
+            NotificationType.PHASE,
+            NotificationType.HYDRATION,
+            NotificationType.SLEEP,
+            NotificationType.CHECK_IN,
+        ),
+        KEY_SAFETY_NET to listOf(
+            NotificationType.CUMULATIVE,
+            NotificationType.INVENTORY,
+        ),
+    )
+
+    /**
+     * Put the user's answers where the schedulers actually read them.
+     *
+     * Called from the reminders step, after the choices are recorded and after the
+     * system prompt has been answered — the prompt's answer does not change what the
+     * user asked for, and the store's boolean is the app's own gate rather than the
+     * OS grant.
+     *
+     * Both directions are written, not just the refusals: a group left on has to be
+     * *on*, and the session types default off until onboarding enables them, so
+     * writing only the `false` cases would leave "During a session" switched on in
+     * the UI and silent in practice.
+     */
+    suspend fun applyReminderChoices(
+        context: Context,
+        doseReminders: Boolean,
+        sessionAlerts: Boolean,
+        safetyNet: Boolean,
+    ) {
+        val answered = mapOf(
+            KEY_DOSE_REMINDERS to doseReminders,
+            KEY_SESSION_ALERTS to sessionAlerts,
+            KEY_SAFETY_NET to safetyNet,
+        )
+        val store = NotificationPreferencesStore(context.applicationContext)
+        for ((key, enabled) in answered) {
+            for (type in reminderGroupTypes[key].orEmpty()) {
+                store.setEnabled(type, enabled)
+            }
+        }
     }
 
     /** The health step's opt-in to the session vitals overlay; off-able in Settings. */

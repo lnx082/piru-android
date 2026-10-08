@@ -335,8 +335,16 @@ private const val WEIGHT_DEFAULT_KG = 60.0
  * Upstream cannot observe read authorization at all — an empty result is
  * indistinguishable from no data, and the UI shows a neutral note either way.
  * Health Connect does expose the grant, but the screen behaves the same way: no
- * permission means no reading, the note says so, and **the weight the stepper
- * shows is saved regardless**, so a user who declines still keeps their number.
+ * permission means no reading and the note says so.
+ *
+ * ## What a refusal must not do is invent a weight
+ * This step used to save the stepper's number whatever happened, on the reasoning
+ * that "a user who declines still keeps their number". They do not — the number on
+ * screen is the population default this screen starts from, and writing it as a
+ * `MANUAL` weight outranks the launch-time Health Connect sync (which refuses to
+ * overwrite a manual entry) and scales every model in the app by 60 kg. So a weight
+ * is recorded only when the user typed one or the phone returned one; see
+ * `weightAnswered`.
  *
  * ## What is read
  * One permission request covering heart rate, resting heart rate, blood
@@ -356,7 +364,37 @@ fun OnboardingHealthStep(nav: OnboardingNav) {
     var connecting by remember { mutableStateOf(false) }
     var noReadNote by remember { mutableStateOf(false) }
 
+    /**
+     * Whether the number on the stepper is something the user actually answered.
+     *
+     * The stepper has to *show* something, and 60 kg is the population default the
+     * models use — but showing it is not the same as being told it, and the two were
+     * conflated here in a way that cost the user their health sync permanently:
+     *
+     * - `WeightSource.MANUAL` outranks the launch-time Health Connect sync, which
+     *   refuses to overwrite a manual entry (`UserProfileStore.syncWeightFromHealthConnect`).
+     * - So writing 60 kg as MANUAL from this step — which is what happened whenever the
+     *   user tapped through, declined the grant, or was on a device without Health
+     *   Connect — pinned every PK, alcohol and tolerance figure to a weight nobody
+     *   entered, and stopped the phone's own reading from ever replacing it.
+     *
+     * Set only where the user is the source: typing in the field, or a grant that
+     * returned a reading we then adopt.
+     */
+    var weightAnswered by remember { mutableStateOf(false) }
+
+    /**
+     * Record the weight, but only if this step actually learned one.
+     *
+     * Returns whether it wrote, so the caller does not have to guess.
+     */
     fun save() {
+        // Neither answered nor read: there is no weight to record. Writing the
+        // default here is the bug this flag exists to prevent, and leaving the
+        // profile alone is the correct "no answer" — the models fall back to the
+        // engine's own reference weight, and the next launch's health sync is still
+        // free to fill it in.
+        if (!weightAnswered) return
         val clamped = weightKg.coerceIn(WEIGHT_MIN_KG, WEIGHT_MAX_KG)
         // Compare against the clamped Health value: an out-of-range reading
         // clamps to the same bound a typed one would, and still counts as
@@ -380,13 +418,22 @@ fun OnboardingHealthStep(nav: OnboardingNav) {
     val permissionLauncher = rememberLauncherForActivityResult(health.permissionContract()) { granted ->
         scope.launch {
             if (granted.isEmpty()) {
-                // Declined, or granted nothing this screen asked for. Not an
-                // error: the stepper's number is what gets saved.
+                // Declined, or granted nothing this screen asked for. Not an error,
+                // and not an answer either: nothing is written unless the user typed
+                // a number themselves.
                 noReadNote = true
             } else {
                 OnboardingPrefs.writeShowSessionVitals(context, true)
                 val kg = health.latestBodyMassKg()
-                if (kg == null) noReadNote = true else healthValue = kg.also { weightKg = it }
+                if (kg == null) {
+                    noReadNote = true
+                } else {
+                    // A reading is an answer, and it is the phone's rather than the
+                    // user's, which is what makes it safe to adopt and label as such.
+                    healthValue = kg
+                    weightKg = kg
+                    weightAnswered = true
+                }
             }
             connecting = false
             save()
@@ -412,7 +459,15 @@ fun OnboardingHealthStep(nav: OnboardingNav) {
                         stringResource(R.string.shell_onboarding_health_weight_label),
                         style = MaterialTheme.typography.titleSmall,
                     )
-                    OnboardingWeightStepper(value = weightKg, onValueChange = { weightKg = it })
+                    OnboardingWeightStepper(
+                        value = weightKg,
+                        onValueChange = {
+                            // The user is the source from here on, which is what makes
+                            // this a MANUAL weight rather than a displayed default.
+                            weightAnswered = true
+                            weightKg = it
+                        },
+                    )
                     OnboardingNote(
                         icon = when {
                             healthValue != null -> Icons.Filled.CheckCircle
@@ -455,8 +510,11 @@ fun OnboardingHealthStep(nav: OnboardingNav) {
             prominence = Prominence.NEUTRAL,
             onClick = {
                 // Deliberately requests nothing at all — not even a permission
-                // check. Skipping is a complete answer.
-                save()
+                // check. Skipping is a complete answer, and a complete answer to
+                // "what is your weight?" can be "I am not telling you": this used
+                // to call `save()`, which wrote the stepper's 60 kg default as a
+                // manual weight and disabled the phone's own reading for good.
+                // Nothing is recorded, and the profile keeps whatever it had.
                 nav.advance()
             },
         )
@@ -728,6 +786,8 @@ private fun ChartLegend(color: Color, label: String, labelColor: Color) {
 fun OnboardingRemindersStep(nav: OnboardingNav) {
     val context = LocalContext.current
     var requesting by remember { mutableStateOf(false) }
+    // Owns the write of the reminder choices into the notification-preference store.
+    val scope = rememberCoroutineScope()
 
     // Held as state holders rather than `by` delegates so a reader can see they
     // are read at the moment of the write, not at composition.
@@ -794,6 +854,19 @@ fun OnboardingRemindersStep(nav: OnboardingNav) {
                     sessionAlerts = sessionAlerts.value,
                     safetyNet = safetyNet.value,
                 )
+                // And then applied, which is the half that was missing: the three
+                // keys above are a record of the answer, and the schedulers read
+                // `NotificationPreferencesStore.allows`. Without this a declined
+                // "A safety net" was recorded and then ignored, so the heavy-range
+                // and low-stock alerts kept arriving.
+                scope.launch {
+                    OnboardingPrefs.applyReminderChoices(
+                        context = context,
+                        doseReminders = doseReminders.value,
+                        sessionAlerts = sessionAlerts.value,
+                        safetyNet = safetyNet.value,
+                    )
+                }
                 val anySelected = doseReminders.value || sessionAlerts.value || safetyNet.value
                 if (anySelected && needsNotificationPrompt(context)) {
                     requesting = true
