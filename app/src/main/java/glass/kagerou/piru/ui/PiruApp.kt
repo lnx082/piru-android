@@ -95,6 +95,7 @@ import glass.kagerou.piru.ui.nav.PushRoute
 import glass.kagerou.piru.ui.nav.parseDeepLink
 import glass.kagerou.piru.ui.nav.key
 import glass.kagerou.piru.ui.theme.PiruTheme
+import glass.kagerou.piru.ui.library.LibraryFavoritesScreen
 
 /**
  * The app shell: five tabs, a push stack per tab, and a modal above them.
@@ -215,7 +216,11 @@ fun PiruApp(
                 // nobody mistakes it for the real thing.
                 onCommitted = { navigator.invalidate() },
             )
-            is SheetRoute.EntryEditor, SheetRoute.NewSession -> NotPortedYet(null, "Not ported yet")
+            // `SheetRoute.EntryEditor` and `SheetRoute.NewSession` have no case: nothing
+            // presents either. Editing an entry is `PushRoute.Entry`, which the sheet was a
+            // duplicate of, and session creation happens through the grouping sweep rather
+            // than a form. Both used to dispatch to "Not ported yet", which is a screen the
+            // user could never reach and a message about a feature that was not missing.
             null -> Unit
         }
     }
@@ -300,7 +305,9 @@ private fun DefaultDestination(route: PushRoute, navigator: AppNavigator) {
         is PushRoute.InventoryItemForm -> InventoryItemFormScreen(route.id, route.substance, navigator)
         is PushRoute.InteractionTimeline ->
             InteractionTimelineScreen(route.substanceA, route.substanceB, navigator)
-        is PushRoute.DrugClass -> DrugClassScreen(route.className, navigator)
+        // `PushRoute.DrugClass` has no case: nothing constructs it. Choosing a class from the
+        // browser is local state on `DrugClassScreen` rather than a pushed route, and the
+        // deep-link decoder has no arm for it, so the destination here could never run.
 
         PushRoute.MyMeds -> MyMedsHubScreen(
             navigator = navigator,
@@ -321,6 +328,10 @@ private fun DefaultDestination(route: PushRoute, navigator: AppNavigator) {
             PushRoute.ToolKind.ALCOHOL -> AlcoholScreen(navigator)
             PushRoute.ToolKind.EQUIVALENCE -> EquivalenceScreen(navigator)
             PushRoute.ToolKind.IDENTIFY -> IdentifyScreen(navigator)
+            // The class browser's entry point is the list, and choosing from it is local state
+            // rather than a pushed route — see `DrugClassScreen`'s own note. The `PushRoute.DrugClass`
+            // case was an unreachable duplicate: nothing constructs it, so it dispatched a
+            // destination no user could ask for.
             PushRoute.ToolKind.DRUG_CLASS -> DrugClassScreen("", navigator)
             PushRoute.ToolKind.COMEDOWN -> ComedownGuideScreen(navigator)
             PushRoute.ToolKind.HELP -> HelpScreen(navigator)
@@ -339,6 +350,7 @@ private fun DefaultDestination(route: PushRoute, navigator: AppNavigator) {
         }
 
         is PushRoute.LibraryCategory -> CategoryBrowseScreen(route.category, navigator)
+        PushRoute.LibraryFavorites -> LibraryFavoritesScreen(navigator)
 
         // The remaining library browse routes — the tag row, favorites and the
         // user's own substances — read user data (Room) rather than the read-only

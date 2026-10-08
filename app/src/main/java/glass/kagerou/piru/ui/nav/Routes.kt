@@ -226,18 +226,18 @@ sealed interface PushRoute {
  * Ported from `SheetRoute`. Quick log is the one that matters: it is how every
  * dose in the app gets logged, and it is a sheet rather than a push because the
  * user is mid-something and must be able to abandon it without unwinding a stack.
+ *
+ * ## Two variants this used to carry, and why they are gone
+ * `EntryEditor` and `NewSession` were declared and never presented by anything: editing an entry
+ * is `PushRoute.Entry`, which the sheet duplicated, and session creation happens through the
+ * grouping sweep rather than a form. Their one dispatch arm rendered "Not ported yet" — a screen
+ * no user could reach, and a message about a feature that was not missing.
  */
 @Serializable
 sealed interface SheetRoute {
 
     @Serializable
     data object QuickLog : SheetRoute
-
-    @Serializable
-    data class EntryEditor(val timestampEpochMillis: Long, val id: String? = null) : SheetRoute
-
-    @Serializable
-    data object NewSession : SheetRoute
 
     /**
      * Whether this sheet hosts its own push stack.

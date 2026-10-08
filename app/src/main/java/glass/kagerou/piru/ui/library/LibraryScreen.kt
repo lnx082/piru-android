@@ -35,6 +35,15 @@ import glass.kagerou.piru.ui.theme.PiruTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import glass.kagerou.piru.substance.SubstanceMatch
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import glass.kagerou.piru.data.entity.FavoriteSubstanceEntity
+import kotlinx.coroutines.launch
 
 /**
  * The library: browse by category, or search the whole catalog, then in.
@@ -54,10 +63,20 @@ import glass.kagerou.piru.substance.SubstanceMatch
 fun LibraryScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val app = context.applicationContext as PiruApplication
+    val scope = rememberCoroutineScope()
     var query by remember { mutableStateOf("") }
     // The matches, not just the substances: `SubstanceMatch.matchedAlias` is what the
     // row needs in order to say what the query actually named.
     var results by remember { mutableStateOf<List<SubstanceMatch<Substance>>>(emptyList()) }
+
+    // Which substances are starred, lowercased for the same reason the DAO matches that way.
+    // Held here rather than queried per row: the star's state is what the row draws, and a
+    // per-row read would be one query per result on every keystroke.
+    var favoriteNames by remember { mutableStateOf<Set<String>>(emptySet()) }
+    LaunchedEffect(Unit) {
+        favoriteNames = app.database.favoriteSubstanceDao().all()
+            .mapTo(HashSet()) { it.substance.lowercase() }
+    }
     var categories by remember { mutableStateOf<List<Pair<SubstanceCategory, Int>>>(emptyList()) }
     var ready by remember { mutableStateOf(false) }
 
@@ -140,11 +159,56 @@ fun LibraryScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                                     )
                                 }
                             }
-                            Text(
-                                CoreLabels.category(substance.category),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = PiruTheme.colors.secondaryLabel,
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                            ) {
+                                Text(
+                                    CoreLabels.category(substance.category),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = PiruTheme.colors.secondaryLabel,
+                                )
+                                // The writer for `favorite_substances`, which had a DAO, an
+                                // export round trip and — until now — nothing in the app that
+                                // ever inserted a row. The favourites screen could only ever be
+                                // empty without this.
+                                val starred = substance.name.lowercase() in favoriteNames
+                                IconButton(
+                                    onClick = {
+                                        scope.launch {
+                                            val dao = app.database.favoriteSubstanceDao()
+                                            if (starred) {
+                                                dao.byName(substance.name)?.let { dao.delete(it) }
+                                            } else {
+                                                dao.insert(
+                                                    FavoriteSubstanceEntity(
+                                                        substance = substance.name,
+                                                        substanceUID = substance.substanceUID,
+                                                    ),
+                                                )
+                                            }
+                                            favoriteNames = dao.all()
+                                                .mapTo(HashSet()) { it.substance.lowercase() }
+                                        }
+                                    },
+                                ) {
+                                    Icon(
+                                        if (starred) Icons.Filled.Star else Icons.Outlined.Star,
+                                        contentDescription = stringResource(
+                                            if (starred) {
+                                                R.string.shell_library_unfavorite
+                                            } else {
+                                                R.string.shell_library_favorite
+                                            },
+                                        ),
+                                        tint = if (starred) {
+                                            PiruTheme.colors.accent
+                                        } else {
+                                            PiruTheme.colors.secondaryLabel
+                                        },
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -172,6 +236,22 @@ private fun CategoryGrid(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = FAB_CLEARANCE),
     ) {
+        // The user's own rows first: a favourites list nobody can find is the same as no
+        // favourites list, which is what this was while `favorite_substances` had a DAO and no
+        // reader.
+        item {
+            PiruCard(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = { navigator.push(PushRoute.LibraryFavorites) },
+            ) {
+                Text(
+                    stringResource(R.string.shell_library_favorites),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(14.dp),
+                )
+            }
+        }
+
         item {
             Text(
                 stringResource(R.string.shell_library_categories),

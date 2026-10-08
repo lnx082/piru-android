@@ -200,6 +200,11 @@
     <string name="shell_library_no_matches">Nothing in the catalog matches “%1$s”.</string>
 
     <!-- The category grid's header, and the badge counting a category's members. -->
+    <string name="shell_library_favorites">Favourites</string>
+    <string name="shell_library_favorites_empty">Nothing starred yet. Search for a substance and star it to keep it here.</string>
+    <string name="shell_library_favorites_unknown">Not in the catalogue</string>
+    <string name="shell_library_unfavorite">Remove from favourites</string>
+    <string name="shell_library_favorite">Add to favourites</string>
     <string name="shell_library_categories">Categories</string>
     <plurals name="shell_library_category_count">
         <item quantity="one">%1$d substance</item>
