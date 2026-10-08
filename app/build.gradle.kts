@@ -19,8 +19,8 @@ android {
         applicationId = "glass.kagerou.piru"
         minSdk = 30
         targetSdk = 37
-        versionCode = 8
-        versionName = "0.5.2"
+        versionCode = 9
+        versionName = "0.5.3"
         // The widget's specs read the real store through `WidgetState.load`, which is
         // what a placed widget does — an in-memory database would test a database the
         // widget never sees. JUnit 4 through AndroidJUnitRunner, the same runner
