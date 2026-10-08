@@ -56,6 +56,12 @@ class ClassAndTagBrowseDeviceTest {
         //   full suite (120s budget)                  FAILED, this case 121.884s, its sibling 122.747s
         //   class alone (300s budget)                 SUCCESSFUL, 3/3, 2.6-3.3s
         //   full suite (300s budget)                  SUCCESSFUL in 61s, 40/40, nothing over 5s
+        //   up 1h15m, full suite (43 specs)            FAILED in 6m53s, this case 304.482s
+        //   after restarting the AVD, same suite       SUCCESSFUL in 71s, 43/43, nothing over 10s
+        //
+        // **Restarting the emulator is what fixes it.** That has now happened twice — the first time a run failing
+        // three ways at 4m11s went green at 55s with no code change. So the useful instruction here is "restart the
+        // AVD", not "this spec is flaky", and a timeout in this file should send the reader there first.
         //
         // and the probes that ruled out every mechanism I could name:
         //

@@ -224,4 +224,7 @@
     <string name="journal_active_now_dose">%1 %2 · %3</string>
     <string name="journal_dose_count">%1 剂</string>
     <string name="journal_maintenance">计划用药</string>
-            </resources>
+                <string name="journal_session_interactions">相互作用</string>
+    <string name="journal_session_interaction_pairs">%1$d 组组合</string>
+    <string name="journal_session_interaction_timeline">查看它们何时重叠</string>
+</resources>

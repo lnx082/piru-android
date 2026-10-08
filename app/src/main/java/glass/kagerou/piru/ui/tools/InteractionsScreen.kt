@@ -738,7 +738,7 @@ private fun CombinationMetaboliteBanner(formation: CombinationFormation, modifie
  * is worse than one that plainly is not.
  */
 @Composable
-private fun Chip(text: String, tint: Color?, onClick: (() -> Unit)? = null) {
+internal fun Chip(text: String, tint: Color?, onClick: (() -> Unit)? = null) {
     val label = tint ?: PiruTheme.colors.secondaryLabel
     val fill = tint ?: PiruTheme.colors.inputBackground
 

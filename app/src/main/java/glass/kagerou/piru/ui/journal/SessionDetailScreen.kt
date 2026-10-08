@@ -55,6 +55,8 @@ import kotlinx.coroutines.withContext
 import glass.kagerou.piru.ui.insights.SessionShareImage
 import glass.kagerou.piru.ui.insights.ShareImage
 import glass.kagerou.piru.ui.labels.CoreLabels
+import glass.kagerou.piru.engine.InteractionChecker
+import glass.kagerou.piru.ui.nav.PushRoute
 
 /**
  * A session: its span, its curves, and the doses inside it.
@@ -90,6 +92,10 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
     var tints by remember(sessionId) { mutableStateOf<Map<String, P3Color>>(emptyMap()) }
     var vitals by remember(sessionId) { mutableStateOf(SessionVitals.empty) }
     var loading by remember(sessionId) { mutableStateOf(true) }
+
+    // The session's interaction warnings, folded by rule. Resolved here rather than in the card because the
+    // checker needs the catalogue, which is a disk read.
+    var safety by remember(sessionId) { mutableStateOf<List<InteractionGrouping.Group>>(emptyList()) }
 
     // A scope for the export: it is a suspend render plus a share intent.
     val scope = rememberCoroutineScope()
@@ -130,6 +136,16 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
         markers = inputs.markers
         vitals = loadSessionVitals(context, doses)
         loading = false
+
+        // The interaction warnings for this session's substances. Computed from the same checker the
+        // interactions screen and the PDF use, so the three cannot disagree about a pair.
+        safety = runCatching {
+            val resolved = app.catalog()
+            val checker = InteractionChecker(resolved, resolved)
+            val names = doses.map { it.substance }.distinct()
+            val records = doses.map { it.toDoseRecordForSession() }
+            InteractionGrouping.group(checker.checkBatch(names, records))
+        }.getOrDefault(emptyList())
     }
 
     val zone = ZoneId.systemDefault()
@@ -218,6 +234,15 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
                         )
                     }
                 }
+            }
+
+            // The session's interaction warnings, above the doses: a warning below a long list is a
+            // warning nobody reads.
+            item {
+                SessionSafetyCard(
+                    groups = safety,
+                    onOpenPair = { a, b -> navigator.push(PushRoute.InteractionTimeline(a, b)) },
+                )
             }
 
             item {
