@@ -68,6 +68,10 @@ androidx-health-connect = { module = "androidx.health.connect:connect-client", v
 # reboot, but only a persisted work request survives the app being force-stopped
 # and the next boot's reconciliation pass.
 androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
+# The synchronous WorkManager a spec needs to see an enqueue: settleSchedule arms the
+# widget refresh by enqueueing unique work, and that is the only effect of it a JVM test can
+# observe, because refreshAll returns immediately with no widget placed.
+androidx-work-testing = { module = "androidx.work:work-testing", version.ref = "work" }
 
 # Glance app widgets. `glance-appwidget` brings the Compose-style surface and the
 # `GlanceAppWidget`/`GlanceAppWidgetReceiver` pair; `glance-material3` is not pulled

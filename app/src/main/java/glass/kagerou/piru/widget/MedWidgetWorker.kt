@@ -158,6 +158,13 @@ internal object MedWidgetRefresh {
         return maxOf(1L, minOf(untilSlot, untilMidnight))
     }
 
-    /** One name, so a re-arm replaces rather than stacks. */
-    private const val WORK_NAME = "piru-med-widget-refresh"
+    /**
+     * The unique work name the widget's refresh is armed under. One name, so a re-arm replaces rather than
+     * stacks.
+     *
+     * internal rather than private so a spec can ask whether a write path armed it: that is the only effect
+     * settleSchedule has which a JVM harness can observe, because the refresh half returns immediately when
+     * no widget is placed. The enqueue is what proves the call happened at all.
+     */
+    internal const val WORK_NAME = "piru-med-widget-refresh"
 }

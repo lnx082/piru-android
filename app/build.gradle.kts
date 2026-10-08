@@ -153,6 +153,8 @@ dependencies {
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
     testImplementation(libs.robolectric)
+    // A synchronous WorkManager, so a spec can observe the enqueue settleSchedule makes.
+    testImplementation(libs.androidx.work.testing)
     testImplementation(libs.androidx.test.ext.junit)
     debugImplementation(libs.compose.ui.test.manifest)
 
