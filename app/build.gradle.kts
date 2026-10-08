@@ -150,6 +150,7 @@ dependencies {
     //
     // JUnit 4, not JUnit 5: `createComposeRule` is a JUnit 4 rule, and the runner below is
     // configured to run both frameworks in this source set for exactly that reason.
+    testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.ext.junit)
@@ -162,6 +163,11 @@ dependencies {
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.kotest.assertions.core)
     androidTestImplementation(libs.kotlinx.coroutines.core)
+    // The device-side Compose rule, for the specs that need a real IME or a real window —
+    // and the BOM, because `platform(...)` above is in the `implementation` configuration
+    // and the Compose artifacts carry no version of their own in the catalog.
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.ui.test.junit4)
 }
 
 tasks.withType<Test>().configureEach {
