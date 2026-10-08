@@ -143,6 +143,14 @@ class SubstanceReader(
         val displayName: String,
         val defaultPriority: Int,
         val defaultEnabled: Boolean,
+        /**
+         * The catalogue's own sentence about the source, which is where its **licence** lives.
+         *
+         * `sources` has no licence column: the licence is inside this text ("Community wiki. CC BY-SA 4.0.").
+         * Carried so the About page can name each source's terms without a second, hand-maintained list — which
+         * would be wrong the day a source is added or relicensed.
+         */
+        val description: String = "",
     )
 
     /**
@@ -156,7 +164,9 @@ class SubstanceReader(
      */
     fun sources(): List<SourceInfo> {
         val rows = db.query(
-            "SELECT slug, display_name, default_priority, default_enabled FROM sources",
+            // `description` as well: it is where each source's licence is written ("Community wiki. CC BY-SA
+            // 4.0."), and the About page names it from here rather than from a second hand-kept list.
+            "SELECT slug, display_name, default_priority, default_enabled, description FROM sources",
         )
         val bySlug = rows.mapNotNull { row ->
             val slug = row.string("slug") ?: return@mapNotNull null
@@ -165,6 +175,7 @@ class SubstanceReader(
                 displayName = row.string("display_name") ?: slug,
                 defaultPriority = (row.long("default_priority") ?: 0L).toInt(),
                 defaultEnabled = (row.long("default_enabled") ?: 1L) != 0L,
+                description = row.string("description").orEmpty(),
             )
         }.toMap()
 

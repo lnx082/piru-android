@@ -179,6 +179,15 @@ sealed interface PushRoute {
     @Serializable
     data object TabRoot : PushRoute
 
+    /**
+     * The About page: what the app is, its data sources, and what it does with the user's data.
+     *
+     * A destination rather than an inline settings card, because it is a reading page with six sections and a list
+     * of eighteen sources.
+     */
+    @Serializable
+    data object About : PushRoute
+
     /** One tracked supply, by its row id. */
     @Serializable
     data class InventoryItem(val id: String) : PushRoute
@@ -320,6 +329,7 @@ fun PushRoute.key(): String = when (this) {
     is PushRoute.InventoryItemForm -> "inventory-form:${id ?: "new"}"
     is PushRoute.InteractionTimeline -> "interaction:$substanceA:$substanceB"
     is PushRoute.DrugClass -> "drug-class:$className"
+        PushRoute.About -> "about"
     is PushRoute.Effects -> "effects:$name"
     PushRoute.SubstanceDatabase -> "substance-database"
     PushRoute.AdvancedSearch -> "advanced-search"

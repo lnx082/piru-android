@@ -813,4 +813,24 @@
     <string name="shell_section_neuroimaging">Imaging evidence</string>
     <string name="shell_neuroimaging_blurb">What scans of living brains have shown, grouped by method. This is the human corroboration of the receptor data above.</string>
     <string name="shell_neuroimaging_unspecified">Unspecified method</string>
+    <string name="shell_about_disclaimer">Before anything else</string>
+    <string name="shell_about_disclaimer_1">Piru is a personal record and a general reference, provided as is and without warranty of any kind. It is not medical advice and not a medical device.</string>
+    <string name="shell_about_disclaimer_2">Reference content is compiled from third-party, community and curated sources and may be incomplete, outdated or wrong. Every curve, level and estimate is a model rather than a measurement of you.</string>
+    <string name="shell_about_disclaimer_3">Nothing here encourages or facilitates the use, acquisition or possession of any substance, and you alone are responsible for complying with the law where you are.</string>
+    <string name="shell_about_disclaimer_emergency">Piru does not monitor emergencies. If someone is in danger, call your local emergency number.</string>
+    <string name="shell_about_sources">Data sources</string>
+    <string name="shell_about_sources_caption">Every source recorded in the substance database that ships with Piru.</string>
+    <string name="shell_about_sources_licenses">Each substance page names the source of each field. Text from PsychonautWiki and FreeOD Wiki is used under CC BY-SA 4.0, edited and merged. Content outside those licences — quotations from published books, manufacturers\' label text, and figures from reference tables — belongs to its own rights holders.</string>
+    <string name="shell_about_source_no_license">No licence stated</string>
+    <string name="shell_about_open_source">Open source</string>
+    <string name="shell_about_open_source_body">Piru\'s source code is available under the GNU GPL v3.</string>
+    <string name="shell_about_ai">AI-assisted content</string>
+    <string name="shell_about_ai_body">Some reference text was drafted with AI assistance and reviewed before publication. AI output is not treated as evidence. Quantitative and safety-critical claims are checked against identified sources, which are listed on each substance page.</string>
+    <string name="shell_about_privacy">What happens to your data</string>
+    <string name="shell_about_privacy_journal">Your journal is stored in the app on this device, and in any device or cloud backup your settings make of it. Anyone who can unlock the device can read it.</string>
+    <string name="shell_about_privacy_health">Health Connect is used only when you connect it, to display data beside your journal.</string>
+    <string name="shell_about_privacy_exports">Exports and backups are created when you ask and saved where you choose. They are unencrypted unless you choose an encrypted backup.</string>
+    <string name="shell_about_app">This build</string>
+    <string name="shell_about_app_catalogue">Reference data is compiled into the app, so the reference works offline. Your log never leaves the device unless you export or back it up.</string>
+    <string name="shell_settings_about_detail">What Piru is, where its data comes from, and what it does with yours.</string>
 </resources>

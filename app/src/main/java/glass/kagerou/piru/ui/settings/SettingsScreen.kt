@@ -376,48 +376,23 @@ fun SettingsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         }
 
         item {
-            SectionCard(stringResource(R.string.shell_settings_about)) {
-                Text(
-                    stringResource(R.string.shell_not_medical_advice),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium,
-                )
-                Text(
-                    stringResource(R.string.shell_settings_about_body),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = PiruTheme.colors.secondaryLabel,
-                )
-                HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
-                Text(
-                    stringResource(
-                        R.string.shell_settings_version,
-                        BuildConfig.VERSION_NAME,
-                        BuildConfig.VERSION_CODE,
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = PiruTheme.colors.secondaryLabel,
-                )
-                Text(
-                    stringResource(R.string.shell_settings_tagline),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = PiruTheme.colors.secondaryLabel,
-                )
-            }
-        }
-
-        item {
-            SectionCard(stringResource(R.string.shell_settings_sources)) {
-                Text(
-                    stringResource(R.string.shell_settings_sources_body),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = PiruTheme.colors.secondaryLabel,
-                )
-                HorizontalDivider(modifier = Modifier.padding(vertical = 6.dp))
-                Text(
-                    stringResource(R.string.shell_settings_license_body),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = PiruTheme.colors.secondaryLabel,
-                )
+            PiruCard(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = { navigator.push(PushRoute.About) },
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        stringResource(R.string.shell_settings_about),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(
+                        // The two-paragraph cards that were here said "sources exist" without naming one. The
+                        // page names all eighteen, with each one's licence.
+                        stringResource(R.string.shell_settings_about_detail),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = PiruTheme.colors.secondaryLabel,
+                    )
+                }
             }
         }
     }

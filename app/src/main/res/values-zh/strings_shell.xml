@@ -779,4 +779,24 @@
     <string name="shell_section_neuroimaging">影像学证据</string>
     <string name="shell_neuroimaging_blurb">活体脑扫描所见，按方法分组。这是对上方受体数据的人体验证。</string>
     <string name="shell_neuroimaging_unspecified">未注明方法</string>
+    <string name="shell_about_disclaimer">在一切之前</string>
+    <string name="shell_about_disclaimer_1">Piru 是个人记录与通用参考资料，按现状提供，不作任何担保。它不是医疗建议，也不是医疗器械。</string>
+    <string name="shell_about_disclaimer_2">参考内容汇编自第三方、社区与人工整理来源，可能不完整、过时或有误。每一条曲线、浓度与估算都是模型，而不是对你本人的测量。</string>
+    <string name="shell_about_disclaimer_3">本应用不鼓励也不协助任何物质的使用、获取或持有；遵守你所在地区的法律完全是你自己的责任。</string>
+    <string name="shell_about_disclaimer_emergency">Piru 不监控紧急情况。如果有人处于危险中，请拨打当地急救电话。</string>
+    <string name="shell_about_sources">数据来源</string>
+    <string name="shell_about_sources_caption">随 Piru 发布的物质数据库中记录的全部来源。</string>
+    <string name="shell_about_sources_licenses">每个物质页面都会标明各字段的来源。PsychonautWiki 与 FreeOD Wiki 的文本以 CC BY-SA 4.0 使用，并经编辑与合并。这些许可之外的内容 —— 已出版书籍的引文、厂商说明书文本、参考表格中的数字 —— 归各自权利人所有。</string>
+    <string name="shell_about_source_no_license">未注明许可</string>
+    <string name="shell_about_open_source">开源</string>
+    <string name="shell_about_open_source_body">Piru 的源代码以 GNU GPL v3 发布。</string>
+    <string name="shell_about_ai">AI 协助内容</string>
+    <string name="shell_about_ai_body">部分参考文本在 AI 协助下起草，并经过发布前审阅。AI 输出不被当作证据。定量与安全性论断都会对照已标明的来源核查，这些来源列在每个物质页面上。</string>
+    <string name="shell_about_privacy">你的数据会怎样</string>
+    <string name="shell_about_privacy_journal">你的日志保存在本机应用内，以及你的设置所生成的任何设备或云端备份中。任何能解锁这台设备的人都能读到它。</string>
+    <string name="shell_about_privacy_health">Health Connect 仅在你连接时使用，用于在你的日志旁显示数据。</string>
+    <string name="shell_about_privacy_exports">导出与备份在你要求时生成，保存在你选择的位置。除非你选择加密备份，否则它们是不加密的。</string>
+    <string name="shell_about_app">此版本</string>
+    <string name="shell_about_app_catalogue">参考数据已编译进应用，因此离线也能查阅。除非你导出或备份，你的日志不会离开这台设备。</string>
+    <string name="shell_settings_about_detail">Piru 是什么、数据来自哪里，以及它如何处理你的数据。</string>
 </resources>
