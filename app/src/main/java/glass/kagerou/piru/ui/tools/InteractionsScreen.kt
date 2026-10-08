@@ -69,6 +69,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import glass.kagerou.piru.substance.SubstanceMatch
 
 /**
  * The interaction explorer: pick up to eight substances, see every rule that
@@ -116,7 +117,9 @@ fun InteractionsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     var results by remember { mutableStateOf<List<InteractionResult>>(emptyList()) }
     var combinations by remember { mutableStateOf<List<CombinationFormation>>(emptyList()) }
     var searchText by remember { mutableStateOf("") }
-    var searchResults by remember { mutableStateOf<List<Substance>>(emptyList()) }
+    // The matches, not just the substances: `matchedAlias` is what the dropdown needs in
+    // order to say which alias the query named.
+    var searchResults by remember { mutableStateOf<List<SubstanceMatch<Substance>>>(emptyList()) }
     var showSearchResults by remember { mutableStateOf(false) }
     var usedCounts by remember { mutableStateOf<List<UsedSubstance>>(emptyList()) }
     var tints by remember { mutableStateOf<Map<String, P3Color>>(emptyMap()) }
@@ -174,7 +177,7 @@ fun InteractionsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         delay(SEARCH_DEBOUNCE_MILLIS)
         val catalog = withContext(Dispatchers.Default) { app.catalog() }
         val found = withContext(Dispatchers.Default) {
-            catalog.search(searchText, limit = SEARCH_RESULT_LIMIT).map { it.substance }
+            catalog.search(searchText, limit = SEARCH_RESULT_LIMIT)
         }
         searchResults = found
         showSearchResults = true
@@ -253,7 +256,7 @@ fun InteractionsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                         // typed — and this screen is usually being used to ask about
                         // a second substance, so the next thing typed usually lands
                         // in the same field.
-                        val first = searchResults.firstOrNull()
+                        val first = searchResults.firstOrNull()?.substance
                         val added = if (first != null) {
                             addSubstance(first.name, selected) { selected = it }
                         } else if (searchText.isNotEmpty()) {
@@ -386,18 +389,21 @@ private fun SearchField(
 @Composable
 private fun SearchDropdown(
     query: String,
-    results: List<Substance>,
+    results: List<SubstanceMatch<Substance>>,
     selected: List<String>,
     hasExactMatch: Boolean,
     onPick: (String) -> Unit,
 ) {
     val selectedLower = remember(selected) { selected.map { it.lowercase() }.toSet() }
-    val shown = results.filter { it.name.lowercase() !in selectedLower }.take(DROPDOWN_LIMIT)
+    val shown = results
+        .filter { it.substance.name.lowercase() !in selectedLower }
+        .take(DROPDOWN_LIMIT)
     val showCustom = query.isNotEmpty() && !hasExactMatch
 
     PiruCard(modifier = Modifier.fillMaxWidth()) {
         Column {
-            shown.forEachIndexed { index, substance ->
+            shown.forEachIndexed { index, match ->
+                val substance = match.substance
                 if (index > 0) {
                     HorizontalDivider(modifier = Modifier.padding(start = 16.dp))
                 }
@@ -412,7 +418,11 @@ private fun SearchDropdown(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
-                        Text(substance.displayTitle, style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            // The alias the query named, when it named one,
+                            // then the canonical title.
+                            match.matchedAlias?.let { "$it · ${substance.displayTitle}" }
+                                ?: substance.displayTitle, style = MaterialTheme.typography.bodyLarge)
                         // Three, as upstream: enough to show which of the brand
                         // names carried the match, not enough to become a list.
                         if (substance.aliases.isNotEmpty()) {
@@ -881,10 +891,19 @@ internal fun rebuildUsedCounts(names: List<String>): List<UsedSubstance> {
 }
 
 /** Whether the catalog returned the typed name itself, so the "use what I typed" row is not offered twice. */
-private fun hasExactMatch(query: String, results: List<Substance>): Boolean {
+/**
+ * Whether the query exactly names one of the results.
+ *
+ * The search layer already knows: `matchedAlias` is non-null only when the query named a catalog
+ * alias rather than matching loosely, so "an alias matched" and "the canonical name matched" are
+ * the two exact cases and both are already decided. This re-scanned every result's whole alias
+ * list with `lowercase()` on a per-keystroke path to reach a conclusion the match object held.
+ */
+private fun hasExactMatch(query: String, results: List<SubstanceMatch<Substance>>): Boolean {
     val needle = query.lowercase()
-    return results.any { substance ->
-        substance.name.lowercase() == needle || substance.aliases.any { it.lowercase() == needle }
+    return results.any { match ->
+        match.substance.name.lowercase() == needle ||
+            match.matchedAlias?.lowercase() == needle
     }
 }
 

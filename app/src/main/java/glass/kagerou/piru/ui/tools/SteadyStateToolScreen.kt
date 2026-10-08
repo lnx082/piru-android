@@ -60,6 +60,7 @@ import java.util.Locale
 import kotlin.math.floor
 import kotlin.math.log10
 import kotlin.math.pow
+import glass.kagerou.piru.substance.SubstanceMatch
 
 /**
  * Steady State — where a medicine taken on a fixed schedule settles.
@@ -406,7 +407,10 @@ private fun SubstanceSearchField(
         if (query.trim().length < 2 || catalog == null) {
             emptyList()
         } else {
-            catalog.search(query.trim(), limit = 8).map { it.substance }
+            // Matches, not substances: the suggestion can then say which alias the query
+            // named, which is the difference between "Methylphenidate" and "the Concerta you
+            // typed".
+            catalog.search(query.trim(), limit = 8)
         }
     }
 
@@ -423,13 +427,16 @@ private fun SubstanceSearchField(
         if (matches.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 for (match in matches) {
+                    val substance = match.substance
                     Text(
-                        match.displayTitle,
+                        // The alias when one matched, because that is the name the user typed
+                        // and the one they will recognise in the result list.
+                        match.matchedAlias?.let { "$it · ${substance.displayTitle}" } ?: substance.displayTitle,
                         style = MaterialTheme.typography.bodyMedium,
                         color = PiruTheme.colors.accent,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onSelect(match) }
+                            .clickable { onSelect(substance) }
                             .padding(vertical = 6.dp),
                     )
                 }

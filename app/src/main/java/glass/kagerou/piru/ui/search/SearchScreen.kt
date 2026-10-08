@@ -35,6 +35,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import glass.kagerou.piru.substance.SubstanceMatch
 
 /**
  * Search, as its own tab.
@@ -62,7 +63,8 @@ fun SearchScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     val dateLocale = appLocale()
 
     var query by remember { mutableStateOf("") }
-    var substances by remember { mutableStateOf<List<Substance>>(emptyList()) }
+    // The matches, so the row can say which alias the query named.
+    var substances by remember { mutableStateOf<List<SubstanceMatch<Substance>>>(emptyList()) }
     var doses by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
     var ready by remember { mutableStateOf(false) }
 
@@ -80,7 +82,7 @@ fun SearchScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         }
         val catalog = withContext(Dispatchers.Default) { app.catalog() }
         substances = withContext(Dispatchers.Default) {
-            catalog.search(query, limit = 20).map { it.substance }
+            catalog.search(query, limit = 20)
         }
         // The log half is a plain substring match over the name as it was written,
         // case-insensitively. The catalog's ranked cascade is for finding a
@@ -161,7 +163,8 @@ fun SearchScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                 item {
                     SectionLabel(stringResource(R.string.shell_search_in_library))
                 }
-                items(substances, key = { it.id.toString() }) { substance ->
+                items(substances, key = { it.substance.id.toString() }) { match ->
+                    val substance = match.substance
                     PiruCard(
                         modifier = Modifier.fillMaxWidth(),
                         onClick = { navigator.push(PushRoute.Substance(substance.name)) },
@@ -170,7 +173,22 @@ fun SearchScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                             modifier = Modifier.padding(14.dp).fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
-                            Text(substance.displayTitle, style = MaterialTheme.typography.titleSmall)
+                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(
+                                    substance.displayTitle,
+                                    style = MaterialTheme.typography.titleSmall,
+                                )
+                                // What the query named, when it named an alias. A search for
+                                // "Concerta" returns Methylphenidate, which is right, but the
+                                // typed string is what tells the reader why this row is here.
+                                match.matchedAlias?.let { alias ->
+                                    Text(
+                                        alias,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = PiruTheme.colors.secondaryLabel,
+                                    )
+                                }
+                            }
                             Text(
                                 CoreLabels.category(substance.category),
                                 style = MaterialTheme.typography.bodySmall,

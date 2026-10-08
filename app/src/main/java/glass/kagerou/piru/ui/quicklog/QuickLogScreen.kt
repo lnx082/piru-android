@@ -48,6 +48,7 @@ import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import glass.kagerou.piru.substance.SubstanceMatch
 
 /**
  * One dose, staged and not yet committed.
@@ -110,7 +111,7 @@ fun QuickLogSheet(
     // meant the keyboard never appeared and the first characters went nowhere, which reads
     // as "the substance field is empty" rather than as "nothing is listening".
     val substanceFocus = remember { FocusRequester() }
-    var results by remember { mutableStateOf<List<Substance>>(emptyList()) }
+    var results by remember { mutableStateOf<List<SubstanceMatch<Substance>>>(emptyList()) }
     var committing by remember { mutableStateOf(false) }
     var catalogReady by remember { mutableStateOf(false) }
 
@@ -133,7 +134,7 @@ fun QuickLogSheet(
     LaunchedEffect(query) {
         val c = catalog.value ?: return@LaunchedEffect
         results = withContext(Dispatchers.Default) {
-            if (query.isBlank()) emptyList() else c.search(query, limit = 20).map { it.substance }
+            if (query.isBlank()) emptyList() else c.search(query, limit = 20)
         }
     }
 
@@ -161,7 +162,8 @@ fun QuickLogSheet(
                 )
             }
 
-            for (substance in results) {
+            for (match in results) {
+                val substance = match.substance
                 PiruCard(
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {
@@ -182,12 +184,16 @@ fun QuickLogSheet(
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(substance.displayTitle, style = MaterialTheme.typography.titleSmall)
                         Text(
-                            // Both halves are the reader-facing label, not the wire
-                            // value: `category.wireValue` is storage, and a search
-                            // result that reads "stimulant · oral" in the Chinese
-                            // build is a result half in the wrong language.
-                            "${CoreLabels.category(substance.category)} · " +
-                                CoreLabels.route(substance.defaultRoute),
+                            // The alias first when the query named one: it is what the user
+                            // typed, and for a brand name it is also the product the dose is
+                            // being logged as. Then both halves of the reader-facing label —
+                            // not the wire value, because a result reading "stimulant · oral"
+                            // in the Chinese build is a result half in the wrong language.
+                            listOfNotNull(
+                                match.matchedAlias,
+                                CoreLabels.category(substance.category) +
+                                    " · " + CoreLabels.route(substance.defaultRoute),
+                            ).joinToString(" · "),
                             style = MaterialTheme.typography.bodySmall,
                             color = PiruTheme.colors.secondaryLabel,
                         )

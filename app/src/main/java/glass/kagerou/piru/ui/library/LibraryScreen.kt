@@ -34,6 +34,7 @@ import glass.kagerou.piru.ui.nav.PushRoute
 import glass.kagerou.piru.ui.theme.PiruTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import glass.kagerou.piru.substance.SubstanceMatch
 
 /**
  * The library: browse by category, or search the whole catalog, then in.
@@ -54,7 +55,9 @@ fun LibraryScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val app = context.applicationContext as PiruApplication
     var query by remember { mutableStateOf("") }
-    var results by remember { mutableStateOf<List<Substance>>(emptyList()) }
+    // The matches, not just the substances: `SubstanceMatch.matchedAlias` is what the
+    // row needs in order to say what the query actually named.
+    var results by remember { mutableStateOf<List<SubstanceMatch<Substance>>>(emptyList()) }
     var categories by remember { mutableStateOf<List<Pair<SubstanceCategory, Int>>>(emptyList()) }
     var ready by remember { mutableStateOf(false) }
 
@@ -68,7 +71,7 @@ fun LibraryScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         if (!ready) return@LaunchedEffect
         val catalog = withContext(Dispatchers.Default) { app.catalog() }
         results = withContext(Dispatchers.Default) {
-            if (query.isBlank()) emptyList() else catalog.search(query, limit = 60).map { it.substance }
+            if (query.isBlank()) emptyList() else catalog.search(query, limit = 60)
         }
     }
 
@@ -108,7 +111,8 @@ fun LibraryScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                 modifier = Modifier.fillMaxSize().padding(top = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                items(results, key = { it.id }) { substance ->
+                items(results, key = { it.substance.id }) { match ->
+                    val substance = match.substance
                     PiruCard(
                         modifier = Modifier.fillMaxWidth(),
                         onClick = { navigator.push(PushRoute.Substance(substance.name)) },
@@ -119,8 +123,16 @@ fun LibraryScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                         ) {
                             Column {
                                 Text(substance.displayTitle, style = MaterialTheme.typography.titleSmall)
-                                val alias = substance.aliases.firstOrNull()
-                                if (alias != null) {
+                                // What the query named, when it named an alias.
+                                //
+                                // This used to be `substance.aliases.firstOrNull()` — an
+                                // arbitrary entry from a list ordered by the catalogue, not by
+                                // the query. Searching "Concerta" could label the row with a
+                                // different brand of the same drug, which is a worse answer
+                                // than no subtitle at all. `matchedAlias` is null when the
+                                // canonical name matched or the match was only loose, and then
+                                // there is nothing to explain.
+                                match.matchedAlias?.let { alias ->
                                     Text(
                                         alias,
                                         style = MaterialTheme.typography.bodySmall,
