@@ -252,4 +252,8 @@
     <string name="journal_session_split_confirm">The first %1$d doses stay in this session. A new one starts at %2$s, %3$s.</string>
     <string name="journal_session_merge">Merge</string>
     <string name="journal_entry_grapefruit">Grapefruit</string>
+    <string name="journal_entry_no_location">No place set</string>
+    <string name="journal_entry_add_location">Add place</string>
+    <string name="journal_entry_change_location">Change</string>
+    <string name="journal_entry_clear_location">Clear</string>
 </resources>

@@ -50,6 +50,9 @@ import kotlinx.coroutines.launch
 import glass.kagerou.piru.engine.TagExtractor
 import glass.kagerou.piru.engine.Enzyme
 import glass.kagerou.piru.engine.InteractionData
+import androidx.compose.material3.Surface
+import glass.kagerou.piru.ui.meds.LocationPickerScreen
+import glass.kagerou.piru.ui.meds.PickedLocation
 
 /**
  * One logged dose, read and edited.
@@ -94,6 +97,15 @@ fun EntryDetailScreen(
     var substanceText by remember { mutableStateOf("") }
     var noteText by remember { mutableStateOf("") }
     var isUnknownAmount by remember { mutableStateOf(false) }
+    /**
+     * The place this dose happened, if the user named one.
+     *
+     * Held as the picked value rather than as the row's three columns so the picker can hand one
+     * object back. Null means "no place", which is what a dose has by default — and what the write
+     * below stores as three nulls rather than as a point in the Gulf of Guinea.
+     */
+    var location by remember { mutableStateOf<PickedLocation?>(null) }
+    var pickingLocation by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf(false) }
     var saved by remember { mutableStateOf(false) }
 
@@ -146,6 +158,9 @@ fun EntryDetailScreen(
         isUnknownAmount = row.isUnknownDose
         // Tri-state on the column: null means "not recorded", which reads as off.
         hadGrapefruit = row.hadGrapefruit == true
+        location = row.locationName?.let {
+            PickedLocation(name = it, latitude = row.latitude, longitude = row.longitude)
+        }
     }
 
     LaunchedEffect(timestampEpochMillis, idOrNull) {
@@ -161,6 +176,22 @@ fun EntryDetailScreen(
             .minByOrNull { kotlin.math.abs(it.timestamp.time - timestampEpochMillis) }
         row?.let { seed(it) }
         loaded = true
+    }
+
+    // The picker takes the screen while it is up. It is a whole surface rather than a dialog body:
+    // it draws its own header, its own close control and its own explanatory card, and upstream
+    // presents it as a sheet for the same reason.
+    if (pickingLocation) {
+        Surface(modifier = Modifier.fillMaxSize(), color = PiruTheme.colors.background) {
+            LocationPickerScreen(
+                onPick = {
+                    location = it
+                    pickingLocation = false
+                },
+                onDismiss = { pickingLocation = false },
+            )
+        }
+        return
     }
 
     val current = entry
@@ -261,6 +292,43 @@ fun EntryDetailScreen(
                             label = { Text(stringResource(R.string.common_note)) },
                             modifier = Modifier.fillMaxWidth(),
                         )
+                        // The place, as upstream's "Change Location" button. `EntryContextSection`
+                        // shows it on the read side; this is the write side, and without it the
+                        // three columns could only ever come from an import.
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    stringResource(R.string.meds_location),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                                Text(
+                                    location?.name
+                                        ?: stringResource(R.string.journal_entry_no_location),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = PiruTheme.colors.secondaryLabel,
+                                )
+                            }
+                            TextButton(onClick = { pickingLocation = true }) {
+                                Text(
+                                    stringResource(
+                                        if (location == null) {
+                                            R.string.journal_entry_add_location
+                                        } else {
+                                            R.string.journal_entry_change_location
+                                        },
+                                    ),
+                                )
+                            }
+                            if (location != null) {
+                                TextButton(onClick = { location = null }) {
+                                    Text(stringResource(R.string.journal_entry_clear_location))
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -307,6 +375,12 @@ fun EntryDetailScreen(
                                         // Left null when the toggle was not offered, so "not
                                         // recorded" stays distinguishable from "no grapefruit".
                                         hadGrapefruit = if (offersGrapefruit) hadGrapefruit else null,
+                                        // All three or none: a name with no coordinate is what this
+                                        // build can honestly record, and a coordinate with no name
+                                        // would be a point the user cannot recognise later.
+                                        locationName = location?.name,
+                                        latitude = location?.latitude,
+                                        longitude = location?.longitude,
                                     ).withTags(
                                         // Re-derived on every save rather than merged: the note
                                         // is the source of these, so removing a hashtag from the

@@ -212,4 +212,8 @@
     <string name="journal_session_split_confirm">前 %1$d 剂留在这次会话里，新的会话从 %2$s %3$s 开始。</string>
     <string name="journal_session_merge">合并</string>
     <string name="journal_entry_grapefruit">西柚</string>
+    <string name="journal_entry_no_location">未设置地点</string>
+    <string name="journal_entry_add_location">添加地点</string>
+    <string name="journal_entry_change_location">更改</string>
+    <string name="journal_entry_clear_location">清除</string>
 </resources>
