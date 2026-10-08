@@ -148,6 +148,7 @@ sealed interface PushRoute {
         COMEDOWN("comedown"),
         HELP("help"),
         EDUCATION("education"),
+    SOLUTION_MATH("solutionMath"),
         ;
     }
 

@@ -684,4 +684,22 @@
     <string name="shell_advanced_no_results">No bindings match these filters.</string>
     <string name="tools_advanced_search_title">Advanced search</string>
     <string name="tools_advanced_search_detail">Which substances bind a receptor, and how tightly?</string>
+    <string name="tools_solution_title">Solution math</string>
+    <string name="tools_solution_detail">What concentration did I make, or how much liquid do I need?</string>
+    <string name="tools_solution_mode_solvent">Solvent needed</string>
+    <string name="tools_solution_mode_concentration">Concentration</string>
+    <string name="tools_solution_desired_concentration">Desired concentration</string>
+    <string name="tools_solution_amount">Substance amount</string>
+    <string name="tools_solution_volume">Solvent volume</string>
+    <string name="tools_solution_result_solvent">Solvent needed</string>
+    <string name="tools_solution_result_concentration">Concentration</string>
+    <string name="tools_solution_unit_ml">ml</string>
+    <string name="tools_solution_unit_mg">mg</string>
+    <string name="tools_solution_unit_mg_per_ml">mg/ml</string>
+    <string name="tools_solution_safety">Safety</string>
+    <string name="tools_solution_safety_label">Always label a solution with the substance name and its concentration.</string>
+    <string name="tools_solution_safety_check">Check the arithmetic independently. This screen is a calculator, not a witness.</string>
+    <string name="tools_solution_safety_scale">Use a milligram scale and a graduated cylinder for accuracy.</string>
+    <string name="tools_solution_safety_store">Store solutions in clearly marked, child-proof containers.</string>
+    <string name="common_copy">Copy</string>
 </resources>

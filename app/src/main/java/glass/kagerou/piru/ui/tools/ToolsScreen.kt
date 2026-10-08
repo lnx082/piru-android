@@ -272,6 +272,11 @@ private val TOOL_GROUPS = listOf(
                 R.string.tools_identify_detail,
             ),
             ToolEntry(
+                PushRoute.ToolKind.SOLUTION_MATH,
+                R.string.tools_solution_title,
+                R.string.tools_solution_detail,
+            ),
+            ToolEntry(
                 PushRoute.ToolKind.COMEDOWN,
                 R.string.tools_comedown_title,
                 R.string.tools_comedown_detail,

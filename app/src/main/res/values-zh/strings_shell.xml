@@ -650,4 +650,22 @@
     <string name="shell_advanced_no_results">没有符合这些条件的结合数据。</string>
     <string name="tools_advanced_search_title">高级搜索</string>
     <string name="tools_advanced_search_detail">哪些物质结合这个受体，结合得有多紧？</string>
+    <string name="tools_solution_title">溶液计算</string>
+    <string name="tools_solution_detail">我配出来的浓度是多少，或者需要多少溶剂？</string>
+    <string name="tools_solution_mode_solvent">需要溶剂量</string>
+    <string name="tools_solution_mode_concentration">浓度</string>
+    <string name="tools_solution_desired_concentration">目标浓度</string>
+    <string name="tools_solution_amount">物质量</string>
+    <string name="tools_solution_volume">溶剂体积</string>
+    <string name="tools_solution_result_solvent">需要的溶剂</string>
+    <string name="tools_solution_result_concentration">浓度</string>
+    <string name="tools_solution_unit_ml">ml</string>
+    <string name="tools_solution_unit_mg">mg</string>
+    <string name="tools_solution_unit_mg_per_ml">mg/ml</string>
+    <string name="tools_solution_safety">安全</string>
+    <string name="tools_solution_safety_label">溶液一定要标明物质名称和浓度。</string>
+    <string name="tools_solution_safety_check">请独立复核这个算术。这个屏是计算器，不是见证者。</string>
+    <string name="tools_solution_safety_scale">用毫克级天平和量筒来保证准确。</string>
+    <string name="tools_solution_safety_store">溶液要存放在标记清楚、儿童打不开的容器里。</string>
+    <string name="common_copy">复制</string>
 </resources>
