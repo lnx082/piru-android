@@ -1229,7 +1229,7 @@ private fun AttenuationSection(a: EffectAttenuationResult, modifier: Modifier = 
  * substance is treated as fully engaged at its effect peak, which errs toward
  * warning — the safe direction for a depression readout.
  */
-private object CombinedDepression {
+internal object CombinedDepression {
 
     const val CAUTION_THRESHOLD = 0.45
     const val UNSAFE_THRESHOLD = 0.85
@@ -1432,7 +1432,7 @@ private object CombinedDepression {
 }
 
 /** The additive depression families, each with its relative weight. */
-private enum class DepressantMechanism(val weight: Double) {
+internal enum class DepressantMechanism(val weight: Double) {
     /** μ-opioid agonism — brainstem respiratory drive suppression. The killer; anchors the scale. */
     MU_OPIOID(1.0),
 
@@ -1479,7 +1479,7 @@ private enum class DepressantMechanism(val weight: Double) {
 }
 
 /** The combined CNS / respiratory-depression readout over a shared timeline. */
-private data class CombinedDepressionResult(
+internal data class CombinedDepressionResult(
     val sampleLoads: List<Double>,
     val dtMinutes: Double,
     val peakLoad: Double,
@@ -1540,7 +1540,7 @@ private data class CombinedDepressionResult(
  * systematic review (doi:10.1007/s00213-022-06083-y). A second transporter would
  * need both a row and a value here.
  */
-private object EffectAttenuation {
+internal object EffectAttenuation {
 
     /**
      * Fraction of peak level below which a blocker counts as no longer onboard.
@@ -1702,7 +1702,7 @@ private object EffectAttenuation {
  * supported by the same role detection but ship no graded reduction band, and a
  * band is not something to improvise.
  */
-private enum class CompetingTransporter(
+internal enum class CompetingTransporter(
     @StringRes val displayNameRes: Int,
     /** The evidence-anchored fractional-reduction band `(low, high)`, or null when none is curated. */
     val reductionBand: Pair<Double, Double>?,
@@ -1719,7 +1719,7 @@ private enum class CompetingTransporter(
     }
 }
 
-private data class EffectAttenuationResult(
+internal data class EffectAttenuationResult(
     val attenuated: String,
     val blockers: List<String>,
     val transporter: CompetingTransporter,
