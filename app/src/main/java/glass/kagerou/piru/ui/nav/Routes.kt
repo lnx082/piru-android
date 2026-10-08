@@ -196,6 +196,15 @@ sealed interface PushRoute {
     @Serializable
     data object CustomSubstances : PushRoute
 
+    /**
+     * The vertical timeline's display options: zoom, the hour axis, PK curves, bubble style, gap compression.
+     *
+     * A destination rather than a menu because it is a section with five rows behind it, and both surfaces that
+     * draw the strip link here so a change made from either shows on the other.
+     */
+    @Serializable
+    data object TimelinePreferences : PushRoute
+
     /** Which tabs the bottom bar shows, their order, and whether they carry labels. */
     @Serializable
     data object TabSettings : PushRoute
@@ -343,6 +352,7 @@ fun PushRoute.key(): String = when (this) {
     is PushRoute.DrugClass -> "drug-class:$className"
         PushRoute.About -> "about"
         PushRoute.TabSettings -> "tabs"
+        PushRoute.TimelinePreferences -> "timeline-preferences"
         PushRoute.CustomSubstances -> "custom-substances"
     is PushRoute.Effects -> "effects:$name"
     PushRoute.SubstanceDatabase -> "substance-database"

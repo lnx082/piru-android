@@ -66,6 +66,64 @@ class AppSettingsStore(private val context: Context) {
     fun setStackRedoses(value: Boolean) {
         prefs().edit().putBoolean(KEY_STACK_REDOSES, value).apply()
     }
+    // MARK: - The vertical timeline's display options
+
+    /**
+     * Points-per-hour multiplier for the strip.
+     *
+     * Clamped on read as well as on write: the pinch bounds are `[0.5, 5.0]`, and a value outside them that got into
+     * the store another way would lay the strip out at a scale no gesture could return from.
+     */
+    fun timelineZoom(): Double = prefs().getFloat(KEY_TIMELINE_ZOOM, 1.0f).toDouble().coerceIn(0.5, 5.0)
+
+    fun setTimelineZoom(value: Double) {
+        prefs().edit().putFloat(KEY_TIMELINE_ZOOM, value.coerceIn(0.5, 5.0).toFloat()).apply()
+    }
+
+    /** Collapse the empty stretches between clusters. */
+    fun timelineCompressGaps(): Boolean = prefs().getBoolean(KEY_TIMELINE_COMPRESSION, true)
+
+    fun setTimelineCompressGaps(value: Boolean) {
+        prefs().edit().putBoolean(KEY_TIMELINE_COMPRESSION, value).apply()
+    }
+
+    /** Draw the modeled concentration curves behind the bubbles. */
+    fun timelinePKCurves(): Boolean = prefs().getBoolean(KEY_TIMELINE_PK_CURVES, false)
+
+    fun setTimelinePKCurves(value: Boolean) {
+        prefs().edit().putBoolean(KEY_TIMELINE_PK_CURVES, value).apply()
+    }
+
+    /** Show the hour axis down the left edge. */
+    fun timelineShowsAxis(): Boolean = prefs().getBoolean(KEY_TIMELINE_SHOWS_AXIS, true)
+
+    fun setTimelineShowsAxis(value: Boolean) {
+        prefs().edit().putBoolean(KEY_TIMELINE_SHOWS_AXIS, value).apply()
+    }
+
+    /** How much of a dose each bubble spells out. Stored as its wire value. */
+    fun timelineBubbleStyle(): String =
+        prefs().getString(KEY_TIMELINE_BUBBLE_STYLE, "full") ?: "full"
+
+    fun setTimelineBubbleStyle(value: String) {
+        prefs().edit().putString(KEY_TIMELINE_BUBBLE_STYLE, value).apply()
+    }
+
+    /**
+     * The options the timeline layout is keyed on.
+     *
+     * A display change re-lays the strip; nothing else does. Upstream keeps the same string for the same reason, and
+     * its shape matters: two surfaces draw the strip — the pushed timeline screen and the journal's own grouping —
+     * and a shared signature is what makes a change on one show on the other.
+     */
+    fun timelineLayoutSignature(): String = listOf(
+        timelineZoom().toString(),
+        timelineCompressGaps().toString(),
+        timelinePKCurves().toString(),
+        timelineShowsAxis().toString(),
+        timelineBubbleStyle(),
+    ).joinToString("|")
+
 
     /**
      * The user's source ranking, or null when they have never reordered.
@@ -140,6 +198,11 @@ class AppSettingsStore(private val context: Context) {
             .remove(KEY_SOURCE_ORDER)
             // The tab preferences are user state like the rest, so an import clears them.
             .remove(KEY_VISIBLE_TABS)
+        .remove(KEY_TIMELINE_ZOOM)
+        .remove(KEY_TIMELINE_COMPRESSION)
+        .remove(KEY_TIMELINE_PK_CURVES)
+        .remove(KEY_TIMELINE_SHOWS_AXIS)
+        .remove(KEY_TIMELINE_BUBBLE_STYLE)
             .remove(KEY_TAB_LABELS)
             .apply()
     }
@@ -172,6 +235,16 @@ class AppSettingsStore(private val context: Context) {
         const val KEY_SOURCE_ORDER: String = "sourceOrder"
 
     /** Which tabs the bottom bar shows, comma-joined wire values. Absent means "no preference". */
+    /**
+     * The timeline's display options. The names are upstream's own, because a settings export from iOS carries
+     * them and the two platforms have to agree about what `timelineZoom` means.
+     */
+    const val KEY_TIMELINE_ZOOM: String = "timelineZoom"
+    const val KEY_TIMELINE_COMPRESSION: String = "timelineCompression"
+    const val KEY_TIMELINE_PK_CURVES: String = "timelinePKCurves"
+    const val KEY_TIMELINE_SHOWS_AXIS: String = "timelineShowsAxis"
+    const val KEY_TIMELINE_BUBBLE_STYLE: String = "timelineBubbleStyle"
+
     const val KEY_VISIBLE_TABS: String = "visibleTabs"
 
     /** Whether the bottom bar draws its labels. */

@@ -227,4 +227,16 @@
                 <string name="journal_session_interactions">相互作用</string>
     <string name="journal_session_interaction_pairs">%1$d 组组合</string>
     <string name="journal_session_interaction_timeline">查看它们何时重叠</string>
+    <string name="journal_timeline_prefs_title">时间轴显示</string>
+    <string name="journal_timeline_prefs_detail">缩放、小时轴、模拟曲线，以及每条记录显示多少内容。</string>
+    <string name="journal_timeline_axis">显示小时轴</string>
+    <string name="journal_timeline_axis_detail">左边缘的小时刻度。关闭后记录会平铺成列表，只描述时间轴几何的选项会被收起。</string>
+    <string name="journal_timeline_zoom">缩放</string>
+    <string name="journal_timeline_zoom_detail">一天能显示多少。双指缩放也会改变它，两者保持一致。</string>
+    <string name="journal_timeline_pk_curves">模拟曲线</string>
+    <string name="journal_timeline_pk_curves_detail">在记录背后绘制估算的浓度曲线。这是估算，不是测量结果。</string>
+    <string name="journal_timeline_compact">紧凑条目</string>
+    <string name="journal_timeline_compact_detail">名称与剂量排在一行，不带途径。给曲线留出更多宽度。</string>
+    <string name="journal_timeline_compress">压缩空白时间</string>
+    <string name="journal_timeline_compress_detail">折叠簇之间的安静时段，避免繁忙部分被撑开。</string>
 </resources>
