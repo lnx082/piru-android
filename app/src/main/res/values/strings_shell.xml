@@ -833,4 +833,8 @@
     <string name="shell_about_app">This build</string>
     <string name="shell_about_app_catalogue">Reference data is compiled into the app, so the reference works offline. Your log never leaves the device unless you export or back it up.</string>
     <string name="shell_settings_about_detail">What Piru is, where its data comes from, and what it does with yours.</string>
+    <string name="shell_substance_colours_search">Search your substances</string>
+    <string name="shell_substance_colours_no_match">No substance in your log matches that.</string>
+    <string name="alcohol_aldh2_title">This curve is ethanol, not acetaldehyde</string>
+    <string name="alcohol_aldh2_body">You recorded an ALDH2 deficiency, so acetaldehyde builds up faster than you clear it. That is what causes flushing, headache and nausea — and it is not what the curve above shows, because Piru models ethanol and has no acetaldehyde compartment. Expect to feel worse during the rise and the plateau than this curve suggests, and treat the peak as an underestimate of how bad it gets.</string>
 </resources>

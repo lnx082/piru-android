@@ -87,6 +87,11 @@ fun AlcoholScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     var nameText by remember { mutableStateOf("") }
     var useFluidOunces by remember { mutableStateOf(false) }
 
+    // Collected at onboarding, stored, exported and imported, and read by nothing until now. Its honest effect
+    // is a note rather than a curve change: the engine's alcohol model has an ethanol compartment and no
+    // acetaldehyde one, so scaling the curve would be inventing a mechanism. See `AlcoholFlush`.
+    var aldh2Deficient by remember { mutableStateOf(app.profile().aldh2Deficient()) }
+
     LaunchedEffect(Unit) {
         val catalog = app.catalog()
         capability = catalog.byVolumeDosing("alcohol")
@@ -243,6 +248,12 @@ fun AlcoholScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                 item {
                     EliminationCard(drink.grams * 1000.0, k)
                 }
+
+                // The caveat about the curve above, when it applies to this reader. Outside the card rather than
+                // inside it: the card is the reading, and this is what the reading does not cover.
+                if (AlcoholFlush.showsAcetaldehydeNote(aldh2Deficient)) {
+                    item { AcetaldehydeNote() }
+                }
             }
 
             item {
@@ -360,6 +371,31 @@ private fun oneDecimal(value: Double): String = String.format(Locale.ROOT, "%.1f
  * chart, and this one has to mark two times — the peak, where absorption flux
  * falls to the elimination rate, and the clear, where body content returns to zero.
  */
+/**
+ * The acetaldehyde caveat, shown to a reader who answered yes to the ALDH2 question.
+ *
+ * A card rather than a line of small print, because it changes how the curve above should be read and a reader who
+ * missed it would take the wrong thing from the screen. It does **not** claim to model the flush: it says which
+ * part of the experience the curve is not showing, which is the honest version of what this app knows.
+ */
+@Composable
+private fun AcetaldehydeNote() {
+    PiruCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                stringResource(R.string.alcohol_aldh2_title),
+                style = MaterialTheme.typography.titleSmall,
+                color = PiruTheme.colors.accent,
+            )
+            Text(
+                stringResource(R.string.alcohol_aldh2_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = PiruTheme.colors.secondaryLabel,
+            )
+        }
+    }
+}
+
 @Composable
 private fun EliminationCard(doseMg: Double, kinetics: PKModel.ZeroOrderKinetics) {
     val peakMinutes = PKModel.zeroOrderPeakMinutes(doseMg, kinetics)

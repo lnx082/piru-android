@@ -799,4 +799,8 @@
     <string name="shell_about_app">此版本</string>
     <string name="shell_about_app_catalogue">参考数据已编译进应用，因此离线也能查阅。除非你导出或备份，你的日志不会离开这台设备。</string>
     <string name="shell_settings_about_detail">Piru 是什么、数据来自哪里，以及它如何处理你的数据。</string>
+    <string name="shell_substance_colours_search">搜索你的物质</string>
+    <string name="shell_substance_colours_no_match">你的日志里没有匹配的物质。</string>
+    <string name="alcohol_aldh2_title">这条曲线是乙醇，不是乙醛</string>
+    <string name="alcohol_aldh2_body">你记录了自己有 ALDH2 缺陷，因此乙醛的堆积快于清除。这才是潮红、头痛和恶心的来源 —— 而上面的曲线并不显示它，因为 Piru 建模的是乙醇，没有乙醛这一隔室。上升段和平台段你感到的不适会比曲线显示的更重，请把峰值当作对难受程度的下限估计。</string>
 </resources>

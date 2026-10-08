@@ -48,8 +48,15 @@ class ClassAndTagBrowseDeviceTest {
 
         // Settle first, then poll: both screens open the catalogue on a background dispatcher before they
         // draw, and a bare `waitUntil` on the first node races that read.
+        //
+        // The timeout is sized for the **first-use cost**, which this spec pays and no other does.
+        // `SubstanceCatalogInstaller.install` verifies the installed copy by hashing the whole 18 MB asset, and
+        // `DbSubstanceCatalog.open` then builds the identity index over 1,689 substances and 5,727 aliases. The
+        // catalogue is memoized per process, so that happens once per run — and this test runs early
+        // alphabetically, so it is the one that waits. It timed out at 20 s and at 40 s on loaded runs and passed
+        // on every quiet one, which is what a real one-off cost looks like rather than a flake.
         compose.waitForIdle()
-        compose.waitUntil(timeoutMillis = 40_000) {
+        compose.waitUntil(timeoutMillis = 120_000) {
             compose.onAllNodesWithText("members", substring = true).fetchSemanticsNodes().isNotEmpty()
         }
         compose.onNodeWithText("members", substring = true).assertIsDisplayed()
@@ -68,7 +75,7 @@ class ClassAndTagBrowseDeviceTest {
         // Settle first, then poll: both screens open the catalogue on a background dispatcher before they
         // draw, and a bare `waitUntil` on the first node races that read.
         compose.waitForIdle()
-        compose.waitUntil(timeoutMillis = 40_000) {
+        compose.waitUntil(timeoutMillis = 120_000) {
             compose.onAllNodesWithText("substances", substring = true).fetchSemanticsNodes().isNotEmpty()
         }
         // The count line is "N substances"; zero would mean the gate swallowed the rows.
@@ -90,7 +97,7 @@ class ClassAndTagBrowseDeviceTest {
         // Settle first, then poll: both screens open the catalogue on a background dispatcher before they
         // draw, and a bare `waitUntil` on the first node races that read.
         compose.waitForIdle()
-        compose.waitUntil(timeoutMillis = 40_000) {
+        compose.waitUntil(timeoutMillis = 120_000) {
             compose.onAllNodesWithText("0 substances").fetchSemanticsNodes().isNotEmpty()
         }
         compose.onNodeWithText("0 substances").assertIsDisplayed()

@@ -39,6 +39,9 @@ import glass.kagerou.piru.ui.theme.toComposeColor
 import kotlinx.coroutines.launch
 import glass.kagerou.piru.data.SubstanceColorStore
 import glass.kagerou.piru.engine.SubstanceCatalog
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.text.input.ImeAction
 
 /**
  * The user's substance colours.
@@ -70,6 +73,9 @@ fun SubstanceColorsScreen(
     var rows by remember { mutableStateOf<List<ColourRow>>(emptyList()) }
     var editing by remember { mutableStateOf<ColourRow?>(null) }
     var reload by remember { mutableStateOf(0) }
+    // The search query. Over the user's own log rather than the whole catalogue, because the rows are the names
+    // they typed — see `ColourSearch`'s note on why aliases are not matched.
+    var query by remember { mutableStateOf("") }
     // Held outside the effect because the reset action below needs the same instance: a colour
     // store resolves a substance's class colour through the catalogue, so it cannot be built
     // without one.
@@ -98,6 +104,11 @@ fun SubstanceColorsScreen(
             )
         }
     }
+
+    // Filtered once, here, rather than inside the `items` call: the empty-state decision below needs the
+    // same filtered list, and computing it twice is how the two would disagree.
+    val shown = remember(rows, query) { ColourSearch.filter(rows.map { it.name }, query) }
+    val shownRows = shown.mapNotNull { name -> rows.firstOrNull { it.name == name } }
 
     val editingRow = editing
     if (editingRow != null) {
@@ -170,6 +181,21 @@ fun SubstanceColorsScreen(
                 modifier = Modifier.padding(bottom = 8.dp),
             )
         }
+        // The search, above the list and below the intro. A field rather than a filter chip row, because the
+        // list is a few dozen names and a user arrives knowing which one they want.
+        if (rows.isNotEmpty()) {
+            item {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    label = { Text(stringResource(R.string.shell_substance_colours_search)) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+
         // Reset every colour to its class default.
         //
         // `SubstanceColorStore.resetAll` has existed since the store was written with no caller, so
@@ -194,16 +220,24 @@ fun SubstanceColorsScreen(
                 }
             }
         }
-        if (rows.isEmpty()) {
+        if (shownRows.isEmpty()) {
             item {
                 Text(
-                    stringResource(R.string.shell_substance_colours_empty),
+                    // Two different facts about the user's own data, and telling a user who searched that they
+                    // have logged nothing would be a lie about it.
+                    stringResource(
+                        if (ColourSearch.emptyStateIsSearchResult(rows.size, query)) {
+                            R.string.shell_substance_colours_no_match
+                        } else {
+                            R.string.shell_substance_colours_empty
+                        },
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
             }
         }
-        items(rows, key = { it.name }) { row ->
+        items(shownRows, key = { it.name }) { row ->
             PiruCard(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = { editing = row },
