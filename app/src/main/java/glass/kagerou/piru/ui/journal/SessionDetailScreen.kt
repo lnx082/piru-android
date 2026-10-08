@@ -233,6 +233,16 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
                 )
             }
 
+                // The session's own summary, above the note timeline: it is the sentence a reader sees first
+                // and the one an export prints, and it had no reader or writer anywhere before this.
+                item {
+                    SessionSummaryCard(
+                        sessionId = loaded.id,
+                        // The screen re-reads the session so the header and the notes agree about it.
+                        onChanged = { checkInRevision++ },
+                    )
+                }
+
             item {
                 SessionNotesSection(
                     sessionId = loaded.id,
