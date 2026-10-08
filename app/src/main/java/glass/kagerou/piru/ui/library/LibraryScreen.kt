@@ -44,6 +44,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import glass.kagerou.piru.data.entity.FavoriteSubstanceEntity
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import glass.kagerou.piru.model.P3Color
+import glass.kagerou.piru.ui.theme.toComposeColor
 
 /**
  * The library: browse by category, or search the whole catalog, then in.
@@ -68,6 +74,24 @@ fun LibraryScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     // The matches, not just the substances: `SubstanceMatch.matchedAlias` is what the
     // row needs in order to say what the query actually named.
     var results by remember { mutableStateOf<List<SubstanceMatch<Substance>>>(emptyList()) }
+
+    /**
+     * The tint each result draws with, keyed by lowercased name.
+     *
+     * Read from the palette rather than generated here, so a substance a user recoloured on the
+     * substance-colours screen is that colour in the library too — which is what a colour setting is
+     * for. Loaded once per result set: the palette is a database read, not a per-row computation.
+     */
+    var tints by remember { mutableStateOf<Map<String, P3Color>>(emptyMap()) }
+
+    LaunchedEffect(results) {
+        val names = results.map { it.substance.name }
+        if (names.isEmpty()) {
+            tints = emptyMap()
+        } else {
+            tints = runCatching { app.palette().tintsFor(names) }.getOrDefault(emptyMap())
+        }
+    }
 
     // Which substances are starred, lowercased for the same reason the DAO matches that way.
     // Held here rather than queried per row: the star's state is what the row draws, and a
@@ -140,8 +164,21 @@ fun LibraryScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                             modifier = Modifier.padding(14.dp).fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
+                            // The substance's own colour, as a plain dot rather than as a coloured
+                            // card: a list of thirty saturated cards is harder to read than a list
+                            // of names with thirty small marks beside them, and the mark is what a
+                            // dose in the journal will be drawn with.
+                            Box(
+                                modifier = Modifier
+                                    .padding(end = 12.dp)
+                                    .size(10.dp)
+                                    .background(
+                                        color = (tints[substance.name.lowercase()]
+                                            ?: P3Color.NEUTRAL).toComposeColor(),
+                                        shape = CircleShape,
+                                    ),
+                            )
                             Column {
-                                Text(substance.displayTitle, style = MaterialTheme.typography.titleSmall)
                                 // What the query named, when it named an alias.
                                 //
                                 // This used to be `substance.aliases.firstOrNull()` — an

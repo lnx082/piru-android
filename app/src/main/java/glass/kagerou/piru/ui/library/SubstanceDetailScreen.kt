@@ -39,6 +39,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.material3.TextButton
 import glass.kagerou.piru.ui.nav.PushRoute
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import glass.kagerou.piru.model.P3Color
+import glass.kagerou.piru.ui.theme.toComposeColor
 
 /**
  * A substance's full record.
@@ -65,6 +70,14 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
     val context = LocalContext.current
     val app = context.applicationContext as PiruApplication
     var substance by remember(name) { mutableStateOf<Substance?>(null) }
+
+    /**
+     * This substance's own colour.
+     *
+     * Read from the palette so a colour the user set on the substance-colours screen is what the page
+     * shows, and so the page matches the dot the library list drew to get here.
+     */
+    var tint by remember(name) { mutableStateOf(P3Color.NEUTRAL) }
     var failed by remember(name) { mutableStateOf(false) }
 
     // The user's answer to "how much detail?", which until now nothing could read back.
@@ -73,6 +86,12 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
     val tier = remember(name) { app.profile().disclosureTier() }
 
     LaunchedEffect(name) {
+        // The palette keys on the canonical name, which is not known until the catalogue answers.
+        tint = runCatching {
+            val catalogue = app.catalog()
+            val tints = app.palette().tintsFor(listOf(catalogue.lookup(name)?.name ?: name))
+            tints.values.firstOrNull() ?: P3Color.NEUTRAL
+        }.getOrDefault(P3Color.NEUTRAL)
         // Off the main thread. `catalog()` copies and verifies an 18 MB asset on first run
         // and builds the whole identity index; every other caller wraps it, and this one
         // used to run it inline in a `LaunchedEffect`, which is the composition thread — so
@@ -94,7 +113,7 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
             verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = FAB_CLEARANCE),
         ) {
-            item { Header(resolved) }
+            item { Header(resolved, tint) }
 
             if (resolved.displayClass.showsDoseLadder) {
                 item { DoseLadderCard(resolved) }
@@ -150,13 +169,26 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
 }
 
 @Composable
-private fun Header(substance: Substance) {
+private fun Header(substance: Substance, tint: P3Color) {
     Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         val (title, pictograph) = substance.titleAndPictograph
-        Text(
-            if (pictograph != null) "$pictograph $title" else title,
-            style = MaterialTheme.typography.headlineSmall,
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            // A bar rather than a dot: the header is the one place with room for the colour to be a
+            // recognisable mark rather than an accent. It is the same colour the library list drew to
+            // get here, because both read the palette.
+            Box(
+                modifier = Modifier
+                    .size(width = 4.dp, height = 26.dp)
+                    .background(color = tint.toComposeColor(), shape = RoundedCornerShape(2.dp)),
+            )
+            Text(
+                if (pictograph != null) "$pictograph $title" else title,
+                style = MaterialTheme.typography.headlineSmall,
+            )
+        }
         if (substance.displayTitle != substance.name) {
             Text(
                 substance.name,
