@@ -801,4 +801,9 @@
     <string name="shell_strength_blurb">What each rung of the dose scale is like for this substance. Tap a rung.</string>
     <string name="shell_strength_effects">Most reported at this strength</string>
     <string name="shell_strength_hint">Tap a rung to read what it is like.</string>
+    <string name="shell_section_flags">Flags</string>
+    <string name="shell_flag_suppresses_serotonin">May suppress serotonin synthesis — the mechanism behind the comedown, and the reason to space out use.</string>
+    <string name="shell_flag_missold_as_mdma">Has been sold as MDMA. It is not MDMA, and the dose that looks right is not the dose that is right.</string>
+    <string name="shell_flag_model_calibrated">Some modelled values for this substance were calibrated against reference data.</string>
+    <string name="shell_section_class_background">%1$s family</string>
 </resources>

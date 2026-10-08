@@ -57,6 +57,7 @@ import glass.kagerou.piru.engine.OffTargetHit
 import glass.kagerou.piru.engine.PharmacogeneticHit
 import glass.kagerou.piru.engine.MoleculeShape
 import glass.kagerou.piru.engine.SpectrumLevel
+import glass.kagerou.piru.substance.SubstanceReader
 
 /**
  * A substance's full record.
@@ -117,6 +118,10 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
     var pharmacogenetics by remember { mutableStateOf<List<PharmacogeneticHit>>(emptyList()) }
     var structure by remember { mutableStateOf<MoleculeShape?>(null) }
     var spectrum by remember { mutableStateOf<List<SpectrumLevel>>(emptyList()) }
+    var substanceFlags by remember { mutableStateOf<List<SubstanceReader.SubstanceFlagRow>>(emptyList()) }
+    // The class the substance belongs to. Resolved from `resolveFull`'s own slug rather than by name,
+    // because the slug is the identifier the class page uses and a title would need a second lookup.
+    var classContext by remember { mutableStateOf<SubstanceReader.ClassContext?>(null) }
     var metabolism by remember(name) { mutableStateOf<List<MetabolismHit>>(emptyList()) }
 
     // The user's answer to "how much detail?", which until now nothing could read back.
@@ -167,6 +172,14 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
         structure = runCatching { catalog.moleculeShape(canonical) }.getOrNull()
         // 162 substances have a six-rung strength ladder; the section hides for the rest.
         spectrum = runCatching { catalog.spectrumLevels(canonical) }.getOrDefault(emptyList())
+        // Thirteen rows over three flags, two of which are harm-reduction findings rather than metadata.
+        substanceFlags = runCatching { catalog.substanceFlags(canonical) }.getOrDefault(emptyList())
+        // 674 of 1689 substances belong to a class; the card hides for the rest, which is what a null
+        // `classContextSlug` means. Read off the `substance` state rather than a local `resolved`, because the
+        // composition declares `resolved` *after* this effect.
+        classContext = substance?.classContextSlug?.let { slug ->
+            runCatching { catalog.classContext(slug) }.getOrNull()
+        }
         metabolism = runCatching { catalog.metabolismRows(canonical) }.getOrDefault(emptyList())
     }
 
@@ -232,6 +245,22 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
             // alias list that existed for searching. Each card owns its own presence check, so a
             // substance the catalogue does not describe loses a card rather than gaining an empty one.
             resolved.overview?.let { item { OverviewCard(it) } }
+
+            // The class the substance belongs to, and the flags it carries — both readable in the catalogue
+            // and shown nowhere before this.
+            classContext?.let { context ->
+                item {
+                    ClassContextCard(
+                        context = context,
+                        // The class's own write-up page, which the class browser already reaches. `DrugClass`
+                        // carries the slug, which is what the screen resolves.
+                        onOpenClass = { navigator.push(PushRoute.DrugClass(context.slug)) },
+                    )
+                }
+            }
+            if (substanceFlags.isNotEmpty()) {
+                item { StatusFlagsCard(substanceFlags) }
+            }
 
             resolved.toleranceInfo?.let { item { ToleranceCard(it) } }
 

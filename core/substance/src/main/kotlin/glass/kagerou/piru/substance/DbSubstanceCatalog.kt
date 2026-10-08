@@ -465,6 +465,17 @@ class DbSubstanceCatalog private constructor(
     }
 
     /**
+     * Every flag the substance carries — the status-flags section.
+     *
+     * `substance_flags`' thirteen rows were readable only one flag at a time through [hasFlag], by nothing that
+     * showed one.
+     */
+    fun substanceFlags(nameOrAlias: String): List<SubstanceReader.SubstanceFlagRow> {
+        val id = index.resolve(nameOrAlias) ?: return emptyList()
+        return reader.substanceFlags(id)
+    }
+
+    /**
      * The substance's strength ladder — the strength-dial section.
      *
      * Read by nothing before this, so `spectrum_levels`' 972 rows over 162 substances were data with no screen.

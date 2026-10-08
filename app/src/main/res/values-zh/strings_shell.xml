@@ -767,4 +767,9 @@
     <string name="shell_strength_blurb">该物质在剂量刻度各档位下的感受。点选一个档位。</string>
     <string name="shell_strength_effects">该强度下报告最多的效应</string>
     <string name="shell_strength_hint">点选一个档位查看它的感受。</string>
+    <string name="shell_section_flags">标记</string>
+    <string name="shell_flag_suppresses_serotonin">可能抑制血清素合成 —— 这是「回落期」的机制，也是需要拉开间隔的原因。</string>
+    <string name="shell_flag_missold_as_mdma">曾被当作 MDMA 出售。它不是 MDMA，看起来合适的剂量并不是合适的剂量。</string>
+    <string name="shell_flag_model_calibrated">该物质的部分建模数值是参照实测数据校准的。</string>
+    <string name="shell_section_class_background">%1$s 类</string>
 </resources>

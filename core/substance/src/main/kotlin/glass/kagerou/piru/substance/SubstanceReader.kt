@@ -1114,6 +1114,20 @@ class SubstanceReader(
      * receptor rather than one per assay. The **display** target is the most common raw spelling under
      * that base, because a picker full of normalized slugs reads like a database dump.
      */
+    /**
+     * One `substance_flags` row.
+     *
+     * [sourceSlug] and the citation are nullable because the column is: five of the thirteen rows carry no
+     * citation, and a flag without one is still a flag — the note is what makes it readable.
+     */
+    data class SubstanceFlagRow(
+        val flag: String,
+        val notes: String? = null,
+        val sourceSlug: String? = null,
+        val doi: String? = null,
+        val pmid: Int? = null,
+    )
+
     data class BindingTarget(val target: String, val targetBase: String, val substanceCount: Int)
 
     /**
@@ -1485,6 +1499,40 @@ class SubstanceReader(
             )
         }
     }
+
+    /**
+     * Every flag the substance carries, with the note that explains it.
+     *
+     * `substance_flags` is 13 rows over three flags, and two of the three are harm-reduction facts rather than
+     * metadata — `suppresses-serotonin-synthesis` and `missold-as-mdma`. [hasFlag] answers "does this substance
+     * carry this flag", which is the right shape for a caller that knows which flag it is asking about; this
+     * answers "what is flagged about this substance", which is what a section needs and what was missing.
+     *
+     * Ordered by flag name so the list is stable between reads, and because a reader scanning for a known flag
+     * finds it in the same place on every substance.
+     */
+    fun substanceFlags(substanceID: Long): List<SubstanceFlagRow> =
+        db.query(
+            """
+            SELECT f.flag, f.notes, src.slug AS source_slug, c.doi, c.pmid
+              FROM substance_flags f
+              LEFT JOIN sources src ON src.id = f.source_id
+              LEFT JOIN citations c ON c.id = f.citation_id
+             WHERE f.substance_id = ?
+             ORDER BY f.flag ASC
+            """,
+            listOf(substanceID),
+        ).mapNotNull { row ->
+            val flag = row.string("flag").orEmpty()
+            if (flag.isBlank()) return@mapNotNull null
+            SubstanceFlagRow(
+                flag = flag,
+                notes = row.string("notes"),
+                sourceSlug = row.string("source_slug"),
+                doi = row.string("doi"),
+                pmid = row.long("pmid")?.toInt(),
+            )
+        }
 
     /** The substance's `pk_reference` pointer, or null when it carries none. */
     fun pkReference(substanceID: Long): PKReference? {
