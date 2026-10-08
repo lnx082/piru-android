@@ -56,6 +56,7 @@ import glass.kagerou.piru.engine.DownstreamSignallingHit
 import glass.kagerou.piru.engine.OffTargetHit
 import glass.kagerou.piru.engine.PharmacogeneticHit
 import glass.kagerou.piru.engine.MoleculeShape
+import glass.kagerou.piru.engine.SpectrumLevel
 
 /**
  * A substance's full record.
@@ -115,6 +116,7 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
     var offTargets by remember { mutableStateOf<List<OffTargetHit>>(emptyList()) }
     var pharmacogenetics by remember { mutableStateOf<List<PharmacogeneticHit>>(emptyList()) }
     var structure by remember { mutableStateOf<MoleculeShape?>(null) }
+    var spectrum by remember { mutableStateOf<List<SpectrumLevel>>(emptyList()) }
     var metabolism by remember(name) { mutableStateOf<List<MetabolismHit>>(emptyList()) }
 
     // The user's answer to "how much detail?", which until now nothing could read back.
@@ -163,6 +165,8 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
         pharmacogenetics = runCatching { catalog.pharmacogeneticRows(canonical) }.getOrDefault(emptyList())
         // 958 of the catalogue's 1689 substances have a structure; the section hides for the rest.
         structure = runCatching { catalog.moleculeShape(canonical) }.getOrNull()
+        // 162 substances have a six-rung strength ladder; the section hides for the rest.
+        spectrum = runCatching { catalog.spectrumLevels(canonical) }.getOrDefault(emptyList())
         metabolism = runCatching { catalog.metabolismRows(canonical) }.getOrDefault(emptyList())
     }
 
@@ -253,6 +257,8 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
             // and the two genetic sections read the same rows.
             // The structure diagram above the pharmacology prose: it is the one section a reader
             // recognises a substance by at a glance.
+            // The strength ladder, above the pharmacology prose: it is what the dose card's own rungs mean.
+            spectrum.takeIf { it.isNotEmpty() }?.let { levels -> item { StrengthDialCard(levels) } }
             structure?.let { shape -> item { StructureCard(shape) } }
             item { DownstreamSignallingCard(signalling) }
             item { OffTargetCard(offTargets) }

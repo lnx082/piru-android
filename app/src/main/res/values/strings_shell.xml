@@ -797,4 +797,8 @@
     <string name="shell_value_unknown">—</string>
     <string name="shell_section_structure">Structure</string>
     <string name="shell_structure_note">2-D depiction from the catalogue. Carbon atoms are the unlabelled vertices.</string>
+    <string name="shell_section_strength">Strength</string>
+    <string name="shell_strength_blurb">What each rung of the dose scale is like for this substance. Tap a rung.</string>
+    <string name="shell_strength_effects">Most reported at this strength</string>
+    <string name="shell_strength_hint">Tap a rung to read what it is like.</string>
 </resources>

@@ -32,6 +32,7 @@ import glass.kagerou.piru.engine.DownstreamSignallingHit
 import glass.kagerou.piru.engine.OffTargetHit
 import glass.kagerou.piru.engine.PharmacogeneticHit
 import glass.kagerou.piru.engine.MoleculeShape
+import glass.kagerou.piru.engine.SpectrumLevel
 
 /**
  * The bundled catalog, seen through the engine's [SubstanceCatalog] port.
@@ -461,6 +462,16 @@ class DbSubstanceCatalog private constructor(
     fun metabolismRows(nameOrAlias: String): List<MetabolismHit> {
         val id = index.resolve(nameOrAlias) ?: return emptyList()
         return reader.metabolismRows(id)
+    }
+
+    /**
+     * The substance's strength ladder — the strength-dial section.
+     *
+     * Read by nothing before this, so `spectrum_levels`' 972 rows over 162 substances were data with no screen.
+     */
+    fun spectrumLevels(nameOrAlias: String): List<SpectrumLevel> {
+        val id = index.resolve(nameOrAlias) ?: return emptyList()
+        return reader.spectrumLevels(id)
     }
 
     /**

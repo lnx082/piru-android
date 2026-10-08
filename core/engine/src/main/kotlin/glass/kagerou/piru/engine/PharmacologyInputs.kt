@@ -73,6 +73,55 @@ data class PharmacogeneticHit(
  * Ported from `BindingHit` in `SubstanceReadModel+Pharmacology.swift`.
  */
 /**
+ * An effect reported at one strength band, and how often.
+ *
+ * [freq] is a consensus count, not a boolean — the catalogue's values run from 1 to 45, so the band's effects can
+ * be ranked rather than merely listed. Ordered descending by the reader, because a band's most-reported effect is
+ * the one the band is about.
+ */
+@Serializable
+data class SpectrumEffect(
+    val name: String,
+    /** How many reports carried this effect. Never a flag; see the class doc. */
+    val freq: Int = 1,
+)
+
+/**
+ * One rung of a substance's strength ladder.
+ *
+ * All 162 substances in the catalogue have exactly **six** of these, and they are the same six rungs in the same
+ * order for every one — which is what makes the ladder comparable between substances and worth a dial rather than
+ * a table. [bandIndex] is the rung (`0` threshold … `5` overdose), and [bandName] is its label.
+ *
+ * Ported from the strength-dial section upstream draws over `spectrum_levels`.
+ */
+data class SpectrumLevel(
+    val bandIndex: Int,
+    val bandName: String,
+    val description: String,
+    /** The effects most reported at this band, already ordered by [SpectrumEffect.freq] descending. */
+    val topEffects: List<SpectrumEffect> = emptyList(),
+    /** Dangers specific to this band. Empty for the lower rungs of most substances. */
+    val warnings: List<String> = emptyList(),
+) {
+    /**
+     * Whether this rung is one of the two the dial marks as a warning rather than a reading.
+     *
+     * A property rather than a string comparison at the call site: the two upper rungs are the ones a reader needs
+     * told apart from the rest, and `bandName == "Heavy"` scattered through the UI would break on a rename.
+     */
+    val isUpperRung: Boolean get() = bandIndex >= UPPER_RUNG_INDEX
+
+    companion object {
+        /** `4` = Heavy, `5` = Overdose. The two rungs the dial colours as caution. */
+        const val UPPER_RUNG_INDEX: Int = 4
+
+        /** The rungs every substance in the catalogue has, in order. */
+        val BAND_NAMES: List<String> = listOf("Threshold", "Light", "Common", "Strong", "Heavy", "Overdose")
+    }
+}
+
+/**
  * One atom of a 2-D structure diagram.
  *
  * Ported from the `molecule_shapes` JSON. [x] and [y] are in an arbitrary box — the shipped rows span roughly 0..100

@@ -61,6 +61,8 @@ import glass.kagerou.piru.engine.PharmacogeneticHit
 import glass.kagerou.piru.engine.MoleculeAtom
 import glass.kagerou.piru.engine.MoleculeBond
 import glass.kagerou.piru.engine.MoleculeShape
+import glass.kagerou.piru.engine.SpectrumEffect
+import glass.kagerou.piru.engine.SpectrumLevel
 
 /**
  * Source-priority-aware reads over the bundled catalog.
@@ -1440,6 +1442,48 @@ class SubstanceReader(
         // An absent bond list is a lone atom, not a failure; the column is nullable in practice.
         val bonds = decodeJson<List<MoleculeBond>>(row.string("bonds_json")).orEmpty()
         return MoleculeShape.parse(atoms, bonds)
+    }
+
+    /**
+     * The substance's strength ladder, lowest rung first.
+     *
+     * 162 of the catalogue's substances have one, six bands each. Read in `band_index` order rather than by rowid:
+     * the index is what the ladder means, and a source's row order is not guaranteed to follow it.
+     *
+     * Both JSON columns are decoded through [decodeJson], which returns null on a format break — so a test asserts
+     * counts for a substance known to have effects and warnings, because "wrong format" and "no data" are
+     * indistinguishable at this call site.
+     */
+    fun spectrumLevels(substanceID: Long): List<SpectrumLevel> {
+        if (order.isEmpty()) return emptyList()
+        return db.query(
+            """
+            SELECT t.band_index, t.band_name, t.description, t.top_effects_json, t.warnings_json
+              FROM spectrum_levels t
+              JOIN sources src ON src.id = t.source_id
+             WHERE t.substance_id = ?
+               AND src.slug IN ($enabledSourceListSQL)
+             ORDER BY t.band_index ASC
+            """,
+            listOf(substanceID),
+        ).mapNotNull { row ->
+            val name = row.string("band_name").orEmpty()
+            if (name.isBlank()) return@mapNotNull null
+            SpectrumLevel(
+                bandIndex = row.long("band_index")?.toInt() ?: 0,
+                bandName = name,
+                description = row.string("description").orEmpty(),
+                // Ordered here rather than left to the source: the ranked order is the reason the column is a
+                // count, and a JSON array's order is whatever the pipeline wrote.
+                topEffects = decodeJson<List<SpectrumEffect>>(row.string("top_effects_json"))
+                    .orEmpty()
+                    .filter { it.name.isNotBlank() }
+                    .sortedByDescending { it.freq },
+                warnings = decodeJson<List<String>>(row.string("warnings_json"))
+                    .orEmpty()
+                    .filter { it.isNotBlank() },
+            )
+        }
     }
 
     /** The substance's `pk_reference` pointer, or null when it carries none. */

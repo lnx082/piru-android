@@ -763,4 +763,8 @@
     <string name="shell_value_unknown">—</string>
     <string name="shell_section_structure">结构式</string>
     <string name="shell_structure_note">来自目录的二维结构式。碳原子是没有标注的顶点。</string>
+    <string name="shell_section_strength">强度</string>
+    <string name="shell_strength_blurb">该物质在剂量刻度各档位下的感受。点选一个档位。</string>
+    <string name="shell_strength_effects">该强度下报告最多的效应</string>
+    <string name="shell_strength_hint">点选一个档位查看它的感受。</string>
 </resources>
