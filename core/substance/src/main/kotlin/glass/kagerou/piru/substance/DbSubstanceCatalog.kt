@@ -364,6 +364,20 @@ class DbSubstanceCatalog private constructor(
      * search, and has no notion of a category. It answers a question about presentation, and the
      * caller is the screen that presents it.
      */
+    /**
+     * The identity facets a name or alias is annotated with.
+     *
+     * Upstream's `SubstanceLibrary.isomer(for:)` / `releaseForm(for:)`, which turns "Concerta" into
+     * Methylphenidate·XR. The annotations were in the catalogue's `aliases` table the whole time and
+     * the identity index read past them — see [SubstanceIdentityIndex.Facets].
+     *
+     * Not on [SubstanceCatalog]: the engine identifies a substance by its family uid and has no
+     * notion of a branded form. A form is what a *dose* was taken as, which is the med form's and
+     * the logger's business.
+     */
+    fun identityFacets(nameOrAlias: String): SubstanceIdentityIndex.Facets =
+        index.facets(nameOrAlias)
+
     fun effectGroups(nameOrAlias: String): List<EffectGroup> {
         val id = index.resolve(nameOrAlias) ?: return emptyList()
         return reader.effectGroups(id)

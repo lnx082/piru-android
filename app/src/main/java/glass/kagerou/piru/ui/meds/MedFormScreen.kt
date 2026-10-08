@@ -145,7 +145,9 @@ fun MedFormScreen(
                             .clickable(enabled = canSave && !saving) {
                                 saving = true
                                 scope.launch {
-                                    save(app, existing, draft, existingCount)
+                                    // The catalogue is already in state; passing it keeps the save from waiting on
+                    // a second read of a file the form has open.
+                    save(app, existing, draft, existingCount, catalog)
                                     saving = false
                                     onDismiss()
                                 }
@@ -319,9 +321,10 @@ private suspend fun save(
     existing: DailyDoseItemEntity?,
     draft: MedFormDraft,
     existingCount: Int,
+    catalog: DbSubstanceCatalog?,
 ) {
     val amount = draft.amount ?: return
-    val identity = draftIdentity(draft)
+    val identity = draftIdentity(draft, catalog)
     val canonical = draft.selectedSubstance?.name ?: draft.substance.trim()
     val sortedTimes = draft.times.map { it.minutes }.toSortedSet().toList()
 
@@ -373,24 +376,38 @@ private data class DraftIdentity(
 /**
  * The identity to stamp on the saved item.
  *
- * Upstream derives it from `SubstanceLibrary.isomer(for:)` and
- * `releaseForm(for:)` — the facet-annotated alias table that turns "Concerta"
- * into Methylphenidate·XR. **This build has no such resolver**: neither
- * `DbSubstanceCatalog` nor `SubstanceIdentityIndex` exposes a facet lookup, and
- * `Substance` carries only the family uid. So the uid resolves and the two
- * facets stay whatever the row already had — which means a med saved under a
- * brand name keeps the family identity rather than the branded form, and a
- * "Concerta" med is answered by any methylphenidate dose of the same route.
- * That is a real fidelity loss, and it belongs to `:core:substance` rather than
- * to this form.
+ * Upstream derives it from `SubstanceLibrary.isomer(for:)` and `releaseForm(for:)` — the
+ * facet-annotated alias table that turns "Concerta" into Methylphenidate·XR. This port documented
+ * the loss here for as long as the form existed: "**This build has no such resolver**", so a med
+ * saved under a brand name kept the family identity rather than the branded form, and a "Concerta"
+ * med was answered by any methylphenidate dose of the same route.
+ *
+ * The annotations were in the catalogue's own `aliases` table and the identity index had always
+ * selected past them. [SubstanceIdentityIndex.facets] reads them, `DbSubstanceCatalog.identityFacets`
+ * exposes them, and this resolves through it.
+ *
+ * ## Create and edit differ on purpose
+ * A **new** med resolves its facets from the name the user typed, so "Concerta" is saved as the
+ * branded XR form — which is the whole point of the resolver.
+ *
+ * An **edit** keeps whatever the row already had when the name is unchanged, because re-resolving
+ * would silently rewrite the facets of a row the user did not touch the name of. When the name
+ * *did* change, the new name's facets win: that is the edit saying which form this med is.
  */
-private fun draftIdentity(draft: MedFormDraft): DraftIdentity =
-    DraftIdentity(
+private fun draftIdentity(draft: MedFormDraft, catalog: DbSubstanceCatalog?): DraftIdentity {
+    val typed = draft.substance.trim()
+    val resolved = catalog?.identityFacets(typed)
+    // A new med resolves from what the user typed; an edit resolves only when the name actually
+    // moved. Comparing case-insensitively means re-typing "concerta" over "Concerta" is not a change.
+    val keepStored = draft.originalSubstance.isNotEmpty() &&
+        typed.equals(draft.originalSubstance, ignoreCase = true)
+    return DraftIdentity(
         uid = draft.selectedSubstance?.substanceUID,
-        isomer = null,
-        release = null,
+        isomer = if (keepStored) draft.originalIsomer else resolved?.isomer,
+        release = if (keepStored) draft.originalRelease else resolved?.releaseForm,
         product = draft.productName,
     )
+}
 
 // MARK: - The draft
 
@@ -425,6 +442,18 @@ private class MedFormDraft {
     var userTouchedQuiet by mutableStateOf(false)
 
     var selectedSubstance by mutableStateOf<Substance?>(null)
+
+    /**
+     * The name and facets the row was loaded with, or empty and null for a new med.
+     *
+     * [draftIdentity] compares against these: an edit that leaves the name alone keeps the row's own
+     * facets rather than re-deriving them, and an edit that changes the name takes the new name's.
+     * Without them the form cannot tell "the user did not touch this" from "the user retyped the
+     * same thing", and re-resolving on the second would rewrite a stored form.
+     */
+    var originalSubstance by mutableStateOf("")
+    var originalIsomer by mutableStateOf<String?>(null)
+    var originalRelease by mutableStateOf<String?>(null)
     var productName by mutableStateOf<String?>(null)
     var availableRoutes by mutableStateOf(RouteOfAdministration.entries.toList())
 
@@ -545,6 +574,10 @@ private class MedFormDraft {
         isQuiet = item.isQuiet
         userTouchedQuiet = true
         productName = item.productName
+        // What this row already is, so a save can tell whether the name moved.
+        originalSubstance = item.substance
+        originalIsomer = item.isomer
+        originalRelease = item.releaseForm
 
         val match = catalog.lookup(item.substance)
         if (match != null && match.name.equals(item.substance, ignoreCase = true)) {

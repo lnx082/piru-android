@@ -24,6 +24,14 @@ class SubstanceIdentityIndex(
     /** Normalized alias to the casing the catalog displays it in. */
     val aliasDisplayIndex: Map<String, String>,
     /**
+     * The annotated identity each alias carries, keyed as the alias index is.
+     *
+     * Built from columns the alias query had always read past — see [Facets]. Only aliases with at
+     * least one facet are stored, so the map is a few hundred entries rather than every synonym in
+     * the catalogue.
+     */
+    private val facetsByAlias: Map<String, Facets>,
+    /**
      * Rows the build flagged as carrying no dose data at all. They stay reachable
      * by name, but name resolution demotes them, so a bare stub does not outrank
      * a substance that actually has content.
@@ -80,6 +88,42 @@ class SubstanceIdentityIndex(
     private fun nonStubAliasOwner(key: String): Long? =
         contestedAliasOwners[key]?.firstOrNull { it !in stubIds }
 
+    /**
+     * The identity facets a name or alias carries.
+     *
+     * Ported from upstream's `SubstanceLibrary.isomer(for:)` and
+     * `releaseForm(for:)`, which read the same annotations out of the alias table. `saltForm` rides
+     * along because the table carries it and a caller stamping an identity wants all three or none.
+     *
+     * All three null is the ordinary case: the overwhelming majority of aliases are plain
+     * synonyms — "K" for ketamine — and a name with no annotated form is the base compound.
+     */
+    data class Facets(
+        val isomer: String? = null,
+        val saltForm: String? = null,
+        val releaseForm: String? = null,
+    ) {
+        /** Whether any facet is present. A name with none of them is the base form. */
+        val isEmpty: Boolean get() = isomer == null && saltForm == null && releaseForm == null
+
+        companion object {
+            val NONE = Facets()
+        }
+    }
+
+    /**
+     * The facets [nameOrAlias] is annotated with, or [Facets.NONE].
+     *
+     * **First wins, in the order the index was built** — canonical names are not annotated at all,
+     * so this is the alias rows in table order. That is the same tie-break the alias index uses,
+     * and picking a different one here would mean a name resolving to one substance while its facets
+     * came from another.
+     *
+     * A name the catalogue does not carry answers [Facets.NONE] rather than throwing: this is called
+     * on a form field the user is still typing in.
+     */
+    fun facets(nameOrAlias: String): Facets = facetsByAlias[nameOrAlias.lowercase()] ?: Facets.NONE
+
     companion object {
 
         /**
@@ -103,7 +147,8 @@ class SubstanceIdentityIndex(
             }
 
             val aliasRows = db.query(
-                "SELECT substance_id, alias, alias_normalized FROM aliases",
+                "SELECT substance_id, alias, alias_normalized, isomer, salt_form, release_form " +
+                    "FROM aliases",
             )
             // Localized titles (Ketamina, 氯胺酮) are searchable in every app
             // language, so they join the search keys — after the aliases, so
@@ -116,6 +161,7 @@ class SubstanceIdentityIndex(
             val aliasIndex = LinkedHashMap<String, Long>()
             val aliasDisplay = LinkedHashMap<String, String>()
             val owners = LinkedHashMap<String, MutableSet<Long>>()
+            val facets = LinkedHashMap<String, Facets>()
 
             fun noteAlias(normalized: String?, display: String?, id: Long?) {
                 if (normalized.isNullOrEmpty() || id == null) return
@@ -124,7 +170,18 @@ class SubstanceIdentityIndex(
                 owners.getOrPut(normalized) { linkedSetOf() }.add(id)
             }
             for (row in aliasRows) {
-                noteAlias(row.string("alias_normalized"), row.string("alias"), row.long("substance_id"))
+                val normalized = row.string("alias_normalized")
+                noteAlias(normalized, row.string("alias"), row.long("substance_id"))
+                // Only annotated aliases earn an entry, so the map holds the few hundred names that
+                // mean a specific form rather than every synonym the catalogue carries.
+                val annotated = Facets(
+                    isomer = row.string("isomer"),
+                    saltForm = row.string("salt_form"),
+                    releaseForm = row.string("release_form"),
+                )
+                if (normalized != null && !annotated.isEmpty) {
+                    facets.putIfAbsent(normalized, annotated)
+                }
             }
             for (row in localizedRows) {
                 noteAlias(row.string("name_normalized"), row.string("name"), row.long("substance_id"))
@@ -137,7 +194,14 @@ class SubstanceIdentityIndex(
                 .filterValues { it.size > 1 }
                 .mapValues { (_, ids) -> ids.toList() }
 
-            return SubstanceIdentityIndex(nameIndex, aliasIndex, aliasDisplay, stubIds, contested)
+            return SubstanceIdentityIndex(
+                nameIndex,
+                aliasIndex,
+                aliasDisplay,
+                facets,
+                stubIds,
+                contested,
+            )
         }
     }
 }

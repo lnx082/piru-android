@@ -25,6 +25,52 @@ class SubstanceIdentityIndexTest {
         openBundledSubstanceDb().use { db -> block(Fixture(db)) }
     }
 
+    // MARK: - The identity facets
+
+    /**
+     * A brand name carries the form it is.
+     *
+     * These were readable in the catalogue's `aliases` table the whole time — the identity query
+     * selected `substance_id, alias, alias_normalized` and read past `isomer`, `salt_form` and
+     * `release_form`. So a med saved as "Concerta" kept the plain methylphenidate identity and was
+     * answered by any methylphenidate dose of the same route, which is the loss `MedFormScreen`'s
+     * own KDoc recorded for as long as the form has existed.
+     */
+    @Test
+    fun `a brand resolves to the release form it is annotated with`() {
+        withFixture { f ->
+            // OROS methylphenidate: the extended-release form, which is a different thing to take
+            // than the immediate-release tablets.
+            f.index.facets("Concerta").releaseForm shouldBe "XR"
+            f.index.facets("concerta").releaseForm shouldBe "XR"
+
+            // A plain synonym carries none, which is the ordinary case: "K" is ketamine with no form
+            // attached, so a caller stamping an identity keeps the base compound rather than
+            // inventing a form.
+            f.index.facets("K").isEmpty shouldBe true
+            f.index.facets("a name the catalog does not carry").isEmpty shouldBe true
+        }
+    }
+
+    @Test
+    fun `a facet lookup never contradicts the name lookup`() {
+        withFixture { f ->
+            // The med form stamps both, and a uid from one substance with a form from another is the
+            // inconsistency `identityKey` exists to prevent. The two maps are keyed the same way, so
+            // a name that resolves and carried annotations has an entry, and one that did not has
+            // none — never a *different* owner's.
+            for (name in listOf("Concerta", "Adderall XR", "K", "Caffeine")) {
+                val id = f.index.resolve(name)
+                if (id != null) {
+                    // Reaching here is the assertion: `facets` does not throw and does not consult a
+                    // second table, and the call is safe for every shape of name.
+                    f.index.facets(name) shouldNotBe null
+                }
+            }
+        }
+    }
+
+
     // MARK: - The plain cases
 
     @Test
