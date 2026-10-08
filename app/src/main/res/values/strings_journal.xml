@@ -262,4 +262,6 @@
     <string name="journal_active_now">Active now</string>
     <string name="journal_active_now_count">%1 substances</string>
     <string name="journal_active_now_dose">%1 %2 · %3</string>
-</resources>
+    <string name="journal_dose_count">%1 doses</string>
+    <string name="journal_maintenance">Scheduled medications</string>
+            </resources>

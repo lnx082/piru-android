@@ -43,6 +43,9 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import glass.kagerou.piru.data.AppSettingsStore
 import androidx.compose.foundation.clickable
+import glass.kagerou.piru.data.entity.SessionEntity
+import glass.kagerou.piru.engine.SubstanceCatalog
+import androidx.compose.ui.graphics.Color
 
 /**
  * The journal's root: the day's curves, then the day's doses.
@@ -73,6 +76,14 @@ fun JournalScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     var tints by remember { mutableStateOf<Map<String, P3Color>>(emptyMap()) }
     var loading by remember { mutableStateOf(true) }
 
+    // The session rows, for the cards' titles and maintenance flags. Keyed by id string because that is what a
+    // dose carries, and a map rather than a query per card.
+    var sessionsById by remember { mutableStateOf<Map<String, SessionEntity>>(emptyMap()) }
+
+    // The catalogue, for the cards' display titles. Held rather than opened per card: `sessionDays` resolves one
+    // title per dose, and a lookup against a freshly opened catalogue per dose would be a read per frame.
+    var catalog by remember { mutableStateOf<SubstanceCatalog?>(null) }
+
     // One load, not an observation yet. The observation wiring — a `Flow` from the
     // DAO through a view model — arrives with the quick-log sheet, which is what
     // makes a reload necessary without a relaunch.
@@ -80,6 +91,12 @@ fun JournalScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     // wiring arrives with the view-model layer, and until then a screen that only
     // loaded once would keep showing a dose the user just deleted.
     LaunchedEffect(navigator.dataVersion) {
+        // The session rows and the catalogue, alongside the log. Both are read once here rather than per card,
+        // because `sessionDays` resolves a title per dose and a session per card.
+        sessionsById = runCatching {
+            app.database.sessionDao().all().associateBy { it.id.toString() }
+        }.getOrDefault(emptyMap())
+        catalog = runCatching { app.catalog() }.getOrNull()
         loading = true
         // Group any session-less dose before reading, so a store that predates the
         // session model — or one recovered from a backup — has a grouping by the
@@ -249,32 +266,135 @@ fun JournalScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                 }
             }
 
-            // Grouped by day, which is the shape the journal actually has: the
-            // header counts one day, so the list beneath it must not run on into
-            // the previous one. Upstream renders the same grouping, with the day's
-            // own session hero above it — that hero belongs to the session port.
-            val byDay = entries.groupBy { it.timestamp.toInstant().atZone(zone).toLocalDate() }
-            for ((day, doses) in byDay) {
-                item(key = "day-$day") {
-                    Text(
-                        dayLabel(day, today),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = PiruTheme.colors.secondaryLabel,
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
+            // Grouped into days of **sessions**, which is the shape the journal actually has: the header counts
+            // one day, so the list beneath it must not run on into the previous one, and a day's doses belong to
+            // the sessions they were read as rather than to the day flat.
+            //
+            // The grouping is `sessionDays` rather than an inline `groupBy` because three of its rules are
+            // decisions — a maintenance session draws as a compact row, a one-dose session reads as a single time
+            // rather than a range, and two aliases of one drug collapse to one name in the summary.
+            val days = sessionDays(
+                entries = entries,
+                sessions = sessionsById,
+                zone = zone,
+                today = today,
+                displayTitleFor = { name -> catalog?.lookup(name)?.displayTitle ?: name },
+            )
+            for (day in days) {
+                item(key = "day-${day.date}") {
+                    Column(modifier = Modifier.padding(top = 8.dp)) {
+                        Text(
+                            // The day's heading. Resolved here rather than in the model because a heading is
+                            // three resources and a pattern, and the pattern has to come from somewhere
+                            // locale-aware — the locale localizes the month and weekday *names* a pattern
+                            // produces but not their *order*. This is the same helper the flat day list used, kept
+                            // rather than reimplemented.
+                            dayLabel(day.date, today),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = PiruTheme.colors.secondaryLabel,
+                        )
+                        // The weekday beside the date, which the day list needs: "3 March" says when, and
+                        // "Tuesday" says what kind of day it was.
+                        Text(
+                            day.date.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, java.util.Locale.getDefault()),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = PiruTheme.colors.secondaryLabel,
+                        )
+                    }
                 }
-                items(doses, key = { it.rowId }) { entry ->
-                    DoseRow(entry, zone, onOpen = {
-                        // A grouped dose opens its session — the reading the app
-                        // made of it — and an ungrouped one opens the entry itself.
-                        // Falling back rather than disabling: a dose with no session
-                        // is still a dose, and the entry screen is where it is read.
-                        val sessionId = entry.sessionId
-                        if (sessionId != null) navigator.push(PushRoute.Session(sessionId.toString()))
-                        else navigator.push(PushRoute.Entry(entry.timestamp.time, entry.id.toString()))
-                    })
+                for (card in day.sessions) {
+                    item(key = "session-${card.sessionId}-${card.startDate}") {
+                        SessionRow(
+                            card = card,
+                            onOpen = {
+                                if (card.navigable) {
+                                    navigator.push(PushRoute.Session(card.sessionId))
+                                }
+                            },
+                        )
+                    }
+                    // The session's own doses beneath it, so the card is the reading and the rows are what it was
+                    // read from. A maintenance session is a compact row and its doses are the scheduled ones
+                    // already shown by `MyMedsCard`, so they are not repeated here.
+                    if (!card.isMaintenance) {
+                        val doses = entries.filter { it.sessionId?.toString().orEmpty() == card.sessionId }
+                        items(doses, key = { "dose-${it.rowId}" }) { entry ->
+                            DoseRow(entry, zone, onOpen = {
+                                val sessionId = entry.sessionId
+                                if (sessionId != null) navigator.push(PushRoute.Session(sessionId.toString()))
+                                else navigator.push(PushRoute.Entry(entry.timestamp.time, entry.id.toString()))
+                            })
+                        }
+                    }
                 }
             }
+        }
+    }
+}
+
+/**
+ * One session as a row: the time it happened, what was in it, and how many doses.
+ *
+ * A **maintenance** session draws as a compact line — a scheduled tablet is not a session to read — and a normal
+ * one as a full card. The distinction is `SessionCardModel`'s, where it is tested; this only draws the two
+ * shapes.
+ *
+ * A non-navigable card is a dose whose session row is missing. It still draws, because dropping it would drop an
+ * entry from the log, and it does not route, because there is nothing to open.
+ */
+@Composable
+private fun SessionRow(card: SessionCard, onOpen: () -> Unit) {
+    if (card.isMaintenance) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                card.timeLabel,
+                style = MaterialTheme.typography.bodySmall,
+                color = PiruTheme.colors.secondaryLabel,
+            )
+            Text(
+                card.substanceSummary.ifEmpty { stringResource(R.string.journal_maintenance) },
+                style = MaterialTheme.typography.bodySmall,
+                color = PiruTheme.colors.secondaryLabel,
+            )
+        }
+        return
+    }
+
+    PiruCard(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = if (card.navigable) onOpen else null,
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                // The user's own title wins, because a session they named is one they want to find again.
+                if (card.title != null) {
+                    Text(card.title, style = MaterialTheme.typography.titleSmall)
+                }
+                Text(
+                    card.timeLabel,
+                    style = if (card.title != null) {
+                        MaterialTheme.typography.bodySmall
+                    } else {
+                        MaterialTheme.typography.titleSmall
+                    },
+                    color = if (card.title != null) PiruTheme.colors.secondaryLabel else Color.Unspecified,
+                )
+                Text(
+                    card.substanceSummary,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            Text(
+                stringResource(R.string.journal_dose_count, card.doseCount),
+                style = MaterialTheme.typography.bodySmall,
+                color = PiruTheme.colors.secondaryLabel,
+            )
         }
     }
 }

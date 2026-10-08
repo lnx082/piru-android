@@ -222,4 +222,6 @@
     <string name="journal_active_now">当前生效</string>
     <string name="journal_active_now_count">%1 种物质</string>
     <string name="journal_active_now_dose">%1 %2 · %3</string>
-</resources>
+    <string name="journal_dose_count">%1 剂</string>
+    <string name="journal_maintenance">计划用药</string>
+            </resources>
