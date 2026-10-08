@@ -52,6 +52,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.material3.TextButton
 import glass.kagerou.piru.ui.nav.PushRoute
+import glass.kagerou.piru.data.entity.DoseEntryEntity
 
 /**
  * The tolerance tool: one card per mechanism class.
@@ -107,6 +108,14 @@ fun ToleranceToolScreen(navigator: AppNavigator, modifier: Modifier = Modifier) 
 
     var range by rememberSaveable { mutableStateOf(UsageTimeRange.NINETY_DAYS) }
     var loadSeries by remember { mutableStateOf<List<ReceptorLoadSeries>>(emptyList()) }
+
+    /**
+     * The log the cards are readings of.
+     *
+     * Held because two things need it — the load series and the GABA card — and reading it inside a
+     * composable would be a Room query during composition. It is the same list the effect already fetched.
+     */
+    var entries by remember { mutableStateOf<List<DoseEntryEntity>>(emptyList()) }
     var selected by remember { mutableStateOf<Instant?>(null) }
 
     LaunchedEffect(navigator.dataVersion) {
@@ -138,10 +147,14 @@ fun ToleranceToolScreen(navigator: AppNavigator, modifier: Modifier = Modifier) 
     // runs on the default dispatcher — `LaunchedEffect` continues on the
     // composition's dispatcher, which is the main one.
     LaunchedEffect(navigator.dataVersion, range) {
+        // Read once, held in state, and handed to both consumers: the load series below and the GABA card.
+        // Reading it inside a composable would be a Room query during composition.
+        val log = app.database.doseEntryDao().all()
+        entries = log
         val built = withContext(Dispatchers.Default) {
             buildReceptorLoadSeries(
                 app = app,
-                entries = app.database.doseEntryDao().all(),
+                entries = log,
                 range = range,
                 futureHorizonMinutes = TOLERANCE_FUTURE_HORIZON_MINUTES,
             )
@@ -300,7 +313,7 @@ fun ToleranceToolScreen(navigator: AppNavigator, modifier: Modifier = Modifier) 
         }
 
         items(ordered, key = { it.receptorClass.wireValue }) { card ->
-            ToleranceClassCard(card)
+            ToleranceClassCard(card, entries)
         }
 
         if (incomplete.isNotEmpty()) {
@@ -350,7 +363,7 @@ fun ToleranceToolScreen(navigator: AppNavigator, modifier: Modifier = Modifier) 
 }
 
 @Composable
-private fun ToleranceClassCard(card: ToleranceReplay.ClassTolerance) {
+private fun ToleranceClassCard(card: ToleranceReplay.ClassTolerance, entries: List<DoseEntryEntity>) {
     val tint = receptorClassColor(card.receptorClass)
     val params = ReceptorClasses.parametersFor(card.receptorClass)
 
@@ -390,6 +403,13 @@ private fun ToleranceClassCard(card: ToleranceReplay.ClassTolerance) {
             }
 
             RecoveryChart(card)
+
+            // The combined load for this class, for GABA only. Upstream hangs it on the benzodiazepine card,
+            // which is the one whose members stack on a single receptor — several benzodiazepines plus alcohol
+            // plus a lingering metabolite all loading GABA-A at once.
+            if (card.receptorClass == ReceptorClasses.ReceptorClass.GABA) {
+                GabaLoadingCard(entries)
+            }
 
             SafetyNote(card, params.safetyAxis)
         }

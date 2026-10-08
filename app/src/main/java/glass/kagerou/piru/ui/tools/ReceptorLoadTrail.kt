@@ -137,6 +137,72 @@ internal suspend fun buildReceptorLoadSeries(
     return out.sortedByDescending { it.peak }
 }
 
+
+/**
+ * The GABA class's load trail over upstream's own window: four days back, fourteen forward, two-hour steps.
+ *
+ * ## Why the class is hard-coded instead of passed
+ * This is the GABA card. Upstream fixes `.gaba` for the same reason: the reading exists because several
+ * different things — benzodiazepines, alcohol, a lingering metabolite — load *one* receptor, and that is a fact
+ * about GABA-A rather than about a class the caller chose.
+ *
+ * ## Why the horizon is fixed too
+ * `GABALoadingCard`'s own constants. The past window is long enough to show the doses doing the loading rather
+ * than only their decay tail, and the forward window is the clearance. A caller-supplied range would make the
+ * curve's meaning depend on where it was opened from.
+ *
+ * Returns an empty list when the class is not driven by any in-window dose — which the card draws as nothing,
+ * because an empty trail and a trail of zeros mean different things (see `LoadTrail`'s own note).
+ */
+internal suspend fun buildGabaLoadTrail(
+    app: PiruApplication,
+    entries: List<DoseEntryEntity>,
+): List<LoadPoint> {
+    val log = entries.mapNotNull { it.toToleranceSimDose() }
+    if (log.isEmpty()) return emptyList()
+
+    val pharmacology = app.catalog()
+    val now = Instant.now()
+    val nowMinutes = now.toEpochMilli() / 60_000.0
+    val weight = app.profile().weightKgOrDefault()
+
+    val params = pharmacology.pharmacologyForLog(
+        log.map { it.substance }.toSet() + pharmacology.classRepresentativeNames(),
+    )
+
+    return LoadTrail.loadTrail(
+        doses = log,
+        params = params,
+        now = now,
+        weightKg = weight,
+        receptorClass = ReceptorClasses.ReceptorClass.GABA,
+        horizonMinutes = GABA_FORWARD_HORIZON_MINUTES,
+        stepMinutes = GABA_STEP_MINUTES,
+        pastHorizonMinutes = GABA_PAST_HORIZON_MINUTES,
+        // The engine's lookback defaults to a year and the window here is eighteen days, so the default is
+        // ample. Passed explicitly anyway, so the window and the lookback cannot drift apart.
+        lookbackDays = 365.0,
+    ).map { LoadPoint(it.date, it.load) }
+}
+
+/** Four days of history, so the doses doing the loading are visible rather than only their decay tail. */
+internal const val GABA_PAST_HORIZON_MINUTES: Double = 4 * 1_440.0
+
+/** Fourteen days forward: the clearance, for a class whose members run from hours to days. */
+internal const val GABA_FORWARD_HORIZON_MINUTES: Double = 14 * 1_440.0
+
+/** Two hours, upstream's step: fine enough to show a peak, coarse enough for eighteen days. */
+internal const val GABA_STEP_MINUTES: Double = 120.0
+
+/**
+ * Below this peak the card hides itself.
+ *
+ * A curve whose maximum is a few percent is not a reading, it is a flat line at the floor — and a card that
+ * always draws teaches the reader to ignore it, which is the wrong lesson for the one card that answers "is
+ * this receptor loaded".
+ */
+internal const val GABA_VISIBILITY_FLOOR: Double = 0.05
+
 /**
  * Sample spacing for the trail: coarser as the window widens, so a year's trace is
  * not an unreadable comb. Three hours is `loadTrail`'s own default and the spacing a

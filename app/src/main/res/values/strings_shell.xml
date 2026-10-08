@@ -769,4 +769,8 @@
     <string name="tolerance_meaning_alpha2_agonist">Barely builds tolerance; stopping suddenly can make blood pressure rebound hard.</string>
     <string name="tolerance_meaning_beta_blocker">Barely builds tolerance; stopping suddenly can make heart rate and blood pressure rebound.</string>
     <string name="tolerance_meaning_unknown">Generic class-default kinetics at the lowest confidence.</string>
+    <string name="tolerance_gaba_load_title">Modeled receptor load</string>
+    <string name="tolerance_gaba_load_now">About %1$.0f%% of your recent peak right now</string>
+    <string name="tolerance_gaba_load_caption">Modeled combined load across your logged GABAergics, relative to your recent peak.</string>
+    <string name="tolerance_gaba_load_caption_alcohol">Modeled combined load across your logged GABAergics, relative to your recent peak. Alcohol is included; it loads the receptor at a different site.</string>
 </resources>

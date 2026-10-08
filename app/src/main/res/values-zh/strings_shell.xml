@@ -735,4 +735,8 @@
     <string name="tolerance_meaning_alpha2_agonist">几乎不形成耐受；突然停药会让血压强烈反弹。</string>
     <string name="tolerance_meaning_beta_blocker">几乎不形成耐受；突然停药会让心率和血压反弹。</string>
     <string name="tolerance_meaning_unknown">通用类别默认动力学，置信度最低。</string>
+    <string name="tolerance_gaba_load_title">建模的受体负荷</string>
+    <string name="tolerance_gaba_load_now">目前约为近期峰值的 %1$.0f%%</string>
+    <string name="tolerance_gaba_load_caption">对你记录过的 GABA 类物质建模得到的合并负荷，以你近期的峰值为基准。</string>
+    <string name="tolerance_gaba_load_caption_alcohol">对你记录过的 GABA 类物质建模得到的合并负荷，以你近期的峰值为基准。已计入酒精；它作用于受体的不同位点。</string>
 </resources>
