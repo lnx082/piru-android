@@ -61,7 +61,13 @@ class SubstancePagesDeviceTest {
     fun theSubstancePageResolvesAndDraws() {
         compose.setContent { PiruTheme { SubstanceDetailScreen("Caffeine", AppNavigator()) } }
 
-        compose.waitUntil(timeoutMillis = 15_000) {
+        // waitForIdle first, then the assertion. The screen got heavier when the reference sections were
+        // added — it now resolves the palette, the binding rows, the metabolism rows and the user's own log
+        // before it draws — and a bare waitUntil on the first node raced the Compose rule's own hierarchy
+        // lookup once in three runs. The failure was No compose hierarchies found in the app, which is the
+        // rule reporting that it looked before the activity had a tree, not an assertion about the screen.
+        compose.waitForIdle()
+        compose.waitUntil(timeoutMillis = 30_000) {
             compose.onAllNodesWithText("Caffeine").fetchSemanticsNodes().isNotEmpty()
         }
         compose.onNodeWithText("Caffeine").assertIsDisplayed()
@@ -78,7 +84,8 @@ class SubstancePagesDeviceTest {
     fun anUnknownNameReportsNotFound() {
         compose.setContent { PiruTheme { SubstanceDetailScreen("Unobtainium", AppNavigator()) } }
 
-        compose.waitUntil(timeoutMillis = 15_000) {
+        compose.waitForIdle()
+        compose.waitUntil(timeoutMillis = 30_000) {
             compose.onAllNodesWithText("Unobtainium", substring = true)
                 .fetchSemanticsNodes().isNotEmpty()
         }

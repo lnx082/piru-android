@@ -544,43 +544,65 @@ private fun EffectLadder(card: ToleranceReplay.ClassTolerance) {
 @Composable
 private fun RecoveryChart(card: ToleranceReplay.ClassTolerance) {
     val params = ReceptorClasses.parametersFor(card.receptorClass)
-    val layers = listOf(
+    val layers = PDModel.ToleranceLayers(
+        acute = card.sAcute,
+        adaptive = card.sAdaptive,
+        deep = card.sDeep,
+        synthesis = card.sSynthesis,
+        tauAcuteMinutes = params.tauAcuteMinutes,
+        tauAdaptiveMinutes = params.tauAdaptiveMinutes,
+        tauDeepMinutes = params.tauDeepMinutes,
+        tauSynthesisMinutes = params.tauSynthesisMinutes,
+    )
+    if (layers.magnitudes.none { it > 0 }) return
+
+    // Asked about 1.05, not 1.0. The shift is a sum of exponentials, so reaching exactly naive is asymptotic
+    // and the honest answer to "when is it zero" is "never" — asking anyway produced "back to baseline in
+    // about 493 d" for MDMA, a number that describes a limit nobody reaches. Within 5 % is finite,
+    // meaningful, and lands where the model's own documentation says it should: about three weeks for an
+    // entactogen, not sixteen months.
+    val decayLayers = listOf(
         PDModel.Layer(card.sAcute, params.tauAcuteMinutes),
         PDModel.Layer(card.sAdaptive, params.tauAdaptiveMinutes),
         PDModel.Layer(card.sDeep, params.tauDeepMinutes),
         PDModel.Layer(card.sSynthesis, params.tauSynthesisMinutes),
     ).filter { it.s > 0 }
-
-    if (layers.isEmpty()) return
-    // Asked about 1.05, not 1.0. The shift is a sum of exponentials, so reaching
-    // exactly naive is asymptotic and the honest answer to "when is it zero" is
-    // "never" — asking anyway produced "back to baseline in about 493 d" for MDMA,
-    // a number that describes a limit nobody reaches. Within 5 % is finite,
-    // meaningful, and lands where the model's own documentation says it should:
-    // about three weeks for an entactogen, not sixteen months.
-    val days = PDModel.shiftDecayMinutes(layers, RECOVERED_SHIFT)?.let { it / 1_440.0 }
-    // The duration keeps its unit abbreviation ("12 h" / "5 d"), which is a
-    // symbol rather than copy, so only the sentence around it is a resource.
+    val days = PDModel.shiftDecayMinutes(decayLayers, RECOVERED_SHIFT)?.let { it / 1_440.0 }
+    // The duration keeps its unit abbreviation ("12 h" / "5 d"), which is a symbol rather than copy, so only
+    // the sentence around it is a resource.
     val duration = days?.let { if (it < 1) "${(it * 24).toInt()} h" else "${it.toInt()} d" }
-    // Read outside the draw scope: a `@Composable` theme read cannot happen inside
-    // `Canvas { … }`, which is a plain lambda.
+
+    // The curve, from the model's own gauge. This is what makes the chart and the bar beside it the same
+    // quantity: `responseFraction` is saturating and capped per class, and a linear ratio of the raw shift is
+    // neither, so a chart drawn from the ratio could say "nearly recovered" where the bar still read high.
+    val windowMinutes = maxOf(days ?: 0.0, 1.0) * 1_440.0 * 1.1
+    val curve = PDModel.toleranceRecoveryCurve(
+        layers = layers,
+        representativeOccupancy = card.representativeOccupancy,
+        occupancyCap = card.receptorClass.gaugeOccupancyCap,
+        windowMinutes = windowMinutes,
+    )
+    if (curve.isEmpty()) return
+
+    // Read outside the draw scope: a `@Composable` theme read cannot happen inside `Canvas { … }`, which is
+    // a plain lambda.
     val accent = PiruTheme.colors.accent
 
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Box(modifier = Modifier.fillMaxWidth().height(48.dp)) {
+        Box(modifier = Modifier.fillMaxWidth().height(56.dp)) {
             Canvas(Modifier.fillMaxSize()) {
-                val spanDays = maxOf(days ?: 0.0, 1.0) * 1.1
-                val steps = 80
                 var previous = Offset.Zero
-                for (index in 0..steps) {
-                    val day = spanDays * index / steps
-                    val shift = layers.sumOf { it.s * kotlin.math.exp(-day * 1_440.0 / it.tau) }
-                    val y = size.height * (1 - (shift / maxOf(layers.sumOf { it.s }, 1e-9)).toFloat())
-                    val point = Offset(size.width * index / steps, y)
+                for ((index, point) in curve.withIndex()) {
+                    // The y axis is the tolerance percentage, 0 at the bottom and 100 at the top, which is
+                    // the same scale the bar reads on. Drawn against the full axis rather than against the
+                    // curve's own maximum: a curve autoscaled to its own range hides how little tolerance is
+                    // left, which is the one thing the chart is for.
+                    val y = size.height * (1f - (point.percent / 100.0).toFloat())
+                    val offset = Offset(size.width * index / (curve.size - 1).coerceAtLeast(1), y)
                     if (index > 0) {
-                        drawLine(color = accent, start = previous, end = point, strokeWidth = 2.5f)
+                        drawLine(color = accent, start = previous, end = offset, strokeWidth = 2.5f)
                     }
-                    previous = point
+                    previous = offset
                 }
             }
         }

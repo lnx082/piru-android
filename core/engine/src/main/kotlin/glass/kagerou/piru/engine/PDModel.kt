@@ -107,6 +107,116 @@ object PDModel {
     // MARK: - The gauge
 
     /**
+     * One sampled point on a tolerance recovery curve: days from now, and tolerance as a percentage.
+     *
+     * The percentage is the same quantity the tolerance bar draws, so a chart and a bar for one class can
+     * never disagree.
+     */
+    data class TolerancePoint(val day: Double, val percent: Double)
+
+    /**
+     * Four right-shift layers' worth of state, as the tolerance replay holds it.
+     *
+     * Its own type rather than four positional `Double`s: three are minutes-scale layer magnitudes and one
+     * is a synthesis pool, and a transposed argument list would be a plausible-looking wrong curve.
+     */
+    data class ToleranceLayers(
+        val acute: Double,
+        val adaptive: Double,
+        val deep: Double,
+        val synthesis: Double,
+        val tauAcuteMinutes: Double,
+        val tauAdaptiveMinutes: Double,
+        val tauDeepMinutes: Double,
+        val tauSynthesisMinutes: Double,
+    ) {
+        /** The four layer magnitudes, in the order the shift factor sums them. */
+        val magnitudes: List<Double> get() = listOf(acute, adaptive, deep, synthesis)
+    }
+
+    /**
+     * The tolerance recovery curve over [windowMinutes], sampled at [sampleCount] points.
+     *
+     * ## The formula, and why it is not a ratio
+     * Each layer decays as `s·e^{-t/τ}`; the shift factor is `exp(Σ)` of them, because the shift is
+     * multiplicative in the model. Tolerance is then `1 - responseFraction(shift, …)` — the **saturating**
+     * read the gauge uses, not `shift / initialShift`, which is a linear ratio of a quantity the model
+     * treats exponentially and then through a hill-like response.
+     *
+     * The difference is not cosmetic. With a cap of 0.5 and a representative occupancy of 0.6, a shift factor
+     * of 2 and one of 20 both read as saturated; a linear ratio would draw them as far apart.
+     *
+     * ## Why the sample at t = 0 is the current tolerance
+     * The curve starts where the user is now and descends toward naive, the same orientation as the bar
+     * beside it. A curve that started at full and fell would read as "you will become tolerant".
+     */
+    fun toleranceRecoveryCurve(
+        layers: ToleranceLayers,
+        representativeOccupancy: Double,
+        occupancyCap: Double?,
+        windowMinutes: Double,
+        sampleCount: Int = 24,
+    ): List<TolerancePoint> {
+        if (sampleCount < 2) return emptyList()
+        val span = max(windowMinutes, 1.0)
+        return (0 until sampleCount).map { index ->
+            val minutes = span * index / (sampleCount - 1)
+            val shift = exp(
+                layers.acute * exp(-minutes / layers.tauAcuteMinutes) +
+                    layers.adaptive * exp(-minutes / layers.tauAdaptiveMinutes) +
+                    layers.deep * exp(-minutes / layers.tauDeepMinutes) +
+                    layers.synthesis * exp(-minutes / layers.tauSynthesisMinutes),
+            )
+            val tolerance = 1.0 - responseFraction(
+                shiftFactor = shift,
+                representativeOccupancy = representativeOccupancy,
+                occupancyCap = occupancyCap,
+            )
+            TolerancePoint(
+                day = minutes / 1_440.0,
+                // Clamped to the axis, as upstream: a floating-point excursion outside `[0, 100]` would
+                // draw a line off the top of the chart rather than at it.
+                percent = (tolerance * 100).coerceIn(0.0, 100.0),
+            )
+        }
+    }
+
+    /**
+     * The per-layer shares of a class's current shift, for a legend or a bar.
+     *
+     * `s / Σ s` is the **right** use of a linear ratio: these are the layer magnitudes themselves, before
+     * the exponential, so a share of them is a share of the state. The recovery curve above is the place a
+     * ratio is wrong.
+     */
+    fun layerShares(magnitudes: List<Double>): List<Double> {
+        val values = magnitudes.map { if (it > 0) it else 0.0 }
+        val total = values.sum()
+        if (total <= 0) return List(values.size) { 0.0 }
+        return values.map { it / total }
+    }
+
+    /**
+     * The tolerance the model reads right now for a class's layers.
+     *
+     * `toleranceRecoveryCurve` sampled at zero, named separately because the bar and the chart's first point
+     * must be the same number — and because a caller that only wants "how tolerant is this" should not have
+     * to sample a curve to ask.
+     */
+    fun toleranceNow(
+        layers: ToleranceLayers,
+        representativeOccupancy: Double,
+        occupancyCap: Double?,
+    ): Double {
+        val shift = exp(layers.magnitudes.sum())
+        val tolerance = 1.0 - responseFraction(
+            shiftFactor = shift,
+            representativeOccupancy = representativeOccupancy,
+            occupancyCap = occupancyCap,
+        )
+        return (tolerance * 100).coerceIn(0.0, 100.0)
+    }
+
+    /**
      * The **response fraction** in `[0, 1]`: how much of the naive effect you
      * would feel at your usual dose under the current right shift [shiftFactor].
      *
