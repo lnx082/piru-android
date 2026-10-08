@@ -789,4 +789,10 @@
     <string name="toolsb_insights_hub_scheduled">scheduled doses taken</string>
     <string name="toolsb_insights_hub_no_entries">No entries recorded yet</string>
     <string name="toolsb_insights_hub_no_meds">Add your meds to see adherence</string>
+    <string name="shell_section_signal_cascade">Downstream signalling</string>
+    <string name="shell_section_off_target">Off-target activity</string>
+    <string name="shell_off_target_blurb">Targets this substance hits besides its main mechanism. These are often where side effects come from.</string>
+    <string name="shell_section_pharmacogenomics">Pharmacogenomics</string>
+    <string name="shell_section_cyp2d6">CYP2D6</string>
+    <string name="shell_value_unknown">—</string>
 </resources>

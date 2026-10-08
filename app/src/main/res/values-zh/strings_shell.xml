@@ -755,4 +755,10 @@
     <string name="toolsb_insights_hub_scheduled">已按计划服用</string>
     <string name="toolsb_insights_hub_no_entries">还没有任何记录</string>
     <string name="toolsb_insights_hub_no_meds">添加用药后才能看到依从性</string>
+    <string name="shell_section_signal_cascade">下游信号</string>
+    <string name="shell_section_off_target">脱靶作用</string>
+    <string name="shell_off_target_blurb">除主要机制外，该物质还会作用的靶点。副作用往往来自这里。</string>
+    <string name="shell_section_pharmacogenomics">药物基因组学</string>
+    <string name="shell_section_cyp2d6">CYP2D6</string>
+    <string name="shell_value_unknown">—</string>
 </resources>

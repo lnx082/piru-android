@@ -52,6 +52,9 @@ import java.time.Instant
 import androidx.compose.foundation.layout.width
 import glass.kagerou.piru.engine.BindingHit
 import glass.kagerou.piru.engine.MetabolismHit
+import glass.kagerou.piru.engine.DownstreamSignallingHit
+import glass.kagerou.piru.engine.OffTargetHit
+import glass.kagerou.piru.engine.PharmacogeneticHit
 
 /**
  * A substance's full record.
@@ -107,6 +110,9 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
      * use.
      */
     var bindings by remember(name) { mutableStateOf<List<BindingHit>>(emptyList()) }
+    var signalling by remember { mutableStateOf<List<DownstreamSignallingHit>>(emptyList()) }
+    var offTargets by remember { mutableStateOf<List<OffTargetHit>>(emptyList()) }
+    var pharmacogenetics by remember { mutableStateOf<List<PharmacogeneticHit>>(emptyList()) }
     var metabolism by remember(name) { mutableStateOf<List<MetabolismHit>>(emptyList()) }
 
     // The user's answer to "how much detail?", which until now nothing could read back.
@@ -148,6 +154,11 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
         // alias would miss a join keyed on the substance row.
         val canonical = catalog.lookup(name)?.name ?: name
         bindings = runCatching { catalog.bindingRows(canonical) }.getOrDefault(emptyList())
+        // Three tables this port shipped and never read: `downstream_signalling` (678 substances),
+        // `off_targets` (165) and `pharmacogenetics` (169).
+        signalling = runCatching { catalog.downstreamSignallingRows(canonical) }.getOrDefault(emptyList())
+        offTargets = runCatching { catalog.offTargetRows(canonical) }.getOrDefault(emptyList())
+        pharmacogenetics = runCatching { catalog.pharmacogeneticRows(canonical) }.getOrDefault(emptyList())
         metabolism = runCatching { catalog.metabolismRows(canonical) }.getOrDefault(emptyList())
     }
 
@@ -233,6 +244,15 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
 
             item { ReferencesCard(resolved.references) }
 
+            // The pharmacology sections, beside the binding and metabolism tables they extend. Signalling is
+            // what happens *after* the receptor, off-targets are what the substance hits besides its mechanism,
+            // and the two genetic sections read the same rows.
+            item { DownstreamSignallingCard(signalling) }
+            item { OffTargetCard(offTargets) }
+            // CYP2D6 first, because it is the gene that most often changes an answer at the doses people take
+            // and a reader should not have to scan the full list to find it.
+            item { Cyp2d6Card(pharmacogenetics) }
+            item { PharmacogeneticsCard(pharmacogenetics) }
             item { BindingTableCard(bindings) }
 
             item { MetabolismCard(metabolism) }

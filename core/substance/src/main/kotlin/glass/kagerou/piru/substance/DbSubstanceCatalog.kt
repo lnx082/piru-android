@@ -28,6 +28,9 @@ import glass.kagerou.piru.model.EffectGroup
 import glass.kagerou.piru.model.SubjectiveEffect
 import glass.kagerou.piru.engine.BindingHit
 import glass.kagerou.piru.engine.MetabolismHit
+import glass.kagerou.piru.engine.DownstreamSignallingHit
+import glass.kagerou.piru.engine.OffTargetHit
+import glass.kagerou.piru.engine.PharmacogeneticHit
 
 /**
  * The bundled catalog, seen through the engine's [SubstanceCatalog] port.
@@ -457,6 +460,39 @@ class DbSubstanceCatalog private constructor(
     fun metabolismRows(nameOrAlias: String): List<MetabolismHit> {
         val id = index.resolve(nameOrAlias) ?: return emptyList()
         return reader.metabolismRows(id)
+    }
+
+    /**
+     * What the substance's engagement sets off beyond the receptor — the signal-cascade section.
+     *
+     * Prose per source. Read by nothing before this, so `downstream_signalling`'s 678 rows over 678 substances
+     * were data with no screen.
+     */
+    fun downstreamSignallingRows(nameOrAlias: String): List<DownstreamSignallingHit> {
+        val id = index.resolve(nameOrAlias) ?: return emptyList()
+        return reader.downstreamSignallingRows(id)
+    }
+
+    /**
+     * What the substance hits besides its mechanism — the off-target section.
+     *
+     * Deliberately separate from [bindingRows]: merging them would make the mechanism indistinguishable from
+     * everything else the compound touches, which is the one distinction this table exists to draw.
+     */
+    fun offTargetRows(nameOrAlias: String): List<OffTargetHit> {
+        val id = index.resolve(nameOrAlias) ?: return emptyList()
+        return reader.offTargetRows(id)
+    }
+
+    /**
+     * The genes that change what this substance does, and how — the pharmacogenomics and CYP2D6 sections.
+     *
+     * One read for both sections: the CYP2D6 section is this list filtered to one gene, and reading it twice would
+     * let the two disagree.
+     */
+    fun pharmacogeneticRows(nameOrAlias: String): List<PharmacogeneticHit> {
+        val id = index.resolve(nameOrAlias) ?: return emptyList()
+        return reader.pharmacogeneticRows(id)
     }
 
     /** Every receptor target with binding rows, most-populated first — the advanced search's picker. */

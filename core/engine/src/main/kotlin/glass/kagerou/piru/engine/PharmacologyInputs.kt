@@ -3,6 +3,70 @@ package glass.kagerou.piru.engine
 import glass.kagerou.piru.model.ConfidenceTier
 
 /**
+ * One `downstream_signalling` row: what a substance's engagement sets off beyond the receptor it binds.
+ *
+ * Ported from `SubstanceStore`'s downstream-signalling read. The table is prose rather than numbers — a summary
+ * per substance per source — so the model is one row and the section reads as a list of attributed statements.
+ *
+ * ## Why this is separate from the binding table
+ * The binding table says what a substance touches. This says what happens after, which is the part a reader
+ * actually wants and the part that binding affinities cannot express: two compounds can share a target and
+ * diverge entirely in what the cell does next. Upstream keeps them apart for the same reason.
+ */
+data class DownstreamSignallingHit(
+    val substanceId: Long,
+    val summary: String,
+    val sourceSlug: String,
+    val doi: String? = null,
+    val pmid: Int? = null,
+)
+
+/**
+ * One `off_targets` row: a target the substance hits that is *not* its mechanism.
+ *
+ * Ported from `SubstanceStore`'s off-target read. The three columns that make it a section rather than a list are
+ * [concernLevel], [clinicalConsequence] and the affinity — a target with no affinity is trivia, and one with no
+ * concern level is a number without a reason to care.
+ *
+ * ## The name is the point
+ * "Off-target" is what separates a substance's pharmacology from its side-effect profile. A reader looking at an
+ * interaction or an unexpected effect wants this list, and it is deliberately not merged into the binding table:
+ * merging them would make the mechanism indistinguishable from everything else the compound touches.
+ */
+data class OffTargetHit(
+    val id: Long,
+    val target: String,
+    /**
+     * The affinity, in nanometres, whichever of Kᵢ or IC₅₀ the row carries.
+     *
+     * Named for both because the table has one column for either — the source reported one, not the other — and a
+     * caller that assumed Kᵢ would compare two different measurements as if they were the same one.
+     */
+    val kiOrIc50Nm: Double? = null,
+    val concernLevel: String? = null,
+    val clinicalConsequence: String? = null,
+    val sourceSlug: String,
+    val doi: String? = null,
+    val pmid: Int? = null,
+)
+
+/**
+ * One `pharmacogenetics` row: a gene, and what a phenotype of it does to this substance.
+ *
+ * Ported from `SubstanceStore`'s pharmacogenetics read. The prose is the payload — [phenotypeEffects] describes
+ * what a poor or ultra-rapid metaboliser experiences — and it is deliberately not reduced to a direction flag,
+ * because the interesting cases differ by gene rather than by sign.
+ */
+data class PharmacogeneticHit(
+    val id: Long,
+    val gene: String,
+    val phenotypeEffects: String,
+    val sourceSlug: String,
+    val doi: String? = null,
+    val pmid: Int? = null,
+)
+
+/**
  * One `bindings` row joined to its substance, source and citation.
  *
  * Ported from `BindingHit` in `SubstanceReadModel+Pharmacology.swift`.

@@ -55,6 +55,9 @@ import glass.kagerou.piru.model.TitrationStep
 import glass.kagerou.piru.model.ToleranceInfo
 import glass.kagerou.piru.model.WaterHeatGuidance
 import kotlinx.serialization.json.Json
+import glass.kagerou.piru.engine.DownstreamSignallingHit
+import glass.kagerou.piru.engine.OffTargetHit
+import glass.kagerou.piru.engine.PharmacogeneticHit
 
 /**
  * Source-priority-aware reads over the bundled catalog.
@@ -1311,6 +1314,107 @@ class SubstanceReader(
                 pmid = row.long("pmid")?.toInt(),
             )
         }
+    }
+
+    /**
+     * The substance's `downstream_signalling` rows.
+     *
+     * Prose, one row per source, ordered by source priority then rowid so the same source always comes first for
+     * a given substance. Deduplicated on the summary text, because a substance whose signalling is described
+     * identically by two sources has one description and two attributions — and the section lists the text once
+     * with both sources rather than twice.
+     */
+    fun downstreamSignallingRows(substanceID: Long): List<DownstreamSignallingHit> {
+        if (order.isEmpty()) return emptyList()
+        return db.query(
+            """
+            SELECT d.summary, src.slug AS source_slug, c.doi, c.pmid
+              FROM downstream_signalling d
+              JOIN sources src ON src.id = d.source_id
+              LEFT JOIN citations c ON c.id = d.citation_id
+             WHERE d.substance_id = ?
+               AND src.slug IN ($enabledSourceListSQL)
+             ORDER BY ${priority.priorityCaseSQL("src")} ASC, d.rowid
+            """,
+            listOf(substanceID),
+        ).map { row ->
+            DownstreamSignallingHit(
+                substanceId = substanceID,
+                summary = row.string("summary").orEmpty(),
+                sourceSlug = row.string("source_slug").orEmpty(),
+                doi = row.string("doi"),
+                pmid = row.long("pmid")?.toInt(),
+            )
+        }.filter { it.summary.isNotBlank() }
+    }
+
+    /**
+     * The substance's `off_targets` rows: what it hits besides its mechanism.
+     *
+     * Ordered by affinity ascending — the tightest binding first — with the affinity-less rows last. That order is
+     * the section's whole argument: a reader scanning it wants the targets most likely to matter, and a target
+     * with no measured affinity cannot be ranked. `concern_level` is deliberately **not** the sort key: it is a
+     * source's editorial judgement rather than a measurement, and sorting by it would put one source's opinion
+     * above another's number.
+     */
+    fun offTargetRows(substanceID: Long): List<OffTargetHit> {
+        if (order.isEmpty()) return emptyList()
+        return db.query(
+            """
+            SELECT o.id, o.target, o.ki_or_ic50_nm, o.concern_level, o.clinical_consequence,
+                   src.slug AS source_slug, c.doi, c.pmid
+              FROM off_targets o
+              JOIN sources src ON src.id = o.source_id
+              LEFT JOIN citations c ON c.id = o.citation_id
+             WHERE o.substance_id = ?
+               AND src.slug IN ($enabledSourceListSQL)
+             ORDER BY o.ki_or_ic50_nm ASC NULLS LAST, o.target ASC, o.id ASC
+            """,
+            listOf(substanceID),
+        ).map { row ->
+            OffTargetHit(
+                id = row.long("id") ?: 0L,
+                target = row.string("target").orEmpty(),
+                kiOrIc50Nm = row.double("ki_or_ic50_nm"),
+                concernLevel = row.string("concern_level"),
+                clinicalConsequence = row.string("clinical_consequence"),
+                sourceSlug = row.string("source_slug").orEmpty(),
+                doi = row.string("doi"),
+                pmid = row.long("pmid")?.toInt(),
+            )
+        }.filter { it.target.isNotBlank() }
+    }
+
+    /**
+     * The substance's `pharmacogenetics` rows, one per gene.
+     *
+     * Ordered by gene name, because a reader looking for their own genotype scans for the gene rather than reading
+     * the list — and a section ordered by source priority would move CYP2D6 around between substances.
+     */
+    fun pharmacogeneticRows(substanceID: Long): List<PharmacogeneticHit> {
+        if (order.isEmpty()) return emptyList()
+        return db.query(
+            """
+            SELECT p.id, p.gene, p.phenotype_effects,
+                   src.slug AS source_slug, c.doi, c.pmid
+              FROM pharmacogenetics p
+              JOIN sources src ON src.id = p.source_id
+              LEFT JOIN citations c ON c.id = p.citation_id
+             WHERE p.substance_id = ?
+               AND src.slug IN ($enabledSourceListSQL)
+             ORDER BY p.gene ASC, p.id ASC
+            """,
+            listOf(substanceID),
+        ).map { row ->
+            PharmacogeneticHit(
+                id = row.long("id") ?: 0L,
+                gene = row.string("gene").orEmpty(),
+                phenotypeEffects = row.string("phenotype_effects").orEmpty(),
+                sourceSlug = row.string("source_slug").orEmpty(),
+                doi = row.string("doi"),
+                pmid = row.long("pmid")?.toInt(),
+            )
+        }.filter { it.gene.isNotBlank() }
     }
 
     /** The substance's `pk_reference` pointer, or null when it carries none. */
