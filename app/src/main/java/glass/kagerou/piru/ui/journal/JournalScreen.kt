@@ -42,6 +42,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import glass.kagerou.piru.data.AppSettingsStore
+import androidx.compose.foundation.clickable
 
 /**
  * The journal's root: the day's curves, then the day's doses.
@@ -136,6 +137,12 @@ fun JournalScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                         )
                     ),
                     style = MaterialTheme.typography.titleLarge,
+                    // The way into the continuous timeline. `PushRoute.Timeline`'s own declaration
+                    // says it is "pushed from the journal's day header", and this heading is that
+                    // header — so the link is the date the reader is already looking at. The day
+                    // view shows one day; the timeline shows the log, which is what a pattern
+                    // spanning weeks needs.
+                    modifier = Modifier.clickable { navigator.push(PushRoute.Timeline) },
                 )
                 Text(
                     stringResource(R.string.journal_logged_today, todaysEntries.size),

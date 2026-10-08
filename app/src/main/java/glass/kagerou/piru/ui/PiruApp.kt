@@ -101,6 +101,7 @@ import glass.kagerou.piru.ui.library.ClassWriteUpScreen
 import glass.kagerou.piru.ui.library.TagBrowseScreen
 import glass.kagerou.piru.ui.settings.SubstanceDatabaseScreen
 import glass.kagerou.piru.ui.settings.SourcePriorityOrderScreen
+import glass.kagerou.piru.ui.journal.TimelineScreen
 
 /**
  * The app shell: five tabs, a push stack per tab, and a modal above them.
@@ -364,6 +365,7 @@ private fun DefaultDestination(route: PushRoute, navigator: AppNavigator) {
         PushRoute.SubstanceDatabase -> SubstanceDatabaseScreen(navigator)
         PushRoute.SourcePriority -> SourcePriorityOrderScreen(navigator)
         is PushRoute.LibraryTag -> TagBrowseScreen(route.tag, navigator)
+        PushRoute.Timeline -> TimelineScreen(navigator)
 
         // The remaining library browse routes — the user's own substances — read
         // user data (Room) rather than the read-only catalog, so they name

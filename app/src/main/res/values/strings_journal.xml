@@ -256,4 +256,7 @@
     <string name="journal_entry_add_location">Add place</string>
     <string name="journal_entry_change_location">Change</string>
     <string name="journal_entry_clear_location">Clear</string>
+    <string name="journal_timeline_title">Timeline</string>
+    <string name="journal_timeline_loading">Loading…</string>
+    <string name="journal_timeline_count">%1$d doses</string>
 </resources>

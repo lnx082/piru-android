@@ -216,4 +216,7 @@
     <string name="journal_entry_add_location">添加地点</string>
     <string name="journal_entry_change_location">更改</string>
     <string name="journal_entry_clear_location">清除</string>
+    <string name="journal_timeline_title">时间轴</string>
+    <string name="journal_timeline_loading">载入中…</string>
+    <string name="journal_timeline_count">%1$d 条记录</string>
 </resources>
