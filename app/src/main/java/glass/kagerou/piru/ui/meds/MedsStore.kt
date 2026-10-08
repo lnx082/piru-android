@@ -166,7 +166,11 @@ internal object MedsStore {
         val sessionId = entry.sessionId
         app.database.doseEntryDao().deleteByRowId(entry.rowId)
         if (sessionId != null) app.database.sessionDao().refreshDoseBounds(sessionId)
-        app.reconcileRoutineOccurrences()
+        // Through `settleSchedule`, like every other write in this file. This one used to
+        // call `reconcileRoutineOccurrences` directly and skip the widget, which is how a
+        // dose unticked on the journal's med card kept showing as taken on the home screen
+        // until the next boundary or midnight.
+        settleSchedule(app)
     }
 
     // MARK: - Reads

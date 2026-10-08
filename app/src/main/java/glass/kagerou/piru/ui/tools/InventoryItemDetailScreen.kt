@@ -76,6 +76,7 @@ import glass.kagerou.piru.ui.labels.appLocale
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.nav.PushRoute
 import glass.kagerou.piru.ui.theme.PiruTheme
+import glass.kagerou.piru.notifications.InventoryNotifier
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -193,14 +194,58 @@ object InventoryStore {
     /**
      * Re-derive the cached quantity and the alert latch, then write the row.
      *
-     * The [LowStockAlert.shouldNotify] answer is deliberately discarded here — see
-     * the file note. Whoever wires notifications reads it from a call of their own.
+     * The [LowStockAlert.shouldNotify] answer is deliberately discarded here: this
+     * function has no `Context` and no business deciding to interrupt anyone. Use
+     * [recomputeAndNotify] from somewhere that has both.
      */
     suspend fun recompute(db: PiruDatabase, catalog: SubstanceCatalog, item: InventoryItemEntity): InventoryItemEntity {
         val quantity = quantity(db, catalog, item)
         val alert = lowStockAlert(item, quantity)
         val updated = item.copy(currentQuantity = quantity, lowStockNotified = alert.notified)
         db.inventoryDao().upsert(updated)
+        return updated
+    }
+
+    /**
+     * Recompute, and post the stock alert when this replay is the one that crossed the
+     * line.
+     *
+     * ## Why this exists, and what its absence cost
+     * `recompute` answers "should this alert?" and throws the answer away, and every
+     * caller did the same — so `InventoryNotifier.lowStock` existed, was correct, gated
+     * itself on the user's `INVENTORY` preference, and had **no caller anywhere in the
+     * app**. The practical effect was that a tracked supply could run to zero and the
+     * user would never be told: they got the `LOW` badge when they opened the screen,
+     * which is the one moment they did not need telling.
+     *
+     * The latch is what keeps this to one alert per shortage rather than one per replay:
+     * `lowStockAlert` only sets [LowStockAlert.shouldNotify] when the row was *not*
+     * already flagged, so a second recompute of the same shortage stays quiet, and a
+     * restock that takes the quantity back over the threshold clears the flag so the
+     * next crossing alerts again.
+     *
+     * Reading the alert from a second `lowStockAlert` call rather than returning it from
+     * `recompute` keeps `recompute`'s signature and its purity, and the check is a
+     * comparison of two fields on a row already in hand.
+     */
+    suspend fun recomputeAndNotify(
+        context: Context,
+        db: PiruDatabase,
+        catalog: SubstanceCatalog,
+        item: InventoryItemEntity,
+    ): InventoryItemEntity {
+        val updated = recompute(db, catalog, item)
+        val alert = lowStockAlert(item, updated.currentQuantity)
+        if (alert.shouldNotify) {
+            InventoryNotifier.lowStock(
+                context = context,
+                substance = updated.substance,
+                remaining = updated.currentQuantity,
+                unit = updated.unit,
+                isOut = alert.isOut,
+                itemId = updated.id,
+            )
+        }
         return updated
     }
 
@@ -626,7 +671,7 @@ fun InventoryItemDetailScreen(
         val current = item ?: return@LaunchedEffect
         if (recomputed) return@LaunchedEffect
         recomputed = true
-        InventoryStore.recompute(app.database, resolved, current)
+        InventoryStore.recomputeAndNotify(context, app.database, resolved, current)
     }
 
     LaunchedEffect(item?.trackingStart, catalog) {
@@ -711,7 +756,7 @@ fun InventoryItemDetailScreen(
             }
         } else {
             items(rows, key = { it.key }) { row ->
-                SwipeToDelete(onDelete = { deleteHistoryRow(app, catalog, item, row, scope, navigator) }) {
+                SwipeToDelete(onDelete = { deleteHistoryRow(context, app, catalog, item, row, scope, navigator) }) {
                     HistoryRowLabel(row = row, unit = item.unit)
                 }
             }
@@ -891,6 +936,7 @@ private fun historyRows(doses: List<DoseEntryEntity>, item: InventoryItemEntity)
 }
 
 private fun deleteHistoryRow(
+    context: Context,
     app: PiruApplication,
     catalog: SubstanceCatalog?,
     item: InventoryItemEntity,
@@ -907,11 +953,12 @@ private fun deleteHistoryRow(
                 // Same as the journal's delete: the slot this dose satisfied is
                 // no longer satisfied, and the record has to say so.
                 app.reconcileRoutineOccurrences()
-// And the home-screen widget, which draws this slot's state. A dose retimed,
-                // relabelled or deleted settles a different slot than it did, and the widget
-                // was left showing the previous answer.
+                // And the home-screen widget, which draws this slot's state. Deleting a
+                // dose from here unsettles its slot exactly as the journal's delete does.
                 MedWidgetRefresh.afterWrite(app)
-                catalog?.let { InventoryStore.recompute(app.database, it, item) }
+                // Deleting a dose gives the stock back, so the level may have risen back
+                // over the threshold — which clears the latch rather than alerting.
+                catalog?.let { InventoryStore.recomputeAndNotify(context, app.database, it, item) }
                 navigator.invalidate()
             }
 
@@ -1512,6 +1559,7 @@ fun InventoryItemEditScreen(
                 onClick = {
                     scope.launch {
                         commitEdit(
+                            context = context,
                             db = app.database,
                             catalog = loaded,
                             item = current,
@@ -1610,6 +1658,7 @@ private fun EditSection(title: String, footer: String, content: @Composable () -
  * 3. **The three derived fields last**, then one replay to land the cache.
  */
 private suspend fun commitEdit(
+    context: Context,
     db: PiruDatabase,
     catalog: SubstanceCatalog,
     item: InventoryItemEntity,
@@ -1634,7 +1683,7 @@ private suspend fun commitEdit(
         doseSize = normalizedPositive(doseSize),
         lowStockThreshold = normalizedPositive(threshold),
     )
-    InventoryStore.recompute(db, catalog, working)
+    InventoryStore.recomputeAndNotify(context, db, catalog, working)
 }
 
 // MARK: - Shared

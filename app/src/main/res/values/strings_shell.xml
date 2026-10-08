@@ -326,6 +326,7 @@
     <string name="shell_notif_authorized">Piru may send notifications.</string>
     <string name="shell_notif_not_determined">Piru has not asked yet. Nothing below will arrive until it may.</string>
     <string name="shell_notif_denied">Notifications are off for Piru. Nothing below will arrive.</string>
+    <string name="shell_notif_open_settings">Open system settings</string>
     <string name="shell_notif_allow">Allow notifications</string>
     <string name="shell_notif_all">All notifications</string>
     <string name="shell_notif_pause_all">Pause all</string>

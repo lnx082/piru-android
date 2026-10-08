@@ -86,6 +86,14 @@ import kotlinx.coroutines.withContext
  * load over time" draws, and it answers the question the cursor is asking: how hard
  * has this been driven, and when does that let go.
  */
+/**
+ * The severity below which a class gets no card unless it is safety-critical.
+ *
+ * iOS's `ToleranceRow.minimumCardSeverity`. See the ordering block for what a card
+ * below the floor says that is not true.
+ */
+private const val MINIMUM_CARD_SEVERITY = 0.10
+
 @Composable
 fun ToleranceToolScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -148,10 +156,28 @@ fun ToleranceToolScreen(navigator: AppNavigator, modifier: Modifier = Modifier) 
 
     // Safety-critical first, then by how much of a usual dose is gone. The
     // severity is `1 − responseFraction`, so a bigger number is more toleranced.
-    val ordered = cards.values.sortedWith(
-        compareByDescending<ToleranceReplay.ClassTolerance> { it.receptorClass.isSafetyCritical }
-            .thenByDescending { it.severity },
-    )
+    //
+    // ## The floor, and why a card without one is a false statement
+    // A class the replay produced is not the same as a class with something to say. A
+    // mechanism the user has rested for months still comes back from the replay with a
+    // severity at or near zero, and drawing it produces a full card with an empty gauge
+    // and a summary line that recites the layer shares as though they meant something --
+    // which, on a screen about tolerance, reads as "you have tolerance here" when the
+    // number says the opposite.
+    //
+    // iOS gates at `ToleranceRow.minimumCardSeverity = 0.10`, keeping a class below the
+    // floor only when it is safety-critical:
+    //
+    //     guard snapshot.severity > ToleranceRow.minimumCardSeverity || row.isSafetyCritical
+    //
+    // The same two clauses, so the safety-critical exemption applies to the floor rather
+    // than replacing it.
+    val ordered = cards.values
+        .filter { it.severity > MINIMUM_CARD_SEVERITY || it.receptorClass.isSafetyCritical }
+        .sortedWith(
+            compareByDescending<ToleranceReplay.ClassTolerance> { it.receptorClass.isSafetyCritical }
+                .thenByDescending { it.severity },
+        )
 
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),

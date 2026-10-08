@@ -125,11 +125,36 @@ fun NotificationSettingsScreen(modifier: Modifier = Modifier) {
                     color = PiruTheme.colors.secondaryLabel,
                 )
                 if (authorization != PiruNotifications.Authorization.AUTHORIZED) {
+                    // Two states, two destinations, because Android will only show the
+                    // runtime dialog once.
+                    //
+                    // `authorization` reports DENIED as soon as the app has asked, and
+                    // from API 33 the platform suppresses the dialog after a denial — so
+                    // re-launching `RequestPermission` returns instantly with the same
+                    // answer and the button does nothing at all. That is what this button
+                    // used to do in both states, which made a permanent denial a dead end.
+                    // iOS routes the denial to Open Settings; so does this now, and the
+                    // label says which of the two things is about to happen.
+                    val isDenied = authorization == PiruNotifications.Authorization.DENIED
                     TextButton(onClick = {
-                        PiruNotifications.notePermissionRequest(context)
-                        permissionLauncher.launch(Unit)
+                        if (isDenied) {
+                            context.startActivity(
+                                PiruNotifications.appNotificationSettingsIntent(context),
+                            )
+                        } else {
+                            PiruNotifications.notePermissionRequest(context)
+                            permissionLauncher.launch(Unit)
+                        }
                     }) {
-                        Text(stringResource(R.string.shell_notif_allow))
+                        Text(
+                            stringResource(
+                                if (isDenied) {
+                                    R.string.shell_notif_open_settings
+                                } else {
+                                    R.string.shell_notif_allow
+                                },
+                            ),
+                        )
                     }
                 }
             }

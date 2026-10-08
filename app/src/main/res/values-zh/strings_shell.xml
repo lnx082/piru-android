@@ -298,6 +298,7 @@
     <string name="shell_notif_authorized">Piru 可以发送通知。</string>
     <string name="shell_notif_not_determined">Piru 还没有询问过。在获得许可之前，下面的内容都不会送达。</string>
     <string name="shell_notif_denied">Piru 的通知已关闭。下面的内容都不会送达。</string>
+    <string name="shell_notif_open_settings">打开系统设置</string>
     <string name="shell_notif_allow">允许通知</string>
     <string name="shell_notif_all">全部通知</string>
     <string name="shell_notif_pause_all">全部暂停</string>
