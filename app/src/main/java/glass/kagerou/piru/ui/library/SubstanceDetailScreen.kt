@@ -58,6 +58,8 @@ import glass.kagerou.piru.engine.PharmacogeneticHit
 import glass.kagerou.piru.engine.MoleculeShape
 import glass.kagerou.piru.engine.SpectrumLevel
 import glass.kagerou.piru.substance.SubstanceReader
+import glass.kagerou.piru.engine.ConcentrationEffectHit
+import glass.kagerou.piru.engine.NeuroimagingHit
 
 /**
  * A substance's full record.
@@ -122,6 +124,8 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
     // The class the substance belongs to. Resolved from `resolveFull`'s own slug rather than by name,
     // because the slug is the identifier the class page uses and a title would need a second lookup.
     var classContext by remember { mutableStateOf<SubstanceReader.ClassContext?>(null) }
+    var thresholds by remember { mutableStateOf<List<ConcentrationEffectHit>>(emptyList()) }
+    var neuroimaging by remember { mutableStateOf<List<NeuroimagingHit>>(emptyList()) }
     var metabolism by remember(name) { mutableStateOf<List<MetabolismHit>>(emptyList()) }
 
     // The user's answer to "how much detail?", which until now nothing could read back.
@@ -178,6 +182,10 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
         // `classContextSlug` means. Read off the `substance` state rather than a local `resolved`, because the
         // composition declares `resolved` *after* this effect.
         classContext = substance?.classContextSlug?.let { slug ->
+        // 25 rows over 20 substances, of which the engine reads only `kind = 'therapeutic_range'`.
+        thresholds = runCatching { catalog.concentrationEffectRows(canonical) }.getOrDefault(emptyList())
+        // 52 rows over 36 substances, not read at all before this.
+        neuroimaging = runCatching { catalog.neuroimagingRows(canonical) }.getOrDefault(emptyList())
             runCatching { catalog.classContext(slug) }.getOrNull()
         }
         metabolism = runCatching { catalog.metabolismRows(canonical) }.getOrDefault(emptyList())
@@ -259,6 +267,12 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
                 }
             }
             if (substanceFlags.isNotEmpty()) {
+            if (thresholds.isNotEmpty()) {
+                item { ThresholdCard(thresholds) }
+            }
+            if (neuroimaging.isNotEmpty()) {
+                item { NeuroimagingCard(neuroimaging) }
+            }
                 item { StatusFlagsCard(substanceFlags) }
             }
 

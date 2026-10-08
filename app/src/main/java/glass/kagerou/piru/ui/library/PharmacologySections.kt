@@ -196,7 +196,7 @@ private fun SectionHeader(title: String) {
  * one paywalled benefits from the other.
  */
 @Composable
-private fun SourceLine(sourceSlug: String, doi: String?, pmid: Int?) {
+internal fun SourceLine(sourceSlug: String, doi: String?, pmid: Int?) {
     val parts = listOfNotNull(
         sourceSlug.takeIf { it.isNotBlank() },
         doi?.takeIf { it.isNotBlank() },

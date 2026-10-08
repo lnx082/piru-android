@@ -772,4 +772,11 @@
     <string name="shell_flag_missold_as_mdma">曾被当作 MDMA 出售。它不是 MDMA，看起来合适的剂量并不是合适的剂量。</string>
     <string name="shell_flag_model_calibrated">该物质的部分建模数值是参照实测数据校准的。</string>
     <string name="shell_section_class_background">%1$s 类</string>
+    <string name="shell_section_threshold">血药浓度阈值</string>
+    <string name="shell_threshold_blurb">出现效应时的实测血药或血清浓度。治疗范围是目标值，其余各行是研究发现。</string>
+    <string name="shell_threshold_at">自 %1$s %2$s 起</string>
+    <string name="shell_threshold_peak">报告最高 %1$s %2$s</string>
+    <string name="shell_section_neuroimaging">影像学证据</string>
+    <string name="shell_neuroimaging_blurb">活体脑扫描所见，按方法分组。这是对上方受体数据的人体验证。</string>
+    <string name="shell_neuroimaging_unspecified">未注明方法</string>
 </resources>

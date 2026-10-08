@@ -63,6 +63,8 @@ import glass.kagerou.piru.engine.MoleculeBond
 import glass.kagerou.piru.engine.MoleculeShape
 import glass.kagerou.piru.engine.SpectrumEffect
 import glass.kagerou.piru.engine.SpectrumLevel
+import glass.kagerou.piru.engine.ConcentrationEffectHit
+import glass.kagerou.piru.engine.NeuroimagingHit
 
 /**
  * Source-priority-aware reads over the bundled catalog.
@@ -1533,6 +1535,82 @@ class SubstanceReader(
                 pmid = row.long("pmid")?.toInt(),
             )
         }
+
+    /**
+     * Every `concentration_effects` row, findings included.
+     *
+     * Distinct from [therapeuticRangeRows], which filters to `kind = 'therapeutic_range'` **and** `threshold > 0`
+     * because it answers a modelling question. This answers "what does the literature say about this substance's
+     * blood levels", so it takes everything and carries `kind` through for the card to sort out.
+     *
+     * Ordered findings-first, then by level: the findings are the reason a reader opens the section, and a
+     * therapeutic reference is context for them rather than the headline. `NULLS LAST` on the level because a row
+     * with no measured threshold cannot be ranked against one that has.
+     */
+    fun concentrationEffectRows(substanceID: Long): List<ConcentrationEffectHit> {
+        if (order.isEmpty()) return emptyList()
+        return db.query(
+            """
+            SELECT e.id, e.effect, e.kind, e.concentration_unit, e.threshold, e.peak_effect,
+                   src.slug AS source_slug, c.doi, c.pmid
+              FROM concentration_effects e
+              JOIN sources src ON src.id = e.source_id
+              LEFT JOIN citations c ON c.id = e.citation_id
+             WHERE e.substance_id = ?
+               AND src.slug IN ($enabledSourceListSQL)
+             ORDER BY (e.kind IS NULL) DESC, e.threshold ASC NULLS LAST, e.id ASC
+            """,
+            listOf(substanceID),
+        ).mapNotNull { row ->
+            val effect = row.string("effect").orEmpty()
+            if (effect.isBlank()) return@mapNotNull null
+            ConcentrationEffectHit(
+                id = row.long("id") ?: 0L,
+                effect = effect,
+                kind = row.string("kind"),
+                concentrationUnit = row.string("concentration_unit").orEmpty(),
+                thresholdValue = row.double("threshold"),
+                peakValue = row.double("peak_effect"),
+                sourceSlug = row.string("source_slug").orEmpty(),
+                doi = row.string("doi"),
+                pmid = row.long("pmid")?.toInt(),
+            )
+        }
+    }
+
+    /**
+     * The substance's neuroimaging findings.
+     *
+     * 52 rows over 36 substances, with 13 distinct modality strings. Ordered by modality then rowid so the rows of
+     * one study type stay together and the order is stable between reads.
+     */
+    fun neuroimagingRows(substanceID: Long): List<NeuroimagingHit> {
+        if (order.isEmpty()) return emptyList()
+        return db.query(
+            """
+            SELECT n.id, n.modality, n.finding,
+                   src.slug AS source_slug, c.doi, c.pmid
+              FROM neuroimaging n
+              JOIN sources src ON src.id = n.source_id
+              LEFT JOIN citations c ON c.id = n.citation_id
+             WHERE n.substance_id = ?
+               AND src.slug IN ($enabledSourceListSQL)
+             ORDER BY n.modality ASC, n.id ASC
+            """,
+            listOf(substanceID),
+        ).mapNotNull { row ->
+            val finding = row.string("finding").orEmpty()
+            if (finding.isBlank()) return@mapNotNull null
+            NeuroimagingHit(
+                id = row.long("id") ?: 0L,
+                modality = row.string("modality").orEmpty(),
+                finding = finding,
+                sourceSlug = row.string("source_slug").orEmpty(),
+                doi = row.string("doi"),
+                pmid = row.long("pmid")?.toInt(),
+            )
+        }
+    }
 
     /** The substance's `pk_reference` pointer, or null when it carries none. */
     fun pkReference(substanceID: Long): PKReference? {

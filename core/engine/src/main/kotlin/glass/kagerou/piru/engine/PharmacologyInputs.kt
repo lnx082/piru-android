@@ -73,6 +73,77 @@ data class PharmacogeneticHit(
  * Ported from `BindingHit` in `SubstanceReadModel+Pharmacology.swift`.
  */
 /**
+ * One `concentration_effects` row: a blood or serum level at which something happens.
+ *
+ * The table holds two kinds of row, and the distinction matters:
+ *
+ * - `kind = "therapeutic_range"` — the TDM reference. [PharmacologyAssembly] reads these to calibrate modelled
+ *   occupancy against a measured range, and they are *not* what this section is for.
+ * - `kind = NULL` — a finding: "fatal blood concentration", "respiratory depression (clinically significant)",
+ *   "QTc prolongation". These are harm-reduction readings and had no reader at all.
+ *
+ * [kind] is therefore carried rather than filtered on, so the card can tell the two apart instead of a reader
+ * deciding for it.
+ *
+ * ## Why the unit is text
+ * `concentration_unit` is free text with five values including `µg/mL` and `ng/mL psilocin`. Parsing it into a
+ * number-with-unit type would be a parser for five hand-written strings that silently mis-scales a substance the
+ * day a sixth appears.
+ */
+data class ConcentrationEffectHit(
+    val id: Long,
+    /** What the level does — "fatal blood concentration", "analgesia (50% pain reduction)". */
+    val effect: String,
+    /** `"therapeutic_range"`, or null for the findings. */
+    val kind: String? = null,
+    val concentrationUnit: String,
+    val thresholdValue: Double? = null,
+    /**
+     * The level at which the effect is at its peak, when the source reports one.
+     *
+     * Nullable because most rows do not — and for the threshold rows it is often the *dangerous* value rather than
+     * a peak, which is why the card labels it by the magnitude rather than calling it a peak.
+     */
+    val peakValue: Double? = null,
+    val sourceSlug: String,
+    val doi: String? = null,
+    val pmid: Int? = null,
+) {
+    /**
+     * Whether this is a finding about the substance rather than a therapeutic reference.
+     *
+     * The card's whole reason for existing: the findings are cautions and the reference is not. Null `kind` is a
+     * finding, because that is how the pipeline marked these 23 rows.
+     */
+    val isFinding: Boolean get() = kind != THERAPEUTIC_KIND
+
+    companion object {
+        const val THERAPEUTIC_KIND: String = "therapeutic_range"
+    }
+}
+
+/**
+ * One `neuroimaging` row: what a scan showed.
+ *
+ * `modality` is free text with thirteen distinct values across 52 rows — `"PET"`, `"fMRI BOLD"`, `"EEG"`, and
+ * longer ones that describe the study (`"fMRI BOLD (12 healthy men, 15 µg/kg inhaled vapor)"`). Carried as text
+ * for the same reason the concentration unit is.
+ *
+ * ## Why this is target evidence
+ * The binding table says what a substance binds in a dish. This says what a living brain did, which is the
+ * corroboration a reader weighing a receptor table wants — and the two can disagree, which is the interesting
+ * case.
+ */
+data class NeuroimagingHit(
+    val id: Long,
+    val modality: String,
+    val finding: String,
+    val sourceSlug: String,
+    val doi: String? = null,
+    val pmid: Int? = null,
+)
+
+/**
  * An effect reported at one strength band, and how often.
  *
  * [freq] is a consensus count, not a boolean — the catalogue's values run from 1 to 45, so the band's effects can

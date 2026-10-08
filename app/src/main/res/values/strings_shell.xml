@@ -806,4 +806,11 @@
     <string name="shell_flag_missold_as_mdma">Has been sold as MDMA. It is not MDMA, and the dose that looks right is not the dose that is right.</string>
     <string name="shell_flag_model_calibrated">Some modelled values for this substance were calibrated against reference data.</string>
     <string name="shell_section_class_background">%1$s family</string>
+    <string name="shell_section_threshold">Concentration thresholds</string>
+    <string name="shell_threshold_blurb">Measured blood or serum levels at which an effect appears. A therapeutic range is a target; the other lines are findings.</string>
+    <string name="shell_threshold_at">from %1$s %2$s</string>
+    <string name="shell_threshold_peak">reported up to %1$s %2$s</string>
+    <string name="shell_section_neuroimaging">Imaging evidence</string>
+    <string name="shell_neuroimaging_blurb">What scans of living brains have shown, grouped by method. This is the human corroboration of the receptor data above.</string>
+    <string name="shell_neuroimaging_unspecified">Unspecified method</string>
 </resources>

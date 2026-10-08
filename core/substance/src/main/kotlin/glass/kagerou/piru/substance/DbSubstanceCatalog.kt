@@ -33,6 +33,8 @@ import glass.kagerou.piru.engine.OffTargetHit
 import glass.kagerou.piru.engine.PharmacogeneticHit
 import glass.kagerou.piru.engine.MoleculeShape
 import glass.kagerou.piru.engine.SpectrumLevel
+import glass.kagerou.piru.engine.ConcentrationEffectHit
+import glass.kagerou.piru.engine.NeuroimagingHit
 
 /**
  * The bundled catalog, seen through the engine's [SubstanceCatalog] port.
@@ -462,6 +464,27 @@ class DbSubstanceCatalog private constructor(
     fun metabolismRows(nameOrAlias: String): List<MetabolismHit> {
         val id = index.resolve(nameOrAlias) ?: return emptyList()
         return reader.metabolismRows(id)
+    }
+
+    /**
+     * Blood or serum levels at which something happens — the threshold section.
+     *
+     * Findings first, then the therapeutic reference. Distinct from the model's own
+     * `therapeuticRangeRows`; see the reader's note.
+     */
+    fun concentrationEffectRows(nameOrAlias: String): List<ConcentrationEffectHit> {
+        val id = index.resolve(nameOrAlias) ?: return emptyList()
+        return reader.concentrationEffectRows(id)
+    }
+
+    /**
+     * What scans of living brains have shown — the target-evidence section.
+     *
+     * Read by nothing before this, so `neuroimaging`'s 52 rows over 36 substances were data with no screen.
+     */
+    fun neuroimagingRows(nameOrAlias: String): List<NeuroimagingHit> {
+        val id = index.resolve(nameOrAlias) ?: return emptyList()
+        return reader.neuroimagingRows(id)
     }
 
     /**
