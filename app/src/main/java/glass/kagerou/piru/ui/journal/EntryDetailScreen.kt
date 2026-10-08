@@ -42,6 +42,7 @@ import glass.kagerou.piru.ui.labels.appLocale
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.nav.PushRoute
 import glass.kagerou.piru.ui.theme.PiruTheme
+import glass.kagerou.piru.engine.SubstanceCatalog
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Date
@@ -92,6 +93,16 @@ fun EntryDetailScreen(
     var isUnknownAmount by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf(false) }
     var saved by remember { mutableStateOf(false) }
+
+    // The catalogue, for resolving an edited name back to an identity. Held in state
+    // rather than fetched inside the save so the click does not depend on a disk read
+    // having finished; null simply means the name could not be checked, and the row's
+    // existing identity is kept.
+    var catalog by remember { mutableStateOf<SubstanceCatalog?>(null) }
+
+    LaunchedEffect(Unit) {
+        catalog = runCatching { app.catalog() }.getOrNull()
+    }
 
     fun seed(row: DoseEntryEntity) {
         entry = row
@@ -216,10 +227,30 @@ fun EntryDetailScreen(
                         onClick = {
                             val parsed = amountText.trim().toDoubleOrNull()
                             val unknown = isUnknownAmount || parsed == null
+                            val newName = substanceText.trim().ifEmpty { current.substance }
                             scope.launch {
+                                // Renaming re-resolves the identity, because the identity
+                                // key prefers the UID and therefore *ignores* the name:
+                                // `SubstanceIdentity.identityKey` is the UID when one is
+                                // present, so a dose renamed from Magnesium to Ibuprofen
+                                // kept the magnesium key, went on crediting the magnesium
+                                // med slot, and drew ibuprofen's curve from the name —
+                                // the two halves of the same row disagreeing.
+                                //
+                                // A name the catalogue does not know clears the UID rather
+                                // than keeping the stale one, which falls the key back to
+                                // the name: an unknown substance is its own identity, and
+                                // that is the honest answer.
+                                val renamed = newName != current.substance
+                                val resolvedUid = when {
+                                    !renamed -> current.substanceUID
+                                    else -> runCatching { catalog?.substanceUID(newName) }
+                                        .getOrNull()
+                                }
                                 app.database.doseEntryDao().update(
                                     current.copy(
-                                        substance = substanceText.trim().ifEmpty { current.substance },
+                                        substance = newName,
+                                        substanceUID = resolvedUid,
                                         // An unparseable field is the unknown state, not
                                         // a silent zero: the flag and the number say the
                                         // same thing.
@@ -240,9 +271,10 @@ fun EntryDetailScreen(
                                 // another slot's hour, or relabelled onto another
                                 // substance, satisfies a different slot than it did.
                                 app.reconcileRoutineOccurrences()
-// And the home-screen widget, which draws this slot's state. A dose retimed,
-                                // relabelled or deleted settles a different slot than it did, and the widget
-                                // was left showing the previous answer.
+                                // And the home-screen widget, which draws this slot's
+                                // state. A dose retimed, relabelled or deleted settles a
+                                // different slot than it did, and the widget was left
+                                // showing the previous answer.
                                 MedWidgetRefresh.afterWrite(app)
                                 editing = false
                                 saved = true

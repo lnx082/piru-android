@@ -187,12 +187,25 @@ fun JournalScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                             modifier = Modifier.padding(bottom = 8.dp),
                         )
                         // The window is the engine's, not the screen's: the graph
-                        // frames itself from the data's own tail, so a day whose
-                        // doses all landed before noon is not drawn as fifteen
-                        // hours of flat line. `dayBounded` is what keeps a
-                        // long-acting dose from stretching that frame to days.
+                        // frames itself from the states it is given, so a day whose
+                        // doses all landed before noon is not drawn as fifteen hours
+                        // of flat line.
+                        //
+                        // `states` is passed whole rather than filtered to the day,
+                        // which is what makes a curve outlive midnight. A dose taken at
+                        // 22:00 yesterday with a sixteen-hour profile is still climbing
+                        // all this morning, and `TimelineCurveModel.dayBounded` exists to
+                        // carry exactly that dose into today's frame. Pre-filtering by
+                        // `doseTimestamp in dayStart..dayEnd` removed it before the
+                        // engine ever saw it, defeating the mechanism and hiding the
+                        // morning's curve; the screen's own comment above described the
+                        // right behaviour while the line below it did the opposite.
+                        //
+                        // Markers stay day-scoped deliberately: a marker is a note at a
+                        // moment, not a curve with a tail, so yesterday's does not belong
+                        // in today's window.
                         TimelineGraph(
-                            states = states.filter { it.doseTimestamp in dayStart..dayEnd },
+                            states = states,
                             markers = markers.filter { it.timestamp in dayStart..dayEnd },
                             currentTime = Instant.now(),
                         )

@@ -235,14 +235,21 @@ internal class MyMedsInfoModel(private val preferences: android.content.SharedPr
         now: Instant = Instant.now(),
         zone: ZoneId = ZoneId.systemDefault(),
     ) {
-        // The schedule is the dominant input and it changes rarely; the cost
-        // being guarded is a stock lookup per tracked med plus a ranged dose
-        // read, on a card that re-composes with the Journal. A restock moves the
-        // answer too, and that arrives as a new item list on the next
-        // `navigator.dataVersion` pass, which misses this key.
-        val key = items.fold(1) { acc, item ->
-            31 * acc + item.rowId.hashCode() + (if (item.isAsNeeded) 1 else 0)
-        }
+        // The key is the items' own content, not a hand-picked subset of it.
+        //
+        // It used to be `31*acc + rowId.hashCode() + (isAsNeeded ? 1 : 0)`, on the
+        // reasoning that "the schedule is the dominant input and it changes rarely". The
+        // problem is that `MedsStore.save` re-inserts an edit under the *same* rowId, and
+        // `supplyProjections` reads the substance, salt form and amount — none of which
+        // were in the key. So editing a med from Magnesium to Ibuprofen left the restock
+        // line reading Magnesium's answer indefinitely, because as far as the cache was
+        // concerned nothing had changed.
+        //
+        // `DailyDoseItemEntity` is a data class, so its `hashCode` already covers every
+        // column including the ones the projection reads. Keying on the list is both
+        // shorter and correct by construction: a field that starts mattering is included
+        // without anyone remembering to add it here.
+        val key = items.hashCode()
         if (refreshedKey == key) return
         refreshedKey = key
         restock = MyMedsInfo.restock(MedsStore.supplyProjections(app, items, now, zone))
