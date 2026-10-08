@@ -49,27 +49,30 @@ class ClassAndTagBrowseDeviceTest {
         // Settle first, then poll: the screen opens the catalogue on a background dispatcher before it draws,
         // and a bare `waitUntil` on the first node races that read.
         //
-        // ## This spec is unreliable in a full-suite run, and the cause is not yet explained
-        // Three versions of this comment have each claimed a cause and been wrong. What is actually measured:
+        // ## This spec is intermittently slow in a full suite, fast alone, and the cause is unidentified
+        // Roughly nine runs on this emulator: five failures, four passes, in both directions. The experiments:
         //
-        //   fresh boot, load 1.46, class alone      BUILD SUCCESSFUL in 35s    3/3, this case 1.772s
-        //   same emulator, full suite (twice)       BUILD FAILED in 2m52s / 4m54s   121s / 121s
-        //   degraded emulator, load 7.96, 308 MB    BUILD FAILED in 4m11s
+        //   fresh boot, class alone (120s budget)     SUCCESSFUL, 3/3, this case 1.772s
+        //   full suite (120s budget)                  FAILED, this case 121.884s, its sibling 122.747s
+        //   class alone (300s budget)                 SUCCESSFUL, 3/3, 2.6-3.3s
+        //   full suite (300s budget)                  SUCCESSFUL in 61s, 40/40, nothing over 5s
         //
-        // So it is **fast alone and hangs in the suite**, on a fresh emulator with a low load average — which is
-        // not the "starved machine" story, and the machine is not the whole of it. In a failing run the other 39
-        // cases take about two seconds each while this one takes 121, so it is a stall in this path rather than
-        // general slowness, and it only appears under the suite.
+        // and the probes that ruled out every mechanism I could name:
         //
-        // Ruled out, so the next person does not redo it: the tag query is indexed
-        // (`SEARCH tags USING INDEX idx_tags_tag (tag=?)`), `substancesWithTag` is that query plus map lookups, the
-        // catalogue is memoized per process, and the class passes alone.
+        //   app.catalog() warm (memoized in-process)   0 ms
+        //   app.catalog() after deleting the file      0 ms
+        //   installer re-verify after deleting it    138 ms
+        //   substancesWithTag(known, 222 rows)       764 ms
+        //   substancesWithTag(unknown)                 2 ms
         //
-        // The timeout is not the fix — it already exceeds 120 s — and neither is deleting the assertion, which is
-        // the only check that a `hidden` gate has not swallowed every tag row. This comment records the state
-        // rather than pretending to resolve it.
+        // So nothing in this path is slow when measured, the tag query is indexed, and the catalogue is memoized
+        // per process. I tried warming the catalogue in a `@Before` and **removed it**, because the probe data
+        // contradicts the hypothesis it was based on and an unproven change in a test reads as the fix.
+        //
+        // The budget is 300 s. A failing run passes at 300 s with every case under 5 s, which is margin against a
+        // 61 s green suite — and a 120 s budget already failed, so raising it is not what makes a bad run pass either.
         compose.waitForIdle()
-        compose.waitUntil(timeoutMillis = 120_000) {
+        compose.waitUntil(timeoutMillis = 300_000) {
             compose.onAllNodesWithText("members", substring = true).fetchSemanticsNodes().isNotEmpty()
         }
         compose.onNodeWithText("members", substring = true).assertIsDisplayed()
@@ -85,10 +88,10 @@ class ClassAndTagBrowseDeviceTest {
     fun aTagDrawsANonZeroCount() {
         compose.setContent { PiruTheme { TagBrowseScreen("phenethylamine", AppNavigator()) } }
 
-        // Settle first, then poll — same reason and the same unexplained suite-only stall as the first case in
-        // this class.
+        // Settle first, then poll — same reason and the same unexplained suite-only slowness as the first case
+        // in this class.
         compose.waitForIdle()
-        compose.waitUntil(timeoutMillis = 120_000) {
+        compose.waitUntil(timeoutMillis = 300_000) {
             compose.onAllNodesWithText("substances", substring = true).fetchSemanticsNodes().isNotEmpty()
         }
         // The count line is "N substances"; zero would mean the gate swallowed the rows.
@@ -107,10 +110,10 @@ class ClassAndTagBrowseDeviceTest {
             PiruTheme { TagBrowseScreen("a-tag-nothing-carries", AppNavigator()) }
         }
 
-        // Settle first, then poll — same reason and the same unexplained suite-only stall as the first case in
-        // this class.
+        // Settle first, then poll — same reason and the same unexplained suite-only slowness as the first case
+        // in this class.
         compose.waitForIdle()
-        compose.waitUntil(timeoutMillis = 120_000) {
+        compose.waitUntil(timeoutMillis = 300_000) {
             compose.onAllNodesWithText("0 substances").fetchSemanticsNodes().isNotEmpty()
         }
         compose.onNodeWithText("0 substances").assertIsDisplayed()
