@@ -57,6 +57,7 @@ import glass.kagerou.piru.ui.insights.ShareImage
 import glass.kagerou.piru.ui.labels.CoreLabels
 import glass.kagerou.piru.engine.InteractionChecker
 import glass.kagerou.piru.ui.nav.PushRoute
+import glass.kagerou.piru.data.TimelineDisplay
 
 /**
  * A session: its span, its curves, and the doses inside it.
@@ -84,6 +85,7 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
     // stacking rule, and this used to be a literal `true` here while the setting existed and
     // wrote to nothing that read it — so the preference reached one graph and not the other.
     val stackRedoses = remember { AppSettingsStore(context).stackRedoses() }
+    val display = remember { TimelineDisplay.read(context) }
 
     var session by remember(sessionId) { mutableStateOf<SessionEntity?>(null) }
     var doses by remember(sessionId) { mutableStateOf<List<DoseEntryEntity>>(emptyList()) }
@@ -226,6 +228,7 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
                             // same *setting*: this was hardcoded `true`, so the journal
                             // preference reached the day view and not this one.
                             stackRedoses = stackRedoses,
+                            display = display,
                             dayBounded = false,
                             // The only graph that carries the cardio lane. The day
                             // view shows today's doses, and a session is the unit a

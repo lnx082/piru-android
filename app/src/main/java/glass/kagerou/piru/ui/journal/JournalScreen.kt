@@ -46,6 +46,7 @@ import androidx.compose.foundation.clickable
 import glass.kagerou.piru.data.entity.SessionEntity
 import glass.kagerou.piru.engine.SubstanceCatalog
 import androidx.compose.ui.graphics.Color
+import glass.kagerou.piru.data.TimelineDisplay
 
 /**
  * The journal's root: the day's curves, then the day's doses.
@@ -68,6 +69,11 @@ fun JournalScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     // The journal preference. Read here rather than defaulted, so the setting reaches the
     // graph it names.
     val stackRedoses = remember { AppSettingsStore(context).stackRedoses() }
+
+    // The rest of the display options, read as one value. The preferences screen writes them and this is a separate
+    // destination, so the read is keyed on the revision the screen already bumps — a stale copy here would make the
+    // settings appear to do nothing until the app restarted.
+    var display by remember { mutableStateOf(TimelineDisplay.read(context)) }
     val app = context.applicationContext as PiruApplication
 
     var entries by remember { mutableStateOf<List<DoseEntryEntity>>(emptyList()) }
@@ -261,6 +267,7 @@ fun JournalScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                             // only in the direction of turning stacking *off*, and only on the
                             // session screen, which read it.
                             stackRedoses = stackRedoses,
+                            display = display,
                         )
                     }
                 }
@@ -273,6 +280,10 @@ fun JournalScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
             // The grouping is `sessionDays` rather than an inline `groupBy` because three of its rules are
             // decisions — a maintenance session draws as a compact row, a one-dose session reads as a single time
             // rather than a range, and two aliases of one drug collapse to one name in the summary.
+            // Re-read on every pass that rebuilds the list, so a change made on the preferences screen is
+            // reflected on return rather than on the next launch.
+            display = TimelineDisplay.read(context)
+
             val days = sessionDays(
                 entries = entries,
                 sessions = sessionsById,

@@ -48,30 +48,3 @@ internal object TimelineZoom {
     fun presetIndex(value: Double): Int =
         PRESETS.indexOfFirst { it == nearest(value) }.coerceAtLeast(0)
 }
-
-/**
- * How much of a dose the timeline's bubbles spell out.
- *
- * Ported from `TimelineBubbleStyle`, and persisted by its own wire value so a stored preference from a build that
- * knew one style still parses. Compact exists for a real reason rather than as a density option: the bubble is
- * demoted to a label so **the curve lane keeps more of the width**, which matters when the PK curves are on.
- */
-internal enum class TimelineBubbleStyle(val wireValue: String) {
-    /** Name over dose + route chip; the trailing readout beside them. */
-    FULL("full"),
-
-    /** Name and dose on one line, no route chip. */
-    COMPACT("compact"),
-    ;
-
-    companion object {
-        /**
-         * Parse a stored wire value, defaulting to [FULL].
-         *
-         * A default rather than null: this is a display preference, so an unreadable value should leave the timeline
-         * drawing the fullest and most informative bubble rather than nothing.
-         */
-        fun from(raw: String?): TimelineBubbleStyle =
-            entries.firstOrNull { it.wireValue == raw } ?: FULL
-    }
-}

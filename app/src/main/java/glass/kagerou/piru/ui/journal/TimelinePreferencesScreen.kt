@@ -24,6 +24,7 @@ import glass.kagerou.piru.R
 import glass.kagerou.piru.data.AppSettingsStore
 import glass.kagerou.piru.ui.components.PiruCard
 import glass.kagerou.piru.ui.theme.PiruTheme
+import glass.kagerou.piru.data.TimelineBubbleStyleName
 
 /**
  * The vertical timeline's display options.
@@ -56,7 +57,7 @@ fun TimelinePreferencesScreen(modifier: Modifier = Modifier) {
     var showsAxis by remember { mutableStateOf(store.timelineShowsAxis()) }
     var pkCurves by remember { mutableStateOf(store.timelinePKCurves()) }
     var compressGaps by remember { mutableStateOf(store.timelineCompressGaps()) }
-    var bubbleStyle by remember { mutableStateOf(TimelineBubbleStyle.from(store.timelineBubbleStyle())) }
+    var bubbleStyle by remember { mutableStateOf(TimelineBubbleStyleName.from(store.timelineBubbleStyle())) }
 
     val rows = TimelineOptions.rows(showsAxis)
 
@@ -138,9 +139,9 @@ fun TimelinePreferencesScreen(modifier: Modifier = Modifier) {
             ToggleCard(
                 title = stringResource(R.string.journal_timeline_compact),
                 detail = stringResource(R.string.journal_timeline_compact_detail),
-                checked = bubbleStyle == TimelineBubbleStyle.COMPACT,
+                checked = bubbleStyle == TimelineBubbleStyleName.COMPACT,
                 onCheckedChange = { compact ->
-                    bubbleStyle = if (compact) TimelineBubbleStyle.COMPACT else TimelineBubbleStyle.FULL
+                    bubbleStyle = if (compact) TimelineBubbleStyleName.COMPACT else TimelineBubbleStyleName.FULL
                     store.setTimelineBubbleStyle(bubbleStyle.wireValue)
                 },
             )

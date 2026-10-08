@@ -4,6 +4,7 @@ import glass.kagerou.piru.data.AppSettingsStore
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
+import glass.kagerou.piru.data.TimelineBubbleStyleName
 
 /**
  * The timeline's zoom ladder and its options gating.
@@ -105,21 +106,21 @@ class TimelineZoomTest {
      */
     @Test
     fun `the bubble style parses and defaults to full`() {
-        TimelineBubbleStyle.from("full") shouldBe TimelineBubbleStyle.FULL
-        TimelineBubbleStyle.from("compact") shouldBe TimelineBubbleStyle.COMPACT
-        TimelineBubbleStyle.from(null) shouldBe TimelineBubbleStyle.FULL
-        TimelineBubbleStyle.from("") shouldBe TimelineBubbleStyle.FULL
-        TimelineBubbleStyle.from("FULL") shouldBe TimelineBubbleStyle.FULL
-        TimelineBubbleStyle.from("nonsense") shouldBe TimelineBubbleStyle.FULL
+        TimelineBubbleStyleName.from("full") shouldBe TimelineBubbleStyleName.FULL
+        TimelineBubbleStyleName.from("compact") shouldBe TimelineBubbleStyleName.COMPACT
+        TimelineBubbleStyleName.from(null) shouldBe TimelineBubbleStyleName.FULL
+        TimelineBubbleStyleName.from("") shouldBe TimelineBubbleStyleName.FULL
+        TimelineBubbleStyleName.from("FULL") shouldBe TimelineBubbleStyleName.FULL
+        TimelineBubbleStyleName.from("nonsense") shouldBe TimelineBubbleStyleName.FULL
     }
 
     /** Every style has its own wire value, so a round trip is lossless. */
     @Test
     fun `every bubble style round-trips`() {
-        for (style in TimelineBubbleStyle.entries) {
-            TimelineBubbleStyle.from(style.wireValue) shouldBe style
+        for (style in TimelineBubbleStyleName.entries) {
+            TimelineBubbleStyleName.from(style.wireValue) shouldBe style
         }
-        TimelineBubbleStyle.entries.map { it.wireValue }.distinct().size shouldBe TimelineBubbleStyle.entries.size
+        TimelineBubbleStyleName.entries.map { it.wireValue }.distinct().size shouldBe TimelineBubbleStyleName.entries.size
     }
 
     // MARK: - The options gating

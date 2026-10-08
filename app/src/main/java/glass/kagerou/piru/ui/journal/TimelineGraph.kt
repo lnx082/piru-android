@@ -51,6 +51,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
+import glass.kagerou.piru.data.TimelineDisplay
 
 /**
  * The dose-effect graph, with a time cursor you can drag.
@@ -102,6 +103,11 @@ fun TimelineGraph(
     currentTime: Instant,
     modifier: Modifier = Modifier,
     plotHeight: Dp = 220.dp,
+    /**
+     * The user's display options. The effective height is [plotHeight] scaled by the zoom, so a caller that passes
+     * neither gets the same picture it always did.
+     */
+    display: TimelineDisplay = TimelineDisplay(),
     /** Merge a substance's redoses into one curve. On for the day view; the session graph does the same. */
     stackRedoses: Boolean = true,
     /** Clamp the frame to a day rather than letting a long-acting dose stretch it. */
@@ -153,6 +159,20 @@ fun TimelineGraph(
     val start = derived.earliestDose
     val tickMinutes = TimelineCurveModel.intervalForSpan(spanMinutes)
 
+    // The effective plot height, computed here rather than inside the canvas.
+    //
+    // The zoom multiplies the plot and compact shortens it, so the curve lane keeps more of the width — upstream's
+    // own reason for the compact bubble. Both are applied here rather than at the call sites, so a caller cannot
+    // pass a zoom and have it ignored. It has to be in the composable body because `LocalDensity` is not available
+    // inside a `DrawScope`.
+    //
+    // `compressGaps` and `pkCurves` are deliberately **not** applied: this port draws a linear-axis plot per day,
+    // where there are no empty stretches to collapse, and there is no concentration-curve layer to draw at all.
+    // Wiring either would mean silently rescaling the axis, or drawing nothing while claiming otherwise.
+    val compactFactor = if (display.bubbleIsCompact) 0.75f else 1f
+    val effectivePlotHeight = plotHeight * (display.zoom * compactFactor).toFloat()
+    val plotHeightPx = with(LocalDensity.current) { effectivePlotHeight.toPx() }
+
     // Where the reader has dragged the cursor, or null for "still at now". Keyed on
     // the inputs so a different day starts at the present rather than inheriting the
     // last day's cursor position.
@@ -160,7 +180,6 @@ fun TimelineGraph(
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val widthPx = constraints.maxWidth.toFloat()
-        val plotHeightPx = with(LocalDensity.current) { plotHeight.toPx() }
 
         // The gutter is sized from the widest marker label rather than fixed: a
         // truncated substance name is worse than a narrower plot, and the labels
