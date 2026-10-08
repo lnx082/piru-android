@@ -501,6 +501,7 @@
     <string name="shell_quicklog_staged_empty">Search for what you took. Emptying the amount logs it as unknown — a record with no number is still a record.</string>
     <string name="shell_quicklog_amount">Amount</string>
     <string name="shell_quicklog_unit">Unit</string>
+    <string name="shell_quicklog_approximate">Approximate</string>
     <string name="shell_quicklog_remove">Remove</string>
     <string name="shell_quicklog_now">now</string>
     <string name="shell_quicklog_minutes_ago">-%1$dm</string>
@@ -546,4 +547,5 @@
     <string name="shell_binding_affinity_significant">significant</string>
     <string name="shell_binding_affinity_primary">primary</string>
 
+    <string name="shell_library_limited_data">Limited data</string>
 </resources>

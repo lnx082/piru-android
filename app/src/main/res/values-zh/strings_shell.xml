@@ -471,6 +471,7 @@
     <string name="shell_quicklog_staged_empty">搜索你用了什么。把数量留空会记为未知——没有数字的记录仍然是一条记录。</string>
     <string name="shell_quicklog_amount">剂量</string>
     <string name="shell_quicklog_unit">单位</string>
+    <string name="shell_quicklog_approximate">大约</string>
     <string name="shell_quicklog_remove">移除</string>
     <string name="shell_quicklog_now">现在</string>
     <string name="shell_quicklog_minutes_ago">-%1$d 分钟</string>
@@ -512,4 +513,5 @@
     <string name="shell_binding_affinity_significant">显著</string>
     <string name="shell_binding_affinity_primary">主要</string>
 
+    <string name="shell_library_limited_data">数据有限</string>
 </resources>

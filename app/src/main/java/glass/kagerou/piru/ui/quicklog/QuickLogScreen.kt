@@ -63,6 +63,15 @@ data class StagedDose(
     val unit: String,
     val route: RouteOfAdministration,
     val atMinutesAgo: Int,
+    /**
+     * Whether the amount is an estimate rather than a measurement.
+     *
+     * Read from the staged dose and written to `DoseEntryEntity.isApproximate`, which the journal
+     * draws as a `~` before the figure. Nothing set that flag before this — the entity, the
+     * export and the row's rendering all supported it while no screen could produce one, so an
+     * estimated dose was stored indistinguishably from a measured one.
+     */
+    val isApproximate: Boolean = false,
 ) {
     val amount: Double? get() = amountText.trim().toDoubleOrNull()
 
@@ -271,6 +280,9 @@ fun QuickLogSheet(
                                                     .toEpochMilli(),
                                             ),
                                             isUnknownDose = dose.amount == null,
+                                            // The user's own "this is a guess", carried into the
+                                            // row the journal reads back as `~`.
+                                            isApproximate = dose.isApproximate,
                                         ),
                                     )
                                     sessionRepository.assignSession(rowId)
@@ -360,6 +372,16 @@ private fun StagedDoseEditor(
                         label = { Text(CoreLabels.route(route)) },
                     )
                 }
+            }
+            // The estimate marker. Its own row rather than a sixth time chip: it answers a
+            // different question from "when", and putting it beside the route chips would read
+            // as a route.
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = dose.isApproximate,
+                    onClick = { onChange(dose.copy(isApproximate = !dose.isApproximate)) },
+                    label = { Text(stringResource(R.string.shell_quicklog_approximate)) },
+                )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 for (minutes in listOf(0, 15, 30, 60, 120)) {

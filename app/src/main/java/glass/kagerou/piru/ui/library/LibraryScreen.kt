@@ -158,6 +158,19 @@ fun LibraryScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                                         color = PiruTheme.colors.secondaryLabel,
                                     )
                                 }
+                                // A thin entry, said so. Both halves of the gate matter: `isStub`
+                                // is whether the catalogue is thin here, and `mayReportLimitedData`
+                                // is whether the phrase can be true of this kind of molecule at all
+                                // — a prescription drug with one source is under-documented, not
+                                // "limited data", and calling it that would misrepresent the drug
+                                // class rather than the coverage.
+                                if (substance.isStub && substance.displayClass.mayReportLimitedData) {
+                                    Text(
+                                        stringResource(R.string.shell_library_limited_data),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = PiruTheme.colors.secondaryLabel,
+                                    )
+                                }
                             }
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
