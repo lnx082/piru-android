@@ -636,4 +636,18 @@
     <string name="shell_library_order_popularity">最常用</string>
     <string name="shell_library_order_name">按名称</string>
     <string name="shell_library_order_family">按类别</string>
+    <string name="shell_advanced_search">高级搜索</string>
+    <string name="shell_advanced_search_footer">按受体、亲和力和名称查询目录里测得的结合数据。</string>
+    <string name="shell_advanced_filters">筛选</string>
+    <string name="shell_advanced_substance_contains">物质名包含…</string>
+    <string name="shell_advanced_target">受体靶点</string>
+    <string name="shell_advanced_loading_targets">载入靶点…</string>
+    <string name="shell_advanced_any">不限</string>
+    <string name="shell_advanced_target_chip">%1（%2）</string>
+    <string name="shell_advanced_ki_ceiling">Ki ≤ %1 nM</string>
+    <string name="shell_advanced_results">结果（%1）</string>
+    <string name="shell_advanced_no_filter">设置一个筛选条件后再搜索。</string>
+    <string name="shell_advanced_no_results">没有符合这些条件的结合数据。</string>
+    <string name="tools_advanced_search_title">高级搜索</string>
+    <string name="tools_advanced_search_detail">哪些物质结合这个受体，结合得有多紧？</string>
 </resources>

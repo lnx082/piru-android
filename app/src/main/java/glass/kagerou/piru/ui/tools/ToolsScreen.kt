@@ -19,6 +19,9 @@ import glass.kagerou.piru.ui.components.PiruCard
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.nav.PushRoute
 import glass.kagerou.piru.ui.theme.PiruTheme
+import androidx.compose.ui.platform.LocalContext
+import glass.kagerou.piru.PiruApplication
+import androidx.compose.runtime.remember
 
 /**
  * The tools hub.
@@ -48,6 +51,22 @@ import glass.kagerou.piru.ui.theme.PiruTheme
  */
 @Composable
 fun ToolsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
+    // Read above the list, not inside it: a `LazyColumn` content lambda is a `LazyListScope` builder
+    // rather than a composable scope, so a `LocalContext` or `remember` read in there does not compile.
+    val context = LocalContext.current
+    val showAdvanced = remember(context) {
+        (context.applicationContext as PiruApplication)
+            .profile()
+            .disclosureTier()
+            .showsReferenceSections()
+    }
+    // The gated entries are dropped rather than shown disabled: a row that cannot be tapped is worse than
+    // an absent one, and a group left with nothing does not render its heading.
+    val groups = TOOL_GROUPS.mapNotNull { group ->
+        val tools = group.tools.filter { showAdvanced || !it.gated }
+        if (tools.isEmpty()) null else ToolGroup(group.titleRes, tools)
+    }
+
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -74,7 +93,7 @@ fun ToolsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         // one thing on this screen that changes on its own.
         item { InventorySummaryCard(onOpen = { navigator.push(PushRoute.Tool(PushRoute.ToolKind.INVENTORY)) }) }
 
-        for (group in TOOL_GROUPS) {
+        for (group in groups) {
             item {
                 Text(
                     stringResource(group.titleRes),
@@ -131,6 +150,14 @@ private data class ToolEntry(
     @StringRes val titleRes: Int,
     @StringRes val detailRes: Int,
     val route: PushRoute? = null,
+    /**
+     * Whether this entry is only for a reader who asked for reference detail.
+     *
+     * The gate upstream applies at the entry point: a binding table is for someone who wants numbers, and
+     * a casual reader should not find it by scrolling. Filtered out entirely rather than shown disabled,
+     * because a row that cannot be tapped is worse than an absent one.
+     */
+    val gated: Boolean = false,
 ) {
     val destination: PushRoute get() = route ?: PushRoute.Tool(requireNotNull(kind))
 }
@@ -227,6 +254,17 @@ private val TOOL_GROUPS = listOf(
                 PushRoute.ToolKind.DRUG_CLASS,
                 R.string.tools_drug_class_title,
                 R.string.tools_drug_class_detail,
+            ),
+            // Gated on the detail level, like upstream: a binding table is a reference surface for a
+            // reader who wants numbers, and a casual reader should not find it by scrolling the hub. The
+            // gate is a field rather than an `if` here, because a `listOf(...)` literal takes expressions
+            // and an `if` without an `else` is not one.
+            ToolEntry(
+                kind = null,
+                titleRes = R.string.tools_advanced_search_title,
+                detailRes = R.string.tools_advanced_search_detail,
+                route = PushRoute.AdvancedSearch,
+                gated = true,
             ),
             ToolEntry(
                 PushRoute.ToolKind.IDENTIFY,

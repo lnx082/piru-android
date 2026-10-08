@@ -670,4 +670,18 @@
     <string name="shell_library_order_popularity">Most used</string>
     <string name="shell_library_order_name">A–Z</string>
     <string name="shell_library_order_family">By class</string>
+    <string name="shell_advanced_search">Advanced search</string>
+    <string name="shell_advanced_search_footer">Query the catalog’s measured bindings by receptor, affinity and name.</string>
+    <string name="shell_advanced_filters">Filters</string>
+    <string name="shell_advanced_substance_contains">Substance contains…</string>
+    <string name="shell_advanced_target">Receptor target</string>
+    <string name="shell_advanced_loading_targets">Loading targets…</string>
+    <string name="shell_advanced_any">Any</string>
+    <string name="shell_advanced_target_chip">%1 (%2)</string>
+    <string name="shell_advanced_ki_ceiling">Ki ≤ %1 nM</string>
+    <string name="shell_advanced_results">Results (%1)</string>
+    <string name="shell_advanced_no_filter">Set a filter to search.</string>
+    <string name="shell_advanced_no_results">No bindings match these filters.</string>
+    <string name="tools_advanced_search_title">Advanced search</string>
+    <string name="tools_advanced_search_detail">Which substances bind a receptor, and how tightly?</string>
 </resources>

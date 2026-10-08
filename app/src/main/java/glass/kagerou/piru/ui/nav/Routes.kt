@@ -239,6 +239,15 @@ sealed interface PushRoute {
     @Serializable
     data object SubstanceDatabase : PushRoute
 
+    /**
+     * Query the catalogue's binding rows by receptor, Ki ceiling and name fragment.
+     *
+     * Upstream keeps this behind the detail-level gate, and so does this: it is a reference surface for a
+     * reader who wants numbers, not a browse path.
+     */
+    @Serializable
+    data object AdvancedSearch : PushRoute
+
     /** Which source wins when two disagree. Reached from [SubstanceDatabase]. */
     @Serializable
     data object SourcePriority : PushRoute
@@ -301,6 +310,7 @@ fun PushRoute.key(): String = when (this) {
     is PushRoute.DrugClass -> "drug-class:$className"
     is PushRoute.Effects -> "effects:$name"
     PushRoute.SubstanceDatabase -> "substance-database"
+    PushRoute.AdvancedSearch -> "advanced-search"
     PushRoute.SourcePriority -> "source-priority"
     PushRoute.MyMeds -> "my-meds"
     is PushRoute.MedDetail -> "med-detail:$rowId"

@@ -423,6 +423,22 @@ class DbSubstanceCatalog private constructor(
         return reader.metabolismRows(id)
     }
 
+    /** Every receptor target with binding rows, most-populated first — the advanced search's picker. */
+    fun availableBindingTargets(): List<SubstanceReader.BindingTarget> =
+        reader.availableBindingTargets()
+
+    /**
+     * Binding rows across the catalogue, filtered by target, a Ki ceiling and a name fragment.
+     *
+     * All three nullable and deliberately not defaulted to something: the caller decides what "active"
+     * means, and the screen's own rule is that an unfiltered scan is not worth running.
+     */
+    fun bindingRowsFiltered(
+        targetBase: String? = null,
+        kiNmAtMost: Double? = null,
+        substanceContains: String? = null,
+    ): List<BindingHit> = reader.bindingRowsFiltered(targetBase, kiNmAtMost, substanceContains)
+
     /**
      * The sources this catalogue was built from, in the order it ranks them.
      *

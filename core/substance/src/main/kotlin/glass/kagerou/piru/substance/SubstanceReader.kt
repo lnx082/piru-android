@@ -1021,6 +1021,128 @@ class SubstanceReader(
             )
         }
 
+    /**
+     * One receptor target and how many substances have a row against it.
+     *
+     * `targetBase` is the normalized spelling — the pipeline folds `α2δ-1 (recombinant human)`,
+     * `α2δ-1` and `alpha2delta-1 (CACNA2D1)` into `alpha-2-delta-1` — so the picker lists one entry per
+     * receptor rather than one per assay. The **display** target is the most common raw spelling under
+     * that base, because a picker full of normalized slugs reads like a database dump.
+     */
+    data class BindingTarget(val target: String, val targetBase: String, val substanceCount: Int)
+
+    /**
+     * Every target with at least one binding row, most-substances first.
+     *
+     * Counted by *distinct substance*, not by row: "how many compounds hit this receptor" is the question
+     * the picker is answering, and a receptor with one compound measured forty times is not more
+     * populated than one with ten compounds.
+     */
+    fun availableBindingTargets(): List<BindingTarget> {
+        val rows = db.query(
+            """
+            SELECT COALESCE(NULLIF(b.target_base, ''), b.target) AS base,
+                   COUNT(DISTINCT b.substance_id) AS n
+              FROM bindings b
+             WHERE COALESCE(NULLIF(b.target_base, ''), b.target) IS NOT NULL
+             GROUP BY base
+             ORDER BY n DESC, base ASC
+            """,
+        )
+        val display = db.query(
+            """
+            SELECT COALESCE(NULLIF(b.target_base, ''), b.target) AS base, b.target AS target, COUNT(*) AS n
+              FROM bindings b
+             GROUP BY base, b.target
+             ORDER BY n DESC
+            """,
+        )
+        // First row per base wins, and the query is ordered so that is the most common spelling.
+        val displayByBase = LinkedHashMap<String, String>()
+        for (row in display) {
+            val base = row.string("base") ?: continue
+            val target = row.string("target") ?: continue
+            displayByBase.putIfAbsent(base, target)
+        }
+        return rows.mapNotNull { row ->
+            val base = row.string("base") ?: return@mapNotNull null
+            BindingTarget(
+                target = displayByBase[base] ?: base,
+                targetBase = base,
+                substanceCount = (row.long("n") ?: 0L).toInt(),
+            )
+        }
+    }
+
+    /**
+     * Binding rows across the whole catalogue, filtered.
+     *
+     * Every filter is nullable, and **all-null is a valid query** — the unfiltered scan the screen refuses
+     * to run on open, because "every measured binding in the catalogue" is 1,462 rows and not an answer to
+     * anything. The screen's own guard is what stops that; this returns it if asked.
+     *
+     * Ordered by Ki then EC50, lowest first, so the tightest binders lead: tightness is what the screen's
+     * one number means, and a ceiling filter makes the head of the list the interesting part.
+     */
+    fun bindingRowsFiltered(
+        targetBase: String? = null,
+        kiNmAtMost: Double? = null,
+        substanceContains: String? = null,
+    ): List<BindingHit> {
+        val clauses = mutableListOf<String>()
+        val args = mutableListOf<Any?>()
+        if (!targetBase.isNullOrBlank()) {
+            // Matched on the **normalized** base rather than the raw target: the picker offers one entry
+            // per receptor, so selecting it has to reach every spelling that folded into it.
+            clauses += "COALESCE(NULLIF(b.target_base, ''), b.target) = ?"
+            args += targetBase
+        }
+        if (kiNmAtMost != null) {
+            // A ceiling on Ki only. A row measured by EC50 has no Ki and is excluded rather than treated
+            // as zero, because "not measured" is not "binds more tightly than the ceiling".
+            clauses += "b.ki_nm IS NOT NULL AND b.ki_nm <= ?"
+            args += kiNmAtMost
+        }
+        if (!substanceContains.isNullOrBlank()) {
+            clauses += "s.canonical_name LIKE ?"
+            // Escaped so a user typing `%` searches for a percent sign rather than matching everything.
+            args += "%" + substanceContains.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+        }
+        val where = if (clauses.isEmpty()) "" else "WHERE " + clauses.joinToString(" AND ")
+
+        return db.query(
+            """
+            SELECT b.id, b.target, b.target_base, b.action, b.ki_nm, b.ec50_nm, b.ic50_nm,
+                   b.species, b.confidence, s.canonical_name AS substance_name,
+                   src.slug AS source_slug, c.doi, c.pmid
+              FROM bindings b
+              JOIN substances s ON s.id = b.substance_id
+              JOIN sources    src ON src.id = b.source_id
+              LEFT JOIN citations c ON c.id = b.citation_id
+             $where
+             ORDER BY b.ki_nm ASC NULLS LAST, b.ec50_nm ASC NULLS LAST, s.canonical_name ASC
+             LIMIT 500
+            """,
+            args,
+        ).map { row ->
+            BindingHit(
+                id = row.long("id") ?: 0L,
+                substanceName = row.string("substance_name").orEmpty(),
+                target = row.string("target").orEmpty(),
+                targetBase = row.string("target_base"),
+                action = row.string("action").orEmpty(),
+                kiNm = row.double("ki_nm"),
+                ec50Nm = row.double("ec50_nm"),
+                ic50Nm = row.double("ic50_nm"),
+                species = row.string("species"),
+                sourceSlug = row.string("source_slug").orEmpty(),
+                doi = row.string("doi"),
+                pmid = row.long("pmid")?.toInt(),
+                confidence = ConfidenceTier.fromGrade(row.string("confidence")),
+            )
+        }
+    }
+
     /** Therapeutic-range rows, lowest threshold first. */
     fun therapeuticRangeRows(substanceID: Long): List<TherapeuticRangeHit> =
         db.query(
