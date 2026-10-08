@@ -24,6 +24,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import glass.kagerou.piru.PiruApplication
 import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.DoseEntryEntity
@@ -108,7 +110,8 @@ fun HormoneLevelsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) 
     val context = LocalContext.current
     val app = context.applicationContext as PiruApplication
     val preferences = remember { DepotPreferences(context) }
-    val labStore = remember { LabMeasurementStore(context) }
+    val labStore = remember { LabMeasurementStore(app.database) }
+    val scope = rememberCoroutineScope()
 
     var model by remember { mutableStateOf<HormoneLevelsModel?>(null) }
     var catalog by remember { mutableStateOf<SubstanceCatalog?>(null) }
@@ -241,12 +244,16 @@ fun HormoneLevelsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) 
                 labs = analyteLabs,
                 onAdd = { showingAddLab = true },
                 onToggleExclude = { lab ->
-                    labStore.setExcluded(lab.id, !lab.excludedFromCalibration)
-                    labs = labStore.all()
+                    scope.launch {
+                        labStore.setExcluded(lab.id, !lab.excludedFromCalibration)
+                        labs = labStore.all()
+                    }
                 },
                 onDelete = { lab ->
-                    labStore.delete(lab.id)
-                    labs = labStore.all()
+                    scope.launch {
+                        labStore.delete(lab.id)
+                        labs = labStore.all()
+                    }
                 },
                 onAutoCalibrateChange = {
                     current.autoCalibrateFromLabs = it
@@ -272,8 +279,10 @@ fun HormoneLevelsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) 
             analyte = current.analyte,
             esterID = null,
             onSave = { measurement ->
-                labStore.insert(measurement)
-                labs = labStore.all()
+                scope.launch {
+                    labStore.insert(measurement)
+                    labs = labStore.all()
+                }
                 showingAddLab = false
             },
             onDismiss = { showingAddLab = false },
@@ -285,8 +294,10 @@ fun HormoneLevelsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) 
         AddCompanionMeasurementDialog(
             measurement = companion,
             onSave = { measurement ->
-                labStore.insert(measurement)
-                labs = labStore.all()
+                scope.launch {
+                    labStore.insert(measurement)
+                    labs = labStore.all()
+                }
                 addingCompanion = null
             },
             onDismiss = { addingCompanion = null },
@@ -308,7 +319,7 @@ fun HormoneLevelsInsightCard(navigator: AppNavigator, modifier: Modifier = Modif
     val context = LocalContext.current
     val app = context.applicationContext as PiruApplication
     val preferences = remember { DepotPreferences(context) }
-    val labStore = remember { LabMeasurementStore(context) }
+    val labStore = remember { LabMeasurementStore(app.database) }
     val tint = Color(0xFFEC407A)
     val colors = PiruTheme.colors
 

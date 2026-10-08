@@ -401,6 +401,7 @@ object DataExportImport {
         db.customSubstanceDao().deleteAll()
         db.quickLogDoseDao().deleteAll()
         db.inventoryDao().deleteAll()
+        db.labMeasurementDao().deleteAll()
     }
 
     /**
@@ -543,6 +544,23 @@ object DataExportImport {
             )
         }
 
+        // Lab results were the one kind of user-authored row this file could not
+        // carry, because they were not in the database — see `LabMeasurementEntity`.
+        // They are v3, and they are here.
+        val labMeasurements = db.labMeasurementDao().all().map { row ->
+            PiruLabMeasurementData(
+                id = row.id,
+                date = row.date.time,
+                analyteKey = row.analyteKey,
+                value = row.value,
+                inputUnit = row.inputUnit,
+                esterID = row.esterId,
+                excludedFromCalibration = row.excludedFromCalibration,
+                note = row.note,
+                createdAt = row.createdAt.time,
+            )
+        }
+
         val profile = db.userProfileDao().current()?.let { record ->
             PiruProfileData(
                 disclosureTier = record.disclosureTierRaw,
@@ -588,11 +606,11 @@ object DataExportImport {
             favorites = favorites,
             customSubstances = customSubstances,
             inventory = inventory,
-            // labMeasurements, customUnits, drinkPresets and settings are left
-            // null — and therefore absent from the file — because this build has
-            // no table for them. A `[]` here would be a claim that the user has
-            // none, which is not the same statement as "this file doesn't carry
-            // them". See the class note.
+            labMeasurements = labMeasurements,
+            // customUnits, drinkPresets and settings are left null — and therefore
+            // absent from the file — because this build has no table for them. A
+            // `[]` here would be a claim that the user has none, which is not the
+            // same statement as "this file doesn't carry them". See the class note.
             quickLogDoses = quickLogDoses,
             routineOccurrences = routineOccurrences,
             profile = profile,

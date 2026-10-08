@@ -11,6 +11,7 @@ import glass.kagerou.piru.data.entity.DailyDoseItemEntity
 import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.data.entity.FavoriteSubstanceEntity
 import glass.kagerou.piru.data.entity.InventoryItemEntity
+import glass.kagerou.piru.data.entity.LabMeasurementEntity
 import glass.kagerou.piru.data.entity.NotificationPreferencesEntity
 import glass.kagerou.piru.data.entity.QuickLogDoseEntity
 import glass.kagerou.piru.data.entity.RoutineOccurrenceEntity
@@ -441,11 +442,49 @@ internal object NativeImport {
         importRoutineOccurrences(file.routineOccurrences ?: emptyList(), db)
         importProfile(file.profile, db)
         importNotificationPreferences(file.notificationPreferences, db)
+        importLabMeasurements(file.labMeasurements ?: emptyList(), db)
         // `settings` is deliberately not applied: none of the keys upstream
         // exports — skins, dock, tab layout, journal grouping, the timeline
         // toggles — exist in this build, so there is nothing to write them to.
         // It is reported by `unsupportedSections` instead of being dropped in
         // silence.
+    }
+
+    /**
+     * Lab results, keyed by their own `id`.
+     *
+     * Dedup is on that id rather than on (analyte, date, value) because upstream keys
+     * it the same way, and because two draws on the same day with the same value are
+     * a real thing — a re-run of an assay — which a value-based key would silently
+     * collapse into one.
+     *
+     * A file from an Android build before v3 has no `createdAt`; the draw's own `date`
+     * stands in for it rather than a fabricated "now", so re-exporting such a file
+     * stays stable instead of dating every row to the moment of the import.
+     */
+    private suspend fun importLabMeasurements(
+        imported: List<PiruLabMeasurementData>,
+        db: PiruDatabase,
+    ) {
+        if (imported.isEmpty()) return
+        val dao = db.labMeasurementDao()
+        val takenIds = dao.all().mapNotNullTo(HashSet()) { it.id }
+        for (row in imported) {
+            if (!takenIds.add(row.id)) continue
+            dao.insert(
+                LabMeasurementEntity(
+                    id = row.id,
+                    date = Date(row.date),
+                    analyteKey = row.analyteKey,
+                    value = row.value,
+                    inputUnit = row.inputUnit,
+                    esterId = row.esterID,
+                    excludedFromCalibration = row.excludedFromCalibration,
+                    note = row.note,
+                    createdAt = Date(row.createdAt.takeIf { it > 0L } ?: row.date),
+                ),
+            )
+        }
     }
 
     private suspend fun importQuickLogDoses(list: List<PiruQuickLogDoseData>, db: PiruDatabase) {
@@ -546,9 +585,8 @@ internal object NativeImport {
     /** The sections the file carried that this build has no table for. */
     private fun unsupportedSections(file: PiruFile): List<DataExportImport.UnsupportedSection> =
         buildList {
-            file.labMeasurements?.takeIf { it.isNotEmpty() }?.let {
-                add(DataExportImport.UnsupportedSection("labMeasurements", it.size))
-            }
+            // `labMeasurements` is no longer here: it became a table in v3, so the
+            // section that used to be counted and reported is now imported.
             file.customUnits?.takeIf { it.isNotEmpty() }?.let {
                 add(DataExportImport.UnsupportedSection("customUnits", it.size))
             }

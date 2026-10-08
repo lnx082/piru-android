@@ -64,11 +64,19 @@ data class PiruFile(
     val favorites: List<PiruFavoriteData> = emptyList(),
     val customSubstances: List<PiruCustomSubstanceData> = emptyList(),
     val inventory: List<PiruInventoryData>? = null,
-    /** No Android table. Decoded, counted and reported, never written. */
-    val labMeasurements: List<JsonElement>? = null,
-    /** No Android table. See [labMeasurements]. */
+    /**
+     * The user's lab results.
+     *
+     * Keys match iOS's `PiruLabMeasurementData` exactly, so a file written here
+     * restores there and the reverse. [note] and [createdAt] default because the
+     * v1/v2 Android preferences blob carried neither — a file from an older
+     * Android build is still readable, and the missing fields are left null rather
+     * than invented.
+     */
+    val labMeasurements: List<PiruLabMeasurementData>? = null,
+    /** No Android table. See the class note. */
     val customUnits: List<JsonElement>? = null,
-    /** No Android table. See [labMeasurements]. */
+    /** No Android table. See the class note. */
     val drinkPresets: List<JsonElement>? = null,
     val quickLogDoses: List<PiruQuickLogDoseData>? = null,
     val routineOccurrences: List<PiruRoutineOccurrenceData>? = null,
@@ -204,6 +212,32 @@ data class PiruFavoriteData(
     val releaseForm: String? = null,
     val saltForm: String? = null,
     val productName: String? = null,
+)
+
+/**
+ * One serum lab result, keyed by [id] on import.
+ *
+ * Ported from iOS's `PiruLabMeasurementData`. The field names are iOS's, not this
+ * port's, because the whole point of a wire type is that a file written on one
+ * platform restores on the other — which is exactly what these rows failed to do
+ * while they lived in a preferences blob that no export could see.
+ *
+ * [note] and [createdAt] have defaults so a file written by an Android build from
+ * before v3 still decodes: that build's blob carried neither field, and inventing
+ * a `createdAt` for it here would be worse than leaving the caller to fall back to
+ * the draw's own [date].
+ */
+@Serializable
+data class PiruLabMeasurementData(
+    val id: String,
+    val date: Long,
+    val analyteKey: String,
+    val value: Double,
+    val inputUnit: String,
+    val esterID: String? = null,
+    val excludedFromCalibration: Boolean = false,
+    val note: String? = null,
+    val createdAt: Long = 0L,
 )
 
 /**

@@ -1,6 +1,7 @@
 package glass.kagerou.piru
 
 import android.app.Application
+import android.util.Log
 import glass.kagerou.piru.data.PiruDatabase
 import glass.kagerou.piru.data.RoutineOccurrenceService
 import glass.kagerou.piru.data.SessionRepository
@@ -17,6 +18,7 @@ import glass.kagerou.piru.notifications.PiruNotifications
 import glass.kagerou.piru.substance.ContentLanguage
 import glass.kagerou.piru.widget.MedWidgetRefresh
 import glass.kagerou.piru.substance.DbSubstanceCatalog
+import glass.kagerou.piru.ui.tools.LabMeasurementStore
 import java.io.File
 import java.time.ZoneId
 import kotlinx.coroutines.CoroutineScope
@@ -95,6 +97,11 @@ open class PiruApplication : Application() {
         appScope.launch {
             // Before anything computes: `weightKgOrDefault` answers from the cache
             // this fills, and every PK figure in the app is scaled by it.
+            // The lab results that were JSON in a preferences file before v3, moved
+            // into their table. Runs before any screen can read labs, and is a no-op
+            // once it has run: it clears the file as it reads it.
+            runCatching { LabMeasurementStore(database).importLegacyRows(this@PiruApplication) }
+                .onFailure { Log.w(TAG, "Lab-measurement backfill failed", it) }
             profile().load()
             notificationPreferences().load()
             // After the profile, never before: the sync below decides whether a
@@ -357,5 +364,10 @@ open class PiruApplication : Application() {
     override fun onTerminate() {
         super.onTerminate()
         catalogHandle?.close()
+    }
+
+    private companion object {
+        /** Logcat tag for the launch-time work that has nowhere else to report failures. */
+        const val TAG = "PiruApp"
     }
 }

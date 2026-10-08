@@ -14,6 +14,7 @@ import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.data.entity.DoseRoutineEntity
 import glass.kagerou.piru.data.entity.FavoriteSubstanceEntity
 import glass.kagerou.piru.data.entity.InventoryItemEntity
+import glass.kagerou.piru.data.entity.LabMeasurementEntity
 import glass.kagerou.piru.data.entity.NotificationPreferencesEntity
 import glass.kagerou.piru.data.entity.QuickLogDoseEntity
 import glass.kagerou.piru.data.entity.RoutineOccurrenceEntity
@@ -75,8 +76,9 @@ import glass.kagerou.piru.data.entity.UserProfileRecordEntity
         CustomSubstanceRecordEntity::class,
         QuickLogDoseEntity::class,
         InventoryItemEntity::class,
+        LabMeasurementEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -108,6 +110,16 @@ abstract class PiruDatabase : RoomDatabase() {
     /** See [QuickLogDoseDao]. */
     abstract fun quickLogDoseDao(): QuickLogDoseDao
 
+    /**
+     * The user's lab results.
+     *
+     * v3: these were JSON in a private preferences file until it became clear they
+     * were outside every export, import and erase path. See
+     * [LabMeasurementEntity] for the full account, and [MIGRATION_2_3] for the
+     * table and the backfill that follows it.
+     */
+    abstract fun labMeasurementDao(): LabMeasurementDao
+
     companion object {
         /**
          * Open the user's store, creating it on first launch.
@@ -119,7 +131,7 @@ abstract class PiruDatabase : RoomDatabase() {
          */
         fun open(context: Context, name: String = "piru.db"): PiruDatabase =
             Room.databaseBuilder(context.applicationContext, PiruDatabase::class.java, name)
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
 
         /**
@@ -161,6 +173,53 @@ abstract class PiruDatabase : RoomDatabase() {
                 connection.execSQL(
                     "CREATE INDEX IF NOT EXISTS `index_inventory_items_sort_order` " +
                         "ON `inventory_items` (`sort_order`)",
+                )
+            }
+        }
+
+        /**
+         * v2 → v3: the lab results become a table.
+         *
+         * Additive, like the one above, and written out for the same reason: Room
+         * validates the migrated schema against the entity on open, so a missing
+         * `DEFAULT` or a differently named index fails loudly rather than
+         * silently producing a table that does not match.
+         *
+         * ## The rows themselves are backfilled after this runs, not inside it
+         * The v2 rows live in the `piru.labMeasurements` preferences file as a JSON
+         * blob (`LabMeasurementStore`), and a `Migration` has no `Context`, so it
+         * has no way to open that file. Copying the blob in here would mean both
+         * reaching outside the connection this method is given and doing JSON
+         * parsing inside a schema migration.
+         *
+         * So this creates the table and nothing else, and
+         * `LabMeasurementStore.importLegacyRows` copies the blob in on the next
+         * launch, once, before any reader runs. Until that has happened the table
+         * being empty is correct: an empty table and an absent one mean the same
+         * thing to every reader, and the backfill is what makes the rows appear.
+         */
+        val MIGRATION_2_3: Migration = object : Migration(2, 3) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `lab_measurements` (" +
+                        "`row_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`id` TEXT NOT NULL, " +
+                        "`date` INTEGER NOT NULL, " +
+                        "`analyte_key` TEXT NOT NULL, " +
+                        "`value` REAL NOT NULL, " +
+                        "`input_unit` TEXT NOT NULL, " +
+                        "`ester_id` TEXT, " +
+                        "`excluded_from_calibration` INTEGER NOT NULL DEFAULT 0, " +
+                        "`note` TEXT, " +
+                        "`created_at` INTEGER NOT NULL)",
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_lab_measurements_analyte_key` " +
+                        "ON `lab_measurements` (`analyte_key`)",
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_lab_measurements_date` " +
+                        "ON `lab_measurements` (`date`)",
                 )
             }
         }

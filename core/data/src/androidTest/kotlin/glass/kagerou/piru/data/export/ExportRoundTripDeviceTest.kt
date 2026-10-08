@@ -62,7 +62,7 @@ class ExportRoundTripDeviceTest {
      */
     private fun inMemory(context: android.content.Context): PiruDatabase =
         Room.inMemoryDatabaseBuilder(context, PiruDatabase::class.java)
-            .addMigrations(PiruDatabase.MIGRATION_1_2)
+            .addMigrations(PiruDatabase.MIGRATION_1_2, PiruDatabase.MIGRATION_2_3)
             .build()
 
     // MARK: - The round trip
@@ -322,6 +322,15 @@ class ExportRoundTripDeviceTest {
             source.notificationPreferencesDao().insert(
                 glass.kagerou.piru.data.entity.NotificationPreferencesEntity(),
             )
+            source.labMeasurementDao().insert(
+                glass.kagerou.piru.data.entity.LabMeasurementEntity(
+                    id = "lab-erase",
+                    date = Date(0),
+                    analyteKey = "estradiol",
+                    value = 100.0,
+                    inputUnit = "pg/mL",
+                ),
+            )
 
             DataExportImport.deleteAll(source)
 
@@ -336,6 +345,7 @@ class ExportRoundTripDeviceTest {
             assertTrue(source.customSubstanceDao().all().isEmpty())
             assertTrue(source.quickLogDoseDao().all().isEmpty())
             assertTrue(source.inventoryDao().all().isEmpty())
+            assertTrue(source.labMeasurementDao().all().isEmpty())
         }
     }
 
@@ -346,6 +356,87 @@ class ExportRoundTripDeviceTest {
         }.exceptionOrNull()
 
         assertTrue(error is DataExportImport.ImportFileException.Encrypted)
+    }
+
+    /**
+     * A lab result survives the trip, because it used to survive nothing.
+     *
+     * Until v3 these rows lived in a `SharedPreferences` file, which meant the export
+     * could not see them, the import counted them as unsupported, and "Delete
+     * Everything" left them on the device. This is the test that fails if any of those
+     * three come back — it seeds one, exports, imports into a second store, and
+     * compares every column including the two (`note`, `createdAt`) that only exist
+     * because iOS carries them.
+     */
+    @Test
+    fun aLabMeasurementSurvivesTheRoundTrip() {
+        runBlocking {
+            source.labMeasurementDao().insert(
+                glass.kagerou.piru.data.entity.LabMeasurementEntity(
+                    id = "lab-1",
+                    date = Date(1_699_100_000_000),
+                    analyteKey = "estradiol",
+                    value = 187.5,
+                    inputUnit = "pmol/L",
+                    esterId = "estradiol_valerate",
+                    excludedFromCalibration = true,
+                    note = "trough, 12 h after dose",
+                    createdAt = Date(1_699_100_500_000),
+                ),
+            )
+
+            val json = DataExportImport.exportJSON(
+                format = ExportFormat.PIRU,
+                db = source,
+                appVersion = "Piru 0.1.0 (1)",
+            )
+            val report = DataExportImport.importJSON(json, target)
+
+            // No longer reported as a section this build cannot store.
+            assertEquals(
+                0,
+                report.unsupported.count { it.name == "labMeasurements" },
+            )
+
+            val rows = target.labMeasurementDao().all()
+            assertEquals(1, rows.size)
+            val row = rows.single()
+            assertEquals("lab-1", row.id)
+            assertEquals(1_699_100_000_000L, row.date.time)
+            assertEquals("estradiol", row.analyteKey)
+            assertEquals(187.5, row.value, 0.0)
+            assertEquals("pmol/L", row.inputUnit)
+            assertEquals("estradiol_valerate", row.esterId)
+            assertTrue(row.excludedFromCalibration)
+            assertEquals("trough, 12 h after dose", row.note)
+            assertEquals(1_699_100_500_000L, row.createdAt.time)
+        }
+    }
+
+    /**
+     * And an erase takes them with it.
+     *
+     * The sibling of the round trip: a restore is not the only path these rows have to
+     * appear in, and an erase that leaves a user's blood results behind is the worse
+     * half of the same bug.
+     */
+    @Test
+    fun deleteAllEmptiesTheLabMeasurementsToo() {
+        runBlocking {
+            source.labMeasurementDao().insert(
+                glass.kagerou.piru.data.entity.LabMeasurementEntity(
+                    id = "lab-2",
+                    date = Date(0),
+                    analyteKey = "testosterone",
+                    value = 540.0,
+                    inputUnit = "ng/dL",
+                ),
+            )
+
+            DataExportImport.deleteAll(source)
+
+            assertTrue(source.labMeasurementDao().all().isEmpty())
+        }
     }
 
     private fun encodeInts(values: List<Int>): String = glass.kagerou.piru.data.JsonLists.encode(values)

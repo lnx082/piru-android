@@ -9,6 +9,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import glass.kagerou.piru.R
 import glass.kagerou.piru.data.entity.DoseEntryEntity
+import glass.kagerou.piru.data.PiruDatabase
+import glass.kagerou.piru.data.entity.LabMeasurementEntity
 import glass.kagerou.piru.engine.PKModelDepot
 import glass.kagerou.piru.engine.SubstanceCatalog
 import java.time.Instant
@@ -112,77 +114,110 @@ internal data class LabMeasurement(
     val inputUnit: String,
     val esterID: String? = null,
     val excludedFromCalibration: Boolean = false,
+    /** A free-text note, as iOS carries one. Null means "no note", not an empty one. */
+    val note: String? = null,
+    /** When the row was written, distinct from [date], which is when blood was drawn. */
+    val createdAt: Instant = Instant.now(),
 )
 
 /**
- * The user's lab results.
+ * The user's lab results, on the database.
  *
- * Ported from the SwiftData store. ## Why this is not a Room entity
- * `LabMeasurement` is a SwiftData model upstream, but the port's Room schema
- * lives in `:core:data` and is not this screen's to extend. Rather than pretend
- * the row does not exist, it is held here as JSON in a private preference file —
- * which is honest about the scope: a lab result is a small, append-mostly list a
- * user accumulates a handful of times a year, never joined against anything, and
- * never queried by anything but the analyte key.
+ * Ported from the SwiftData store. ## Why this stopped being a preferences file
+ * It used to be a JSON blob in `piru.labMeasurements`, on the reasoning that a lab
+ * result is "a small, append-mostly list … never joined against anything". Both
+ * halves of that turned out to be false in a way that cost the user data:
  *
- * The moment a second screen wants to read these, this belongs in the database
- * beside the doses.
+ * - **It was outside every export, import and erase path.** The export layer said
+ *   these had "no table on Android" and omitted them; the importer counted them as
+ *   dropped; `deleteAll` cleared thirteen Room tables and no preferences file, so
+ *   "Delete Everything" left them behind; and `android:allowBackup="false"` ruled
+ *   out the OS backup. Restoring from iOS discarded them, and a reinstall lost them
+ *   for good.
+ * - **Two screens read them** — hormone levels and injection levels — which is the
+ *   condition the old comment named as the point at which this belongs "in the
+ *   database beside the doses".
+ *
+ * So it is a Room table now ([LabMeasurementEntity], v3). [importLegacyRows] moves
+ * anything already in the preferences file across, once, and clears the file so it
+ * cannot be counted twice.
+ *
+ * Every method is `suspend` because Room's are: the callers already read on a
+ * coroutine, and a blocking read behind `runBlocking` would put a disk query on
+ * whichever thread happened to call.
  */
-internal class LabMeasurementStore(context: Context) {
+internal class LabMeasurementStore(private val database: PiruDatabase) {
 
-    private val prefs = context.applicationContext
-        .getSharedPreferences("piru.labMeasurements", Context.MODE_PRIVATE)
+    /** Every measurement, newest first. */
+    suspend fun all(): List<LabMeasurement> =
+        database.labMeasurementDao().all().map { it.toModel() }
 
-    fun all(): List<LabMeasurement> {
-        val raw = prefs.getString(KEY_ROWS, null) ?: return emptyList()
-        // A malformed blob loses the rows rather than crashing a screen: these are
-        // the user's own measurements, and a parse failure is a bug to fix, not a
-        // reason to take the tool down.
-        return runCatching { decode(JSONArray(raw)) }.getOrDefault(emptyList())
+    /** The rows for one analyte, oldest first — the order a series is plotted in. */
+    suspend fun forAnalyte(analyteKey: String): List<LabMeasurement> =
+        database.labMeasurementDao().forAnalyte(analyteKey).map { it.toModel() }
+
+    suspend fun insert(measurement: LabMeasurement) {
+        database.labMeasurementDao().insert(measurement.toEntity())
     }
 
-    fun insert(measurement: LabMeasurement) {
-        write(all() + measurement)
+    suspend fun update(measurement: LabMeasurement) {
+        val existing = database.labMeasurementDao().byId(measurement.id) ?: return
+        database.labMeasurementDao().update(
+            measurement.toEntity().copy(rowId = existing.rowId),
+        )
     }
 
-    fun delete(id: String) {
-        write(all().filterNot { it.id == id })
+    suspend fun delete(id: String) {
+        database.labMeasurementDao().deleteById(id)
     }
 
-    fun setExcluded(id: String, excluded: Boolean) {
-        write(all().map { if (it.id == id) it.copy(excludedFromCalibration = excluded) else it })
+    suspend fun setExcluded(id: String, excluded: Boolean) {
+        database.labMeasurementDao().setExcluded(id, excluded)
     }
 
-    private fun write(rows: List<LabMeasurement>) {
-        prefs.edit().putString(KEY_ROWS, encode(rows).toString()).apply()
+    suspend fun deleteAll() {
+        database.labMeasurementDao().deleteAll()
     }
 
-    private fun encode(rows: List<LabMeasurement>): JSONArray {
-        val array = JSONArray()
+    /**
+     * Copy any rows left in the old preferences file into the table, once.
+     *
+     * Runs on launch before any reader, and is idempotent by construction: the file
+     * is cleared inside the same edit that reads it, so a second call finds nothing.
+     * Rows are inserted only when their own `id` is not already present, so a
+     * backfill interrupted after an insert but before the clear cannot duplicate
+     * anything.
+     *
+     * Returns how many rows were moved, which is what a test can assert on.
+     */
+    suspend fun importLegacyRows(context: Context): Int {
+        val prefs = context.applicationContext
+            .getSharedPreferences(LEGACY_FILE, Context.MODE_PRIVATE)
+        val raw = prefs.getString(LEGACY_KEY, null) ?: return 0
+        // Cleared before the insert loop rather than after: if a row fails to parse,
+        // the blob is already gone, and the alternative — keeping it — means every
+        // later launch retries the same bad blob forever.
+        prefs.edit().remove(LEGACY_KEY).apply()
+
+        val rows = runCatching { decodeLegacy(JSONArray(raw)) }.getOrDefault(emptyList())
+        var moved = 0
         for (row in rows) {
-            array.put(
-                JSONObject().apply {
-                    put("id", row.id)
-                    put("date", row.date.toEpochMilli())
-                    put("analyteKey", row.analyteKey)
-                    put("value", row.value)
-                    put("inputUnit", row.inputUnit)
-                    put("esterID", row.esterID ?: JSONObject.NULL)
-                    put("excluded", row.excludedFromCalibration)
-                },
-            )
+            if (database.labMeasurementDao().byId(row.id) != null) continue
+            database.labMeasurementDao().insert(row.toEntity())
+            moved++
         }
-        return array
+        return moved
     }
 
-    private fun decode(array: JSONArray): List<LabMeasurement> = buildList {
+    private fun decodeLegacy(array: JSONArray): List<LabMeasurement> = buildList {
         for (i in 0 until array.length()) {
             val row = array.optJSONObject(i) ?: continue
             val analyteKey = row.optString("analyteKey").takeIf { it.isNotEmpty() } ?: continue
             val inputUnit = row.optString("inputUnit").takeIf { it.isNotEmpty() } ?: continue
             add(
                 LabMeasurement(
-                    id = row.optString("id").takeIf { it.isNotEmpty() } ?: UUID.randomUUID().toString(),
+                    id = row.optString("id").takeIf { it.isNotEmpty() }
+                        ?: UUID.randomUUID().toString(),
                     date = Instant.ofEpochMilli(row.optLong("date")),
                     analyteKey = analyteKey,
                     value = row.optDouble("value", 0.0),
@@ -194,8 +229,34 @@ internal class LabMeasurementStore(context: Context) {
         }
     }
 
+    private fun LabMeasurement.toEntity() = LabMeasurementEntity(
+        id = id,
+        date = java.util.Date.from(date),
+        analyteKey = analyteKey,
+        value = value,
+        inputUnit = inputUnit,
+        esterId = esterID,
+        excludedFromCalibration = excludedFromCalibration,
+        note = note,
+        createdAt = java.util.Date.from(createdAt),
+    )
+
+    private fun LabMeasurementEntity.toModel() = LabMeasurement(
+        id = id,
+        date = date.toInstant(),
+        analyteKey = analyteKey,
+        value = value,
+        inputUnit = inputUnit,
+        esterID = esterId,
+        excludedFromCalibration = excludedFromCalibration,
+        note = note,
+        createdAt = createdAt.toInstant(),
+    )
+
     private companion object {
-        const val KEY_ROWS = "rows"
+        /** The v2 file and key, read once by [importLegacyRows] and never written again. */
+        const val LEGACY_FILE = "piru.labMeasurements"
+        const val LEGACY_KEY = "rows"
     }
 }
 
