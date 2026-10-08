@@ -32,6 +32,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
 import glass.kagerou.piru.R
+import glass.kagerou.piru.widget.MedWidgetRefresh
 import glass.kagerou.piru.data.entity.DoseEntryEntity
 import glass.kagerou.piru.model.RouteOfAdministration
 import glass.kagerou.piru.ui.components.FAB_CLEARANCE
@@ -239,6 +240,10 @@ fun EntryDetailScreen(
                                 // another slot's hour, or relabelled onto another
                                 // substance, satisfies a different slot than it did.
                                 app.reconcileRoutineOccurrences()
+// And the home-screen widget, which draws this slot's state. A dose retimed,
+                                // relabelled or deleted settles a different slot than it did, and the widget
+                                // was left showing the previous answer.
+                                MedWidgetRefresh.afterWrite(app)
                                 editing = false
                                 saved = true
                             }
@@ -309,6 +314,10 @@ fun EntryDetailScreen(
                             // occurrence goes back to pending rather than leaving the
                             // re-ask suppressed by a dose the user deleted.
                             app.reconcileRoutineOccurrences()
+// And the home-screen widget, which draws this slot's state. A dose retimed,
+                            // relabelled or deleted settles a different slot than it did, and the widget
+                            // was left showing the previous answer.
+                            MedWidgetRefresh.afterWrite(app)
                             navigator.invalidate()
                             navigator.pop()
                         }

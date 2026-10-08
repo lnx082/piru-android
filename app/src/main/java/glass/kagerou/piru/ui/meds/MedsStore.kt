@@ -4,6 +4,7 @@ import glass.kagerou.piru.PiruApplication
 import glass.kagerou.piru.data.InventoryMath
 import glass.kagerou.piru.data.entity.DailyDoseItemEntity
 import glass.kagerou.piru.data.entity.DoseEntryEntity
+import glass.kagerou.piru.widget.MedWidgetRefresh
 import glass.kagerou.piru.engine.AdherenceCalculator
 import glass.kagerou.piru.engine.AdherenceEntry
 import glass.kagerou.piru.engine.AdherenceItem
@@ -41,14 +42,40 @@ import java.util.Date
  * replace the pair with a single statement and this file would shrink to a call;
  * it is the first thing to ask `:core:data` for.
  *
- * ## Every write ends in `reconcileRoutineOccurrences`
+ * ## Every write ends in `settleSchedule`
  * Upstream calls `DoseNotificationManager.syncMedReminders` after a med edit and
- * after a dose commit. The port's equivalent is
- * [PiruApplication.reconcileRoutineOccurrences], which re-derives the occurrence
- * record and re-arms the reminders in that order — so it is called here rather
- * than left to a screen's `onDisappear`, which a configuration change can skip.
+ * after a dose commit. This port has two things to settle after such a write, and
+ * they are deliberately one call:
+ *
+ * - [PiruApplication.reconcileRoutineOccurrences] re-derives the occurrence record
+ *   and re-arms the reminders, in that order.
+ * - `MedWidgetRefresh.afterWrite` redraws the home-screen widget and re-arms its
+ *   next boundary.
+ *
+ * They are together because they were apart, and the widget went stale. The
+ * refresh was wired into the quick-log commit and into launch — the two paths
+ * somebody was looking at — and not into this store, so **adding a medication
+ * changed the schedule without changing the widget**, which kept showing yesterday's
+ * list until something else happened to refresh it. Nothing about that failure was
+ * visible from either side: the store was correct, the widget was correct, and the
+ * connection between them was simply absent.
+ *
+ * So the invariant lives in one place now. A write that settles the schedule but
+ * forgets the widget is no longer something a caller can express.
  */
 internal object MedsStore {
+
+    /**
+     * Settle everything that depends on the schedule having changed.
+     *
+     * Called at the end of every write in this file rather than by its callers: a
+     * caller cannot see whether it remembered, and the two paths that forgot are the
+     * reason this exists.
+     */
+    private suspend fun settleSchedule(app: PiruApplication) {
+        app.reconcileRoutineOccurrences()
+        MedWidgetRefresh.afterWrite(app)
+    }
 
     /**
      * Create or update a med and reschedule from the saved state.
@@ -69,14 +96,14 @@ internal object MedsStore {
             dao.delete(existing)
             dao.insert(entity.copy(rowId = existing.rowId))
         }
-        app.reconcileRoutineOccurrences()
+        settleSchedule(app)
         return rowId
     }
 
     /** Remove a med. Logged doses are untouched — they are history, not schedule. */
     suspend fun delete(app: PiruApplication, item: DailyDoseItemEntity) {
         app.database.dailyDoseItemDao().delete(item)
-        app.reconcileRoutineOccurrences()
+        settleSchedule(app)
     }
 
     /**
@@ -124,7 +151,7 @@ internal object MedsStore {
             sessions.assignSession(rowId)
             written++
         }
-        app.reconcileRoutineOccurrences()
+        settleSchedule(app)
         return written
     }
 

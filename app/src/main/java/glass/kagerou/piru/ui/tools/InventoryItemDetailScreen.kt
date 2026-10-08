@@ -58,6 +58,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import glass.kagerou.piru.PiruApplication
 import glass.kagerou.piru.R
+import glass.kagerou.piru.widget.MedWidgetRefresh
 import glass.kagerou.piru.data.InventoryMath
 import glass.kagerou.piru.data.ManualEvent
 import glass.kagerou.piru.data.PiruDatabase
@@ -906,6 +907,10 @@ private fun deleteHistoryRow(
                 // Same as the journal's delete: the slot this dose satisfied is
                 // no longer satisfied, and the record has to say so.
                 app.reconcileRoutineOccurrences()
+// And the home-screen widget, which draws this slot's state. A dose retimed,
+                // relabelled or deleted settles a different slot than it did, and the widget
+                // was left showing the previous answer.
+                MedWidgetRefresh.afterWrite(app)
                 catalog?.let { InventoryStore.recompute(app.database, it, item) }
                 navigator.invalidate()
             }
