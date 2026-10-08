@@ -450,7 +450,10 @@ private val NotificationType.rowTitle: String
         NotificationType.SLEEP -> stringResource(R.string.shell_notif_type_sleep)
         NotificationType.PHASE -> stringResource(R.string.shell_notif_type_phase)
         NotificationType.CUMULATIVE -> stringResource(R.string.shell_notif_type_cumulative)
-        NotificationType.ROUTINE -> stringResource(R.string.shell_notif_group_meds)
+        // Its own resource, not the group heading's. English happens to read the same either way, which is
+        // exactly why the borrowing went unnoticed: a group heading and an item under it are different strings,
+        // and the translation that distinguishes them is where the difference shows.
+        NotificationType.ROUTINE -> stringResource(R.string.shell_notif_type_routine)
         NotificationType.ROUTINE_FOLLOW_UP -> stringResource(R.string.shell_notif_type_follow_up)
         NotificationType.INVENTORY -> stringResource(R.string.shell_notif_type_inventory)
         NotificationType.CHECK_IN -> stringResource(R.string.shell_notif_type_check_in)

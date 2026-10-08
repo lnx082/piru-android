@@ -28,6 +28,15 @@ data class DoseRecord(
      */
     val isUnknownDose: Boolean = false,
 
+    /**
+     * The amount is an estimate rather than a measurement.
+     *
+     * Carried on the engine's own record because the report prints it: TripReport's readout and the journal's
+     * both mark an estimate with ~, and a dose that reached the report without this flag would print as though it
+     * had been measured — the one place a reader cannot check the number against the app.
+     */
+    val isApproximate: Boolean = false,
+
     /** The PSID release-form code (`"IR"`, `"XR"`, `"DEP"`), or null for the unspecified product. */
     val releaseForm: String? = null,
 

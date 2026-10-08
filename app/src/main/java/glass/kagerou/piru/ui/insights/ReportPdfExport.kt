@@ -288,6 +288,9 @@ private fun DoseEntryEntity.toReportDoseRecord(): DoseRecord = DoseRecord(
     route = route,
     timestamp = timestamp.toInstant(),
     isUnknownDose = isUnknownDose,
+    // Carried so the printed table agrees with the journal it came from: a PDF that prints an estimate as though
+    // it were measured is the one place a reader cannot check against the app.
+    isApproximate = isApproximate,
     releaseForm = releaseForm,
     productName = productName,
     saltForm = saltForm,

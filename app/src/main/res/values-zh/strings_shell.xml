@@ -819,4 +819,5 @@
     <string name="launch_discord_body">一个 Discord，用于提问、纠正参考数据中的错误，以及提功能建议。错误数字在这里修得最快。</string>
     <string name="launch_discord_join">打开 Discord</string>
     <string name="shell_close">关闭</string>
+    <string name="shell_notif_type_routine">服药提醒</string>
 </resources>

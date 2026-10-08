@@ -229,11 +229,22 @@ data class DoseEntryEntity(
     val drinkName: String? = null,
 ) {
     /**
-     * The amount as a journal readout: `?` for an unknown dose, else the
-     * magnitude-rounded numeral. The one string every "amount unit" line prints.
+     * The amount as a journal readout: `?` for an unknown dose, else the magnitude-rounded numeral, with a `~`
+     * before it when the figure is an estimate.
+     *
+     * The one string every "amount unit" line prints, which is why the two markers belong here rather than at each
+     * call site. `isApproximate` was **set by the quick log and read by nothing** — the entity, the export and the
+     * schema all carried it while every surface printed the number as though it had been measured, which is the
+     * kind of thing a reader acts on. See `~`'s own note below on why a tilde rather than a word.
      */
     val amountDisplay: String
-        get() = if (isUnknownDose) "?" else glass.kagerou.piru.model.doseFormatted(amount)
+        get() = when {
+            isUnknownDose -> "?"
+            // The tilde is the standard notation for an approximate figure, and the amount column is narrow —
+            // a word here would push the unit out of the row on a small screen.
+            isApproximate -> "~" + glass.kagerou.piru.model.doseFormatted(amount)
+            else -> glass.kagerou.piru.model.doseFormatted(amount)
+        }
 
     /**
      * Free-form labels attached to the dose, decoded from [tagsRaw]. Whitespace

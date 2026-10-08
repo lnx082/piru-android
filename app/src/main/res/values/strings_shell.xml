@@ -853,4 +853,5 @@
     <string name="launch_discord_body">A Discord for questions, corrections to the reference data, and feature requests. It is also where a wrong number gets fixed fastest.</string>
     <string name="launch_discord_join">Open Discord</string>
     <string name="shell_close">Close</string>
+    <string name="shell_notif_type_routine">Med reminders</string>
 </resources>

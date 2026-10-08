@@ -33,13 +33,30 @@ data class TripReport(
         /** A dose with no amount; the table prints `?` for it. */
         val isUnknownDose: Boolean = false,
         /**
+         * A dose whose amount is an estimate rather than a measurement; the table prints `~` before it.
+         *
+         * Carried because the journal marks these and a report exported from the journal has to agree with it —
+         * "was this measured" is exactly the kind of thing a reader of a printed summary would otherwise assume.
+         */
+        val isApproximate: Boolean = false,
+        /**
          * The modeled phase boundaries as clock times, in order, when the
          * substance carries duration data. Empty for a dose that draws no curve.
          */
         val phases: List<Phase> = emptyList(),
     ) {
+        /**
+         * The amount as the report prints it: `?` for an unknown dose, `~` for an estimate, else the numeral.
+         *
+         * The same two markers the journal's own readout carries, so a PDF and the screen it was exported from
+         * agree about which doses were measured.
+         */
         val amountDisplay: String
-            get() = if (isUnknownDose) "?" else doseFormatted(amount)
+            get() = when {
+                isUnknownDose -> "?"
+                isApproximate -> "~" + doseFormatted(amount)
+                else -> doseFormatted(amount)
+            }
     }
 
     /** One modeled moment of a dose's arc, named in the portable English. */

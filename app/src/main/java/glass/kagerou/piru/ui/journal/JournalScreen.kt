@@ -415,10 +415,11 @@ private fun DoseRow(entry: DoseEntryEntity, zone: ZoneId, onOpen: () -> Unit) {
                     color = PiruTheme.colors.secondaryLabel,
                 )
             }
-            // An unknown dose says so rather than printing "0 mg": the amount is
-            // absent, and a zero is a claim the log does not make.
+            // Through the entity's own readout, which carries **both** markers: `?` for an absent amount — the log
+            // does not claim a zero — and `~` for an estimate. Nothing rendered the second before this, so an
+            // estimated dose and a measured one printed identically.
             Text(
-                if (entry.isUnknownDose) "?" else "${entry.amount} ${entry.unit}",
+                "${entry.amountDisplay} ${entry.unit}",
                 style = MaterialTheme.typography.titleSmall,
             )
         }
