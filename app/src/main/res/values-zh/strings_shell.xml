@@ -810,4 +810,13 @@
     <string name="shell_tabs_last_note">最后一个可见标签页会保留。</string>
     <string name="shell_tabs_labels">显示标签文字</string>
     <string name="shell_tabs_labels_detail">关闭后只显示图标，窄屏上能放下更多标签页。</string>
+    <string name="launch_class_colours_title">你的物质颜色</string>
+    <string name="launch_class_colours_body">Piru 现在按物质所属的类别推导颜色，因此同一族的物质看起来相关，新物质在你挑选之前就已经有颜色了。</string>
+    <string name="launch_class_colours_tradeoff">你自己的颜色可以迁移到新配色，也可以完全保留现在的样子。保留会把它当前的颜色永久固定下来。</string>
+    <string name="launch_class_colours_adopt">使用新颜色</string>
+    <string name="launch_class_colours_keep">保留我的颜色</string>
+    <string name="launch_discord_title">Piru 有社区了</string>
+    <string name="launch_discord_body">一个 Discord，用于提问、纠正参考数据中的错误，以及提功能建议。错误数字在这里修得最快。</string>
+    <string name="launch_discord_join">打开 Discord</string>
+    <string name="shell_close">关闭</string>
 </resources>

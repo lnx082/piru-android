@@ -844,4 +844,13 @@
     <string name="shell_tabs_last_note">The last visible tab stays.</string>
     <string name="shell_tabs_labels">Show tab labels</string>
     <string name="shell_tabs_labels_detail">Turn off to show icons only, which fits more tabs on a narrow screen.</string>
+    <string name="launch_class_colours_title">Your substance colours</string>
+    <string name="launch_class_colours_body">Piru now derives a substance\'s colour from the class it belongs to, so two substances of the same family look related and a new substance has a colour before you pick one.</string>
+    <string name="launch_class_colours_tradeoff">Your own colours can either move to the new palette or keep exactly the look they have now. Keeping them freezes their current hue permanently.</string>
+    <string name="launch_class_colours_adopt">Use the new colours</string>
+    <string name="launch_class_colours_keep">Keep my colours</string>
+    <string name="launch_discord_title">Piru has a community</string>
+    <string name="launch_discord_body">A Discord for questions, corrections to the reference data, and feature requests. It is also where a wrong number gets fixed fastest.</string>
+    <string name="launch_discord_join">Open Discord</string>
+    <string name="shell_close">Close</string>
 </resources>

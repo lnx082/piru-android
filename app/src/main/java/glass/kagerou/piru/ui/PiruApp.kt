@@ -110,6 +110,9 @@ import glass.kagerou.piru.ui.settings.AboutScreen
 import glass.kagerou.piru.ui.settings.TabSettingsScreen
 import glass.kagerou.piru.data.AppSettingsStore
 import glass.kagerou.piru.ui.settings.TabLayout
+import glass.kagerou.piru.ui.launch.LaunchNotices
+import glass.kagerou.piru.ui.launch.LaunchSheetHost
+import glass.kagerou.piru.ui.launch.launchPrefs
 
 /**
  * The app shell: five tabs, a push stack per tab, and a modal above them.
@@ -142,6 +145,20 @@ fun PiruApp(
     destinations: @Composable (PushRoute) -> Unit = { DefaultDestination(it, navigator) },
 ) {
     PiruTheme {
+        // Counted once per process rather than per composition: a recomposition is not a launch, and the Discord
+        // invite's bar is "three launches" rather than "three redraws". `LaunchedEffect(Unit)` fires once for the
+        // lifetime of this composition, which is the app shell's.
+        //
+        // The context is read **before** the effect: `LocalContext.current` is a composable read, and inside a
+        // `LaunchedEffect` body it is outside the composition.
+        val launchContext = LocalContext.current
+        LaunchedEffect(Unit) {
+            val prefs = launchPrefs(launchContext)
+            prefs.edit()
+                .putInt(LaunchNotices.KEY_LAUNCH_COUNT, prefs.getInt(LaunchNotices.KEY_LAUNCH_COUNT, 0) + 1)
+                .apply()
+        }
+
         // A notification's link, applied once per arrival.
         //
         // Keyed on the link rather than run on every recomposition: the host
@@ -187,6 +204,11 @@ fun PiruApp(
         BackHandler(enabled = navigator.path().isNotEmpty() || navigator.sheetStack.isNotEmpty()) {
             if (navigator.sheetStack.isNotEmpty()) navigator.dismiss() else navigator.pop()
         }
+
+        // The self-raised sheets live inside the composition that draws the bar, so their dialogs have something
+        // to attach to. `LaunchSheetHost` decides nothing itself: priority, eligibility and the two gates are
+        // `LaunchNotices`' pure functions.
+        LaunchSheetHost()
 
         Scaffold(
             bottomBar = {
