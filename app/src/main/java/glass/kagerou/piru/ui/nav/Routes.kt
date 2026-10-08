@@ -149,6 +149,7 @@ sealed interface PushRoute {
         HELP("help"),
         EDUCATION("education"),
     SOLUTION_MATH("solutionMath"),
+    PHARMA_TABLE("pharmaTable"),
         ;
     }
 

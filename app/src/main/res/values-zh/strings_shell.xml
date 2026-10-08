@@ -668,4 +668,24 @@
     <string name="tools_solution_safety_scale">用毫克级天平和量筒来保证准确。</string>
     <string name="tools_solution_safety_store">溶液要存放在标记清楚、儿童打不开的容器里。</string>
     <string name="common_copy">复制</string>
+    <string name="tools_pharma_table_title">药理总表</string>
+    <string name="tools_pharma_table_detail">半衰期、吸收与清除，并排比较。</string>
+    <string name="tools_pharma_table_count">%1$d 个物质</string>
+    <string name="tools_pharma_table_loading">载入中…</string>
+    <string name="tools_pharma_table_search">按名称搜索</string>
+    <string name="tools_pharma_table_sort">排序方式</string>
+    <string name="tools_pharma_table_show_pk">显示药代动力学列</string>
+    <string name="tools_pharma_table_hide_pk">隐藏药代动力学列</string>
+    <string name="tools_pharma_table_empty">没有符合这些条件的物质。</string>
+    <string name="tools_pharma_scope_half_life">有半衰期</string>
+    <string name="tools_pharma_scope_all">全部物质</string>
+    <string name="tools_pharma_col_substance">物质</string>
+    <string name="tools_pharma_col_class">类别</string>
+    <string name="tools_pharma_col_half_life">半衰期</string>
+    <string name="tools_pharma_col_tmax">达峰时间</string>
+    <string name="tools_pharma_col_bioavailability">生物利用度</string>
+    <string name="tools_pharma_col_cmax">峰浓度</string>
+    <string name="tools_pharma_col_protein_binding">蛋白结合</string>
+    <string name="tools_pharma_col_vd">分布容积</string>
+    <string name="tools_pharma_col_clearance">清除率</string>
 </resources>

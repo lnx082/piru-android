@@ -272,6 +272,11 @@ private val TOOL_GROUPS = listOf(
                 R.string.tools_identify_detail,
             ),
             ToolEntry(
+                PushRoute.ToolKind.PHARMA_TABLE,
+                R.string.tools_pharma_table_title,
+                R.string.tools_pharma_table_detail,
+            ),
+            ToolEntry(
                 PushRoute.ToolKind.SOLUTION_MATH,
                 R.string.tools_solution_title,
                 R.string.tools_solution_detail,

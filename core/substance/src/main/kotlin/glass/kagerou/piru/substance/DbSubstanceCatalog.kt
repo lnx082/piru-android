@@ -386,6 +386,42 @@ class DbSubstanceCatalog private constructor(
      * caller is the screen that presents it.
      */
     /**
+     * One substance's line in the pharmacology table.
+     *
+     * A seed-merge of three sources — identity and the half-life fallback from the browse metadata, the PK
+     * detail from the preferred `pk_routes` row, and the class title from the write-ups — so the screen
+     * draws one flat row rather than joining three reads per keystroke.
+     */
+    data class PharmaTableRow(
+        val name: String,
+        val displayName: String,
+        val category: SubstanceCategory,
+        /** The curated class this substance belongs to, or null. Named as the class deliberately: it is the family, not the molecule. */
+        val classTitle: String?,
+        val halfLifeMin: Double?,
+        val tmaxMin: Double?,
+        val bioavailabilityPct: Double?,
+        val cmaxNgPerMl: Double?,
+        val proteinBindingPct: Double?,
+        val vdLPerKg: Double?,
+        val clearanceMlPerMinPerKg: Double?,
+        /** The route the PK numbers came from, so a reader knows what they describe. */
+        val route: RouteOfAdministration?,
+        val sourceSlug: String,
+    ) {
+        /**
+         * Whether the row is worth showing.
+         *
+         * True as soon as one column has a number. The table's whole value is the columns, so a row with
+         * none of them would be a name in a grid of dashes.
+         */
+        val hasAnyData: Boolean
+            get() = halfLifeMin != null || tmaxMin != null || bioavailabilityPct != null ||
+                cmaxNgPerMl != null || proteinBindingPct != null || vdLPerKg != null ||
+                clearanceMlPerMinPerKg != null
+    }
+
+    /**
      * The identity facets a name or alias is annotated with.
      *
      * Upstream's `SubstanceLibrary.isomer(for:)` / `releaseForm(for:)`, which turns "Concerta" into
@@ -438,6 +474,44 @@ class DbSubstanceCatalog private constructor(
         kiNmAtMost: Double? = null,
         substanceContains: String? = null,
     ): List<BindingHit> = reader.bindingRowsFiltered(targetBase, kiNmAtMost, substanceContains)
+
+    /**
+     * One row per substance for the pharmacology table.
+     *
+     * Joined here rather than in the screen because the join is the work: the preferred PK row comes from a
+     * single windowed query, the identity and half-life from the browse metadata the catalogue already
+     * holds, and the class title from the class write-ups. The screen gets a list it can sort and filter.
+     */
+    fun pharmaTableRows(): List<PharmaTableRow> {
+        val pkByID = reader.preferredPKRouteRows()
+        val classTitles = reader.classContexts().associate { it.slug to it.title }
+        val out = mutableListOf<PharmaTableRow>()
+        for ((id, substance) in byID) {
+            val pk = pkByID[id]
+            // The top-level half-life is the fallback when the PK row has none, which is upstream's rule
+            // and the reason a substance with a curated half-life but no `pk_routes` row still appears.
+            val halfLife = pk?.halfLifeMin ?: substance.halfLifeMinutes
+            val row = PharmaTableRow(
+                name = substance.name,
+                displayName = substance.displayTitle,
+                category = substance.category,
+                classTitle = substance.classContextSlug?.let { classTitles[it] },
+                halfLifeMin = halfLife,
+                tmaxMin = pk?.tmaxMin,
+                bioavailabilityPct = pk?.bioavailabilityPct,
+                cmaxNgPerMl = pk?.cmaxNgPerMl,
+                proteinBindingPct = pk?.proteinBindingPct,
+                vdLPerKg = pk?.vdLPerKg,
+                clearanceMlPerMinPerKg = pk?.clearanceMlPerMinPerKg,
+                route = pk?.route?.let { RouteOfAdministration.from(it) },
+                sourceSlug = pk?.sourceSlug.orEmpty(),
+            )
+            // The inclusion gate. A row of dashes is not a fact about a substance, so a compound with no
+            // half-life and no PK at all is absent rather than present and empty.
+            if (row.hasAnyData) out.add(row)
+        }
+        return out
+    }
 
     /**
      * The sources this catalogue was built from, in the order it ranks them.

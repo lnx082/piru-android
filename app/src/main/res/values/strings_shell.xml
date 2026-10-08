@@ -702,4 +702,24 @@
     <string name="tools_solution_safety_scale">Use a milligram scale and a graduated cylinder for accuracy.</string>
     <string name="tools_solution_safety_store">Store solutions in clearly marked, child-proof containers.</string>
     <string name="common_copy">Copy</string>
+    <string name="tools_pharma_table_title">Pharmacology table</string>
+    <string name="tools_pharma_table_detail">Half-life, absorption and clearance, side by side.</string>
+    <string name="tools_pharma_table_count">%1$d substances</string>
+    <string name="tools_pharma_table_loading">Loading…</string>
+    <string name="tools_pharma_table_search">Search by name</string>
+    <string name="tools_pharma_table_sort">Sort by</string>
+    <string name="tools_pharma_table_show_pk">Show PK detail columns</string>
+    <string name="tools_pharma_table_hide_pk">Hide PK detail columns</string>
+    <string name="tools_pharma_table_empty">No substances match these filters.</string>
+    <string name="tools_pharma_scope_half_life">Has half-life</string>
+    <string name="tools_pharma_scope_all">All substances</string>
+    <string name="tools_pharma_col_substance">Substance</string>
+    <string name="tools_pharma_col_class">Class</string>
+    <string name="tools_pharma_col_half_life">Half-life</string>
+    <string name="tools_pharma_col_tmax">Tmax</string>
+    <string name="tools_pharma_col_bioavailability">Bioavail.</string>
+    <string name="tools_pharma_col_cmax">Cmax</string>
+    <string name="tools_pharma_col_protein_binding">Protein bind.</string>
+    <string name="tools_pharma_col_vd">Vd</string>
+    <string name="tools_pharma_col_clearance">Clearance</string>
 </resources>

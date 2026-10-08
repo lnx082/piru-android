@@ -104,6 +104,7 @@ import glass.kagerou.piru.ui.settings.SourcePriorityOrderScreen
 import glass.kagerou.piru.ui.journal.TimelineScreen
 import glass.kagerou.piru.ui.tools.AdvancedSearchScreen
 import glass.kagerou.piru.ui.tools.SolutionMathScreen
+import glass.kagerou.piru.ui.tools.PharmaTableScreen
 
 /**
  * The app shell: five tabs, a push stack per tab, and a modal above them.
@@ -348,6 +349,7 @@ private fun DefaultDestination(route: PushRoute, navigator: AppNavigator) {
             PushRoute.ToolKind.HELP -> HelpScreen(navigator)
             PushRoute.ToolKind.EDUCATION -> EducationCardsScreen(navigator)
             PushRoute.ToolKind.SOLUTION_MATH -> SolutionMathScreen()
+            PushRoute.ToolKind.PHARMA_TABLE -> PharmaTableScreen()
         }
 
         is PushRoute.Insight -> when (route.kind) {

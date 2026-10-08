@@ -929,6 +929,83 @@ class SubstanceReader(
     // MARK: - Pharmacology reads
 
     /**
+     * The preferred `pk_routes` row for every substance that has one, in one pass.
+     *
+     * ## The ranking, and why in this order
+     * Oral first — upstream's rule, and the one that makes the result deterministic rather than a function
+     * of the table's physical layout. Then by how many PK fields the row carries, so a row with a
+     * half-life, a Tmax and a bioavailability beats one with a half-life alone. Then by confidence, so
+     * among equally complete rows the better-graded one wins. `id` last, to break a total tie
+     * reproducibly.
+     *
+     * A substance with no `pk_routes` row is absent from the result rather than present with nulls: the
+     * table's inclusion gate is "has any PK signal at all", and a row of dashes is not a fact about a
+     * substance.
+     */
+    fun preferredPKRouteRows(): Map<Long, PKRouteHit> {
+        val rows = db.query(
+            """
+            SELECT * FROM (
+                SELECT p.id AS id, p.substance_id AS substance_id, p.route AS route,
+                       p.bioavailability_pct AS bioavailability_pct,
+                       p.cmax_ng_per_ml AS cmax_ng_per_ml, p.tmax_min AS tmax_min,
+                       p.half_life_min AS half_life_min, p.vd_l_per_kg AS vd_l_per_kg,
+                       p.clearance_ml_per_min_per_kg AS clearance_ml_per_min_per_kg,
+                       p.protein_binding_pct AS protein_binding_pct,
+                       p.dose_in_study_mg AS dose_in_study_mg, p.subject_n AS subject_n,
+                       p.demographics AS demographics, p.species AS species,
+                       p.notes AS notes, p.confidence AS confidence,
+                       src.slug AS source_slug, c.doi AS doi, c.pmid AS pmid,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY p.substance_id
+                           ORDER BY
+                               CASE WHEN LOWER(p.route) = 'oral' THEN 0 ELSE 1 END,
+                               (CASE WHEN p.half_life_min IS NOT NULL THEN 1 ELSE 0 END
+                              + CASE WHEN p.tmax_min IS NOT NULL THEN 1 ELSE 0 END
+                              + CASE WHEN p.bioavailability_pct IS NOT NULL THEN 1 ELSE 0 END
+                              + CASE WHEN p.cmax_ng_per_ml IS NOT NULL THEN 1 ELSE 0 END
+                              + CASE WHEN p.protein_binding_pct IS NOT NULL THEN 1 ELSE 0 END
+                              + CASE WHEN p.vd_l_per_kg IS NOT NULL THEN 1 ELSE 0 END
+                              + CASE WHEN p.clearance_ml_per_min_per_kg IS NOT NULL THEN 1 ELSE 0 END
+                               ) DESC,
+                               p.confidence DESC,
+                               p.id ASC
+                       ) AS rank
+                  FROM pk_routes p
+                  JOIN sources src ON src.id = p.source_id
+                  LEFT JOIN citations c ON c.id = p.citation_id
+            )
+            WHERE rank = 1
+            """,
+        )
+        val out = LinkedHashMap<Long, PKRouteHit>()
+        for (row in rows) {
+            val substanceID = row.long("substance_id") ?: continue
+            out[substanceID] = PKRouteHit(
+                id = row.long("id") ?: 0L,
+                route = row.string("route").orEmpty(),
+                bioavailabilityPct = row.double("bioavailability_pct"),
+                cmaxNgPerMl = row.double("cmax_ng_per_ml"),
+                tmaxMin = row.double("tmax_min"),
+                halfLifeMin = row.double("half_life_min"),
+                vdLPerKg = row.double("vd_l_per_kg"),
+                clearanceMlPerMinPerKg = row.double("clearance_ml_per_min_per_kg"),
+                proteinBindingPct = row.double("protein_binding_pct"),
+                doseInStudyMg = row.double("dose_in_study_mg"),
+                subjectN = row.long("subject_n")?.toInt(),
+                demographics = row.string("demographics"),
+                species = row.string("species")?.lowercase(),
+                sourceSlug = row.string("source_slug").orEmpty(),
+                doi = row.string("doi"),
+                pmid = row.long("pmid")?.toInt(),
+                notes = row.string("notes"),
+                confidence = ConfidenceTier.fromGrade(row.string("confidence")),
+            )
+        }
+        return out
+    }
+
+    /**
      * The raw `pk_routes` read for one substance, route-ranked so the oral row
      * comes first.
      *
