@@ -322,6 +322,8 @@
     <string name="shell_health_weight_value">%1$.1f kg</string>
     <string name="shell_health_no_reading_title">If a reading never appears</string>
     <string name="shell_health_no_reading_body">Piru sees only what other apps have written into Health Connect. If your watch syncs to an app that does not write there, nothing Piru does will make those numbers show up — the steps above are what turns them on.</string>
+    <string name="shell_health_vitals_title">Show readings on sessions</string>
+    <string name="shell_health_vitals_detail">Draw the phone’s heart rate and blood pressure over a session timeline.</string>
     <string name="shell_health_disclaimer">Readings are shown as the other app recorded them. Piru does not verify them. Not medical advice.</string>
 
     <!--

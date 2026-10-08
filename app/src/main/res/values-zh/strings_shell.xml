@@ -295,6 +295,8 @@
     <string name="shell_health_weight_value">%1$.1f kg</string>
     <string name="shell_health_no_reading_title">如果读数一直不出现</string>
     <string name="shell_health_no_reading_body">Piru 只能看到其他应用写入 Health Connect 的内容。如果你的手表同步到一个不往那里写入的应用，Piru 做什么都不会让那些数字出现——上面那一步才是把它们打开的地方。</string>
+    <string name="shell_health_vitals_title">在会话上显示读数</string>
+    <string name="shell_health_vitals_detail">把手机记录的心率和血压画在会话时间轴上。</string>
     <string name="shell_health_disclaimer">读数按其他应用记录的原样显示。Piru 不核实它们。Not medical advice.</string>
 
     <!--

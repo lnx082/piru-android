@@ -40,6 +40,9 @@ import glass.kagerou.piru.ui.theme.PiruTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.material3.Switch
+import glass.kagerou.piru.ui.onboarding.OnboardingPrefs
+import androidx.compose.ui.Alignment
 
 /**
  * What Piru can see of the phone's health data, and the switch for it.
@@ -313,6 +316,48 @@ fun HealthConnectScreen(modifier: Modifier = Modifier, onChanged: () -> Unit = {
                                     Text(stringResource(R.string.shell_health_use_reading, reading))
                                 }
                             }
+                        }
+                    }
+                }
+
+                // The vitals overlay's switch.
+                //
+                // `OnboardingPrefs.showSessionVitals` is read by the session screen to decide
+                // whether to fetch and draw the phone's readings, and until now the only thing
+                // that ever wrote it was the onboarding health step — which sets it to `true`
+                // when the grant lands. The onboarding screen's own note says the overlay is
+                // "off-able in Settings", and nothing under `ui/settings/` wrote it, so a user
+                // who granted once could never turn it off again.
+                item {
+                    val context = LocalContext.current
+                    var vitalsOn by remember { mutableStateOf(OnboardingPrefs.showSessionVitals(context)) }
+                    PiruCard(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    stringResource(R.string.shell_health_vitals_title),
+                                    style = MaterialTheme.typography.titleSmall,
+                                )
+                                Text(
+                                    stringResource(R.string.shell_health_vitals_detail),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = PiruTheme.colors.secondaryLabel,
+                                )
+                            }
+                            Switch(
+                                checked = vitalsOn,
+                                onCheckedChange = { value ->
+                                    vitalsOn = value
+                                    OnboardingPrefs.writeShowSessionVitals(context, value)
+                                    // The journal behind this screen draws the overlay, so it
+                                    // has to be told the answer changed.
+                                    onChanged()
+                                },
+                            )
                         }
                     }
                 }

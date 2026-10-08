@@ -64,6 +64,16 @@ fun ToolsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
             }
         }
 
+        // The inventory preview, above the groups.
+        //
+        // `InventorySummaryCard` was written with the rest of the inventory work, is imported
+        // here — and was never called by anything. It carries the whole read side: the model's
+        // ordering pass, the per-item tint map, the bars. All of it computed for no reader,
+        // which is what "dead code" looks like when it is expensive. iOS renders it at the top
+        // of its Tools hub (`ToolsView.swift:115`) for the same reason: how much is left is the
+        // one thing on this screen that changes on its own.
+        item { InventorySummaryCard(onOpen = { navigator.push(PushRoute.Tool(PushRoute.ToolKind.INVENTORY)) }) }
+
         for (group in TOOL_GROUPS) {
             item {
                 Text(

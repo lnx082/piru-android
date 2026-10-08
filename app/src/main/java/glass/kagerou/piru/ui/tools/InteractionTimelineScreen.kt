@@ -1064,7 +1064,10 @@ private fun DepressionSection(
     val bandColour = InteractionSeverityPalette.text(d.band ?: InteractionSeverity.CAUTION)
     val fill = InteractionSeverityPalette.accent(d.band ?: InteractionSeverity.CAUTION)
     val thresholdMark = InteractionSeverityPalette.accent(InteractionSeverity.DANGEROUS).copy(alpha = 0.5f)
-    val peakHours = max(0.0, minutesBetween(referenceTime, d.peakDate) / 60.0)
+    // No `peakHours` here. It computed `minutesBetween(referenceTime, d.peakDate) / 60.0` and was
+    // never read: the chart places its peak mark from `d.peakMinute`, the grid coordinate the
+    // replay actually produced, and takes its axis from `lastMinute`. Arithmetic that looks
+    // authoritative and is discarded is the kind of line that gets copied into the next screen.
     val yMax = max(CombinedDepression.DANGEROUS_THRESHOLD * 1.1, d.peakLoad * 1.1)
     val measurer = rememberTextMeasurer()
     val axis = PiruTheme.colors.secondaryLabel

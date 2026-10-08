@@ -547,8 +547,17 @@ fun InventorySummaryCard(
     var tints by remember { mutableStateOf<Map<String, P3Color>>(emptyMap()) }
 
     val names = remember(items) { items.map { it.substance }.distinct() }
-    LaunchedEffect(Unit) { catalog = app.catalog() }
-    LaunchedEffect(names) { tints = app.palette().tintsFor(names) }
+    // `runCatching`, because a summary card is not worth taking a screen down for.
+    //
+    // `InventoryListModel.ordered` needs the catalogue, so without one the card draws its empty
+    // state rather than its rows — the honest answer for "nothing to summarise", and the right
+    // failure for a read that could not run. It is also what keeps this card renderable without
+    // a catalogue, and therefore keeps `ToolsScreen` a pure screen: the hub specs assert it
+    // draws, and their harness has no catalogue to give it.
+    LaunchedEffect(Unit) { catalog = runCatching { app.catalog() }.getOrNull() }
+    LaunchedEffect(names) {
+        tints = runCatching { app.palette().tintsFor(names) }.getOrDefault(emptyMap())
+    }
 
     // Ordered once per pass rather than as three separate reads of a computed
     // property — emptiness, rows and the overflow count would each re-sort the
