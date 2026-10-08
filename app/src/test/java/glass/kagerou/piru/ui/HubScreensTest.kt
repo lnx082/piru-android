@@ -64,9 +64,14 @@ class HubScreensTest {
 
         compose.onNodeWithText(string(R.string.toolsb_insights_hub_title)).assertIsDisplayed()
         compose.onNodeWithText(string(R.string.toolsb_insights_hub_subtitle)).assertIsDisplayed()
-        // A group heading, and one card inside it.
+        // A group heading, and a card inside it.
+        //
+        // The card used to be the body-load one, which the two-level hub moves into the compact grid below the
+        // fold — and a `LazyColumn` does not compose what it has not reached, so asserting that card's text here
+        // tests the harness rather than the product. The large card under this heading is the one a reader meets
+        // first and is the change this hub is for.
         compose.onNodeWithText(string(R.string.toolsb_insights_hub_group_right_now)).assertIsDisplayed()
-        compose.onNodeWithText(string(R.string.toolsb_insights_hub_body_load_title)).assertIsDisplayed()
+        compose.onNodeWithText(string(R.string.toolsb_insights_hub_usage_title)).assertIsDisplayed()
     }
 
     /**
@@ -80,7 +85,9 @@ class HubScreensTest {
         val navigator = AppNavigator()
         compose.setContent { PiruTheme { InsightsScreen(navigator) } }
 
-        compose.onNodeWithText(string(R.string.toolsb_insights_hub_body_load_title)).performClick()
+        // The first large card, which is the one within the viewport. The compact grid's cards are further down
+        // and not composed in this harness, but they route through the same call.
+        compose.onNodeWithText(string(R.string.toolsb_insights_hub_usage_title)).performClick()
 
         assertTrue(
             "tapping the body-load card should push a route; the stack was " +

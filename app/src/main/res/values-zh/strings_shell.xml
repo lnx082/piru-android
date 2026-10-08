@@ -750,4 +750,9 @@
     <string name="toolsb_halflife_remaining">体内剩余</string>
     <string name="toolsb_halflife_remaining_value">%1$s mg · %2$s</string>
     <string name="toolsb_halflife_milestone">%1$d 个半衰期 · 剩余 %2$s</string>
+    <string name="toolsb_insights_hub_entries">条记录</string>
+    <string name="toolsb_insights_hub_per_day">每天</string>
+    <string name="toolsb_insights_hub_scheduled">已按计划服用</string>
+    <string name="toolsb_insights_hub_no_entries">还没有任何记录</string>
+    <string name="toolsb_insights_hub_no_meds">添加用药后才能看到依从性</string>
 </resources>

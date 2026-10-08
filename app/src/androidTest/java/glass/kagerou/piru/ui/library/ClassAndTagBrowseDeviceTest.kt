@@ -46,7 +46,10 @@ class ClassAndTagBrowseDeviceTest {
     fun aClassWriteUpDrawsItsMembers() {
         compose.setContent { PiruTheme { ClassWriteUpScreen("arylcyclohexylamines", AppNavigator()) } }
 
-        compose.waitUntil(timeoutMillis = 20_000) {
+        // Settle first, then poll: both screens open the catalogue on a background dispatcher before they
+        // draw, and a bare `waitUntil` on the first node races that read.
+        compose.waitForIdle()
+        compose.waitUntil(timeoutMillis = 40_000) {
             compose.onAllNodesWithText("members", substring = true).fetchSemanticsNodes().isNotEmpty()
         }
         compose.onNodeWithText("members", substring = true).assertIsDisplayed()
@@ -62,7 +65,10 @@ class ClassAndTagBrowseDeviceTest {
     fun aTagDrawsANonZeroCount() {
         compose.setContent { PiruTheme { TagBrowseScreen("phenethylamine", AppNavigator()) } }
 
-        compose.waitUntil(timeoutMillis = 20_000) {
+        // Settle first, then poll: both screens open the catalogue on a background dispatcher before they
+        // draw, and a bare `waitUntil` on the first node races that read.
+        compose.waitForIdle()
+        compose.waitUntil(timeoutMillis = 40_000) {
             compose.onAllNodesWithText("substances", substring = true).fetchSemanticsNodes().isNotEmpty()
         }
         // The count line is "N substances"; zero would mean the gate swallowed the rows.
@@ -81,7 +87,10 @@ class ClassAndTagBrowseDeviceTest {
             PiruTheme { TagBrowseScreen("a-tag-nothing-carries", AppNavigator()) }
         }
 
-        compose.waitUntil(timeoutMillis = 20_000) {
+        // Settle first, then poll: both screens open the catalogue on a background dispatcher before they
+        // draw, and a bare `waitUntil` on the first node races that read.
+        compose.waitForIdle()
+        compose.waitUntil(timeoutMillis = 40_000) {
             compose.onAllNodesWithText("0 substances").fetchSemanticsNodes().isNotEmpty()
         }
         compose.onNodeWithText("0 substances").assertIsDisplayed()

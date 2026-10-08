@@ -784,4 +784,9 @@
     <string name="toolsb_halflife_remaining">Still in the body</string>
     <string name="toolsb_halflife_remaining_value">%1$s mg · %2$s</string>
     <string name="toolsb_halflife_milestone">%1$d half-lives · %2$s left</string>
+    <string name="toolsb_insights_hub_entries">entries</string>
+    <string name="toolsb_insights_hub_per_day">per day</string>
+    <string name="toolsb_insights_hub_scheduled">scheduled doses taken</string>
+    <string name="toolsb_insights_hub_no_entries">No entries recorded yet</string>
+    <string name="toolsb_insights_hub_no_meds">Add your meds to see adherence</string>
 </resources>
