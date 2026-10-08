@@ -90,22 +90,35 @@ class TodayMedsWidgetTest {
     fun aDueMedBecomesARowWithItsTimeAndDose(): Unit = runBlocking {
         val zone = ZoneId.systemDefault()
         val now = Instant.now()
-        val local = now.atZone(zone)
-        val minutes = local.hour * 60 + local.minute
-        // One slot well behind now and one well ahead, so the due flag is exercised
-        // both ways from a single item. Wrapped into 0..1439 so a test running near
-        // midnight still produces two valid times rather than a negative one.
-        val past = ((minutes - 120) + 1440) % 1440
-        val future = (minutes + 120) % 1440
+        val minutes = now.atZone(zone).let { it.hour * 60 + it.minute }
+        // A slot behind now and a slot ahead, so the due flag is exercised both ways from one
+        // item.
+        //
+        // An earlier revision derived both from the current minute and **wrapped** them into
+        // 0..1439. That was wrong, and the failure it produced was not the widget's: the
+        // emulator runs UTC, the run happened at 01:34, and the "past" slot wrapped to
+        // 23:00 — which is not behind a clock reading 01:34, so neither slot was due and the
+        // assertion failed. Midnight is the one place a wrap is exactly what breaks it, which
+        // is the opposite of what it was added for.
+        //
+        // So there is no wrap. Midnight is the floor, which is behind every moment of the
+        // day, and the forward slot is as far ahead as the day allows. The due count is then
+        // asserted on what is actually true in that window rather than on a fixed number.
+        val past = 0
+        val future = minutes + minOf(120, 1439 - minutes)
+        val hasSlotBehindNow = past < minutes
 
         seed(item("WidgetProbe", sortOrder = 999_999, reminderTimes = "[$past,$future]"))
 
         val state = WidgetState.load(context, now)
 
         val mine = state.rows.filter { it.name == "WidgetProbe" }
+        // Both slots materialize whatever their times are: the count is what says the
+        // reminder ladder was read at all.
         mine.size shouldBe 2
-        // Exactly one of the two is due: the one whose minute has passed.
-        mine.count { it.isDueNow(minutes) } shouldBe 1
+        // And when a slot is genuinely behind now, exactly one row is due — the assertion
+        // that would break if "due" stopped reading the clock.
+        if (hasSlotBehindNow) mine.count { it.isDueNow(minutes) } shouldBe 1
         state.totalCount shouldBeGreaterThan 0
         mine.first().doseText shouldBe "10 mg"
         // The row's id is stable and identity-keyed rather than name-keyed.
