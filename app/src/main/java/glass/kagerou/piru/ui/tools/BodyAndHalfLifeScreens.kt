@@ -53,6 +53,16 @@ import java.util.Locale
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.Alignment
+import glass.kagerou.piru.engine.SubstanceCatalog
+import glass.kagerou.piru.model.RouteOfAdministration
+import glass.kagerou.piru.model.Substance
+import glass.kagerou.piru.ui.labels.CoreLabels
 
 /**
  * What is still in the body, and how that moves — backwards and forwards.
@@ -361,29 +371,91 @@ private fun rowsAt(trail: List<BodyLoadTrail.Series>, at: Instant): List<ScrubRo
  * screen names the substances it *can* do this for, so an empty list is
  * information rather than a dead end.
  */
+/**
+ * A single dose's pharmacokinetics: how much is left, when it peaks, and the half-life ladder.
+ *
+ * Ported from `HalfLifeCalculatorView`. The screen answers the question people actually arrive with — "if I take
+ * this at eight, how much is still in me at midnight" — and the port answered a narrower one: it drew a decay
+ * curve and nothing else.
+ *
+ * ## What the calculator needs and the old screen did not have
+ * A dose, an elapsed time, the route, and an override for a substance whose half-life the catalogue does not
+ * carry. Every one of those is an input to arithmetic that already existed in `PKModel` and `PKResolver`; what
+ * was missing was a way to reach it.
+ *
+ * ## The route is not cosmetic
+ * `ka` — the absorption constant — comes from the route's own duration profile, so an oral dose and an
+ * insufflated one of the same substance peak at different times. Drawing one route's curve while the picker says
+ * another is a quiet way to be wrong.
+ *
+ * ## The override is a *modelling* input, not a stored fact
+ * It changes what this screen draws and nothing else. The alternative — writing it to the substance — would let
+ * a user's guess leak into every other reading in the app, which is why upstream keeps it in the view model too.
+ */
 @Composable
 fun HalfLifeScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val app = context.applicationContext as PiruApplication
-    var choices by remember { mutableStateOf<List<Pair<String, PKResolver.Params>>>(emptyList()) }
+
+    /** The substances a half-life can be resolved for, by name. Whole library, not just the log. */
+    var choices by remember { mutableStateOf<List<String>>(emptyList()) }
     var selected by remember { mutableStateOf<String?>(null) }
+    var substance by remember { mutableStateOf<Substance?>(null) }
+    var route by remember { mutableStateOf(RouteOfAdministration.ORAL) }
     var loaded by remember { mutableStateOf(false) }
+
+    // The calculator's own inputs.
+    var doseText by remember { mutableStateOf("") }
+    var elapsedHoursText by remember { mutableStateOf("") }
+    var useCustomHalfLife by remember { mutableStateOf(false) }
+    var customHoursText by remember { mutableStateOf("") }
 
     LaunchedEffect(navigator.dataVersion) {
         val catalog = app.catalog()
-        val names = app.database.doseEntryDao().all().map { it.substance }.distinct()
-        // Only the substances a half-life can be resolved for. A row that resolves
-        // to nothing is left out rather than shown with an empty chart.
-        choices = names.mapNotNull { name ->
-            val substance = catalog.lookup(name) ?: return@mapNotNull null
-            val params = PKResolver.params(substance, route = substance.defaultRoute) ?: return@mapNotNull null
-            name to params
-        }.sortedBy { it.first.lowercase() }
-        selected = choices.firstOrNull()?.first
+        choices = allHalfLifeChoices(
+            catalog = catalog,
+            loggedNames = app.database.doseEntryDao().all().map { it.substance },
+        )
+        selected = choices.firstOrNull()
         loaded = true
     }
 
-    val current = choices.firstOrNull { it.first == selected }
+    // Resolved whenever the pick changes, so the curve and the ladder agree about which substance they describe.
+    LaunchedEffect(selected, useCustomHalfLife) {
+        val name = selected
+        substance = name?.let {
+            runCatching { withContext(Dispatchers.IO) { app.catalog() }.resolveFull(it) }.getOrNull()
+        }
+        route = substance?.defaultRoute ?: RouteOfAdministration.ORAL
+    }
+
+    val resolved = substance
+    val customHours = customHoursText.trim().toDoubleOrNull()
+    val halfLife = HalfLifeCalculation.effectiveHalfLife(
+        useCustom = useCustomHalfLife,
+        customHours = customHours,
+        substance = resolved,
+    )
+    val rateConstants = HalfLifeCalculation.rateConstants(
+        halfLifeMinutes = halfLife,
+        duration = resolved?.resolveDuration(route),
+    )
+    val params = remember(resolved, route, halfLife) {
+        resolved?.let { PKResolver.params(it, route) }
+    }
+
+    val dose = doseText.trim().toDoubleOrNull()
+    val elapsedMinutes = elapsedHoursText.trim().toDoubleOrNull()?.times(60.0)
+    val remaining = if (dose != null && elapsedMinutes != null && halfLife != null) {
+        HalfLifeCalculation.remainingAmount(
+            dose = dose,
+            elapsedMinutes = elapsedMinutes,
+            halfLifeMinutes = halfLife,
+            rateConstants = rateConstants,
+        )
+    } else {
+        null
+    }
 
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -419,7 +491,7 @@ fun HalfLifeScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     for (batch in choices.chunked(3)) {
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            for ((name, _) in batch) {
+                            for (name in batch) {
                                 FilterChip(
                                     selected = name == selected,
                                     onClick = { selected = name },
@@ -432,30 +504,140 @@ fun HalfLifeScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
             }
         }
 
-        if (current != null) {
+        if (resolved != null && halfLife != null) {
             item {
-                val (name, params) = current
                 PiruCard(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text(name, style = MaterialTheme.typography.titleSmall)
+                        Text(resolved.displayTitle, style = MaterialTheme.typography.titleSmall)
+                        // The route picker, over the routes the substance actually has a duration for. A route
+                        // with no profile would draw the same curve as the default and imply otherwise.
+                        val routes = resolved.routes.map { it.route }.distinct()
+                        if (routes.size > 1) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                for (candidate in routes) {
+                                    FilterChip(
+                                        selected = candidate == route,
+                                        onClick = { route = candidate },
+                                        label = { Text(CoreLabels.route(candidate)) },
+                                    )
+                                }
+                            }
+                        }
                         Text(
                             stringResource(
                                 R.string.toolsb_halflife_summary,
-                                hours(params.halfLifeMinutes),
-                                params.ke,
+                                hours(halfLife),
+                                rateConstants?.ke ?: 0.0,
                             ),
                             style = MaterialTheme.typography.bodySmall,
                             color = PiruTheme.colors.secondaryLabel,
                         )
-                        DecayCurve(params)
-                        // The four-and-a-bit half-lives figure, because that is the one
-                        // people mean by "how long until it is out of me" — and saying
-                        // "five half-lives ≈ 97 %" is more honest than a hard zero.
+                        params?.let { DecayCurve(it) }
+                    }
+                }
+            }
+
+            item {
+                PiruCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            stringResource(R.string.toolsb_halflife_calculator),
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        CalculatorField(
+                            value = doseText,
+                            onValueChange = { doseText = it },
+                            label = stringResource(R.string.toolsb_halflife_dose),
+                            unit = stringResource(R.string.toolsb_halflife_unit_mg),
+                        )
+                        CalculatorField(
+                            value = elapsedHoursText,
+                            onValueChange = { elapsedHoursText = it },
+                            label = stringResource(R.string.toolsb_halflife_elapsed),
+                            unit = stringResource(R.string.toolsb_halflife_unit_hours),
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    stringResource(R.string.toolsb_halflife_custom),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                Text(
+                                    stringResource(R.string.toolsb_halflife_custom_note),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = PiruTheme.colors.secondaryLabel,
+                                )
+                            }
+                            Switch(
+                                checked = useCustomHalfLife,
+                                onCheckedChange = { useCustomHalfLife = it },
+                            )
+                        }
+                        if (useCustomHalfLife) {
+                            CalculatorField(
+                                value = customHoursText,
+                                onValueChange = { customHoursText = it },
+                                label = stringResource(R.string.toolsb_halflife_custom_hours),
+                                unit = stringResource(R.string.toolsb_halflife_unit_hours),
+                            )
+                        }
+                    }
+                }
+            }
+
+            item {
+                PiruCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            stringResource(R.string.toolsb_halflife_remaining),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = PiruTheme.colors.secondaryLabel,
+                        )
+                        if (remaining != null) {
+                            Text(
+                                stringResource(
+                                    R.string.toolsb_halflife_remaining_value,
+                                    trim(remaining),
+                                    percent(remaining / (dose ?: 1.0)),
+                                ),
+                                style = MaterialTheme.typography.headlineSmall,
+                            )
+                        } else {
+                            // An em dash rather than a zero: an incomplete form has no answer, and a zero would
+                            // read as "nothing left", which is the opposite of unknown.
+                            Text("—", style = MaterialTheme.typography.headlineSmall)
+                        }
+                        // The milestone ladder, timed against the fitted curve when there is one — the early
+                        // steps come later than `n × t½` because absorption is still filling the compartment.
+                        for (milestone in HalfLifeCalculation.milestones(halfLife, rateConstants)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Text(
+                                    stringResource(
+                                        R.string.toolsb_halflife_milestone,
+                                        milestone.n,
+                                        percent(milestone.fraction),
+                                    ),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                Text(
+                                    hours(milestone.minutes),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = PiruTheme.colors.secondaryLabel,
+                                )
+                            }
+                        }
                         Text(
                             stringResource(
                                 R.string.toolsb_halflife_about_five,
-                                hours(params.halfLifeMinutes * 5),
-                                hours(params.halfLifeMinutes * 7),
+                                hours(halfLife * 5),
+                                hours(halfLife * 7),
                             ),
                             style = MaterialTheme.typography.bodySmall,
                             color = PiruTheme.colors.secondaryLabel,
@@ -475,6 +657,62 @@ fun HalfLifeScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         }
     }
 }
+
+/**
+ * A numeric input with its unit shown as a suffix.
+ *
+ * A decimal keypad, because every field here takes a fraction of a unit and a text keyboard makes the point the
+ * hardest character to reach.
+ */
+@Composable
+private fun CalculatorField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    unit: String,
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        suffix = { Text(unit, color = PiruTheme.colors.secondaryLabel) },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Decimal,
+            imeAction = ImeAction.Next,
+        ),
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+/**
+ * The substances with a resolvable half-life, by display name, from the log.
+ *
+ * ## Why the log, and not the whole library
+ * The audit lists "whole-library substance selection" for this tool, and the honest version of that turned out to
+ * be narrower than it sounds: the only enumeration `SubstanceCatalog` exposes is `lookup(name)`, and the
+ * catalogue-wide `search` lives on `DbSubstanceCatalog` rather than on the interface. Widening the interface for
+ * one picker is the wrong trade, and a chip for every substance in the catalogue is several hundred chips — a
+ * picker nobody can scan.
+ *
+ * The log is the list the screen already had, and it is the right one: the half-life question is asked about a
+ * substance the user has taken or is about to take, both of which are in the log or one chip away from it.
+ *
+ * A substance whose half-life the catalogue does not carry is left out rather than shown with an empty curve:
+ * `PKResolver.halfLifeMinutes` returning null is the honest answer for a compound nobody has measured.
+ */
+private suspend fun allHalfLifeChoices(
+    catalog: SubstanceCatalog,
+    loggedNames: List<String>,
+): List<String> = loggedNames
+    .distinct()
+    .mapNotNull { name ->
+        val substance = catalog.lookup(name) ?: return@mapNotNull null
+        if (PKResolver.halfLifeMinutes(substance) == null) return@mapNotNull null
+        substance.displayTitle
+    }
+    .distinct()
+    .sortedBy { it.lowercase() }
 
 /**
  * The elimination curve over seven half-lives, drawn from the same function the

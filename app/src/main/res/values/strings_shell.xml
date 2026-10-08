@@ -773,4 +773,15 @@
     <string name="tolerance_gaba_load_now">About %1$.0f%% of your recent peak right now</string>
     <string name="tolerance_gaba_load_caption">Modeled combined load across your logged GABAergics, relative to your recent peak.</string>
     <string name="tolerance_gaba_load_caption_alcohol">Modeled combined load across your logged GABAergics, relative to your recent peak. Alcohol is included; it loads the receptor at a different site.</string>
+    <string name="toolsb_halflife_calculator">Calculator</string>
+    <string name="toolsb_halflife_dose">Dose taken</string>
+    <string name="toolsb_halflife_elapsed">Hours since</string>
+    <string name="toolsb_halflife_unit_mg">mg</string>
+    <string name="toolsb_halflife_unit_hours">h</string>
+    <string name="toolsb_halflife_custom">Use a different half-life</string>
+    <string name="toolsb_halflife_custom_note">Affects this calculation only. Nothing is saved.</string>
+    <string name="toolsb_halflife_custom_hours">Half-life</string>
+    <string name="toolsb_halflife_remaining">Still in the body</string>
+    <string name="toolsb_halflife_remaining_value">%1$s mg · %2$s</string>
+    <string name="toolsb_halflife_milestone">%1$d half-lives · %2$s left</string>
 </resources>

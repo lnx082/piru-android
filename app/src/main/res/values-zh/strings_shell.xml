@@ -739,4 +739,15 @@
     <string name="tolerance_gaba_load_now">目前约为近期峰值的 %1$.0f%%</string>
     <string name="tolerance_gaba_load_caption">对你记录过的 GABA 类物质建模得到的合并负荷，以你近期的峰值为基准。</string>
     <string name="tolerance_gaba_load_caption_alcohol">对你记录过的 GABA 类物质建模得到的合并负荷，以你近期的峰值为基准。已计入酒精；它作用于受体的不同位点。</string>
+    <string name="toolsb_halflife_calculator">计算</string>
+    <string name="toolsb_halflife_dose">服用剂量</string>
+    <string name="toolsb_halflife_elapsed">距现在多少小时</string>
+    <string name="toolsb_halflife_unit_mg">mg</string>
+    <string name="toolsb_halflife_unit_hours">小时</string>
+    <string name="toolsb_halflife_custom">使用其他半衰期</string>
+    <string name="toolsb_halflife_custom_note">只影响这次计算，不会保存。</string>
+    <string name="toolsb_halflife_custom_hours">半衰期</string>
+    <string name="toolsb_halflife_remaining">体内剩余</string>
+    <string name="toolsb_halflife_remaining_value">%1$s mg · %2$s</string>
+    <string name="toolsb_halflife_milestone">%1$d 个半衰期 · 剩余 %2$s</string>
 </resources>
