@@ -250,6 +250,16 @@ sealed interface PushRoute {
     @Serializable
     data object AdvancedSearch : PushRoute
 
+    /**
+     * What the tolerance screen's numbers mean.
+     *
+     * Its own route rather than a `ToolKind`: that enum is the instruments the hub dispatches on, and this is
+     * the documentation for one of them. Reached from the tolerance tool itself, which is where upstream
+     * links it.
+     */
+    @Serializable
+    data object ToleranceExplainer : PushRoute
+
     /** Which source wins when two disagree. Reached from [SubstanceDatabase]. */
     @Serializable
     data object SourcePriority : PushRoute
@@ -313,6 +323,7 @@ fun PushRoute.key(): String = when (this) {
     is PushRoute.Effects -> "effects:$name"
     PushRoute.SubstanceDatabase -> "substance-database"
     PushRoute.AdvancedSearch -> "advanced-search"
+    PushRoute.ToleranceExplainer -> "tolerance-explainer"
     PushRoute.SourcePriority -> "source-priority"
     PushRoute.MyMeds -> "my-meds"
     is PushRoute.MedDetail -> "med-detail:$rowId"

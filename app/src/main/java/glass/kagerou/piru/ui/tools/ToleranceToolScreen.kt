@@ -50,6 +50,8 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import androidx.compose.material3.TextButton
+import glass.kagerou.piru.ui.nav.PushRoute
 
 /**
  * The tolerance tool: one card per mechanism class.
@@ -215,6 +217,15 @@ fun ToleranceToolScreen(navigator: AppNavigator, modifier: Modifier = Modifier) 
 
         if (loadSeries.isNotEmpty()) {
             item {
+            // The explainer, linked from the tool itself rather than listed on the hub: a reader who is
+            // looking at a bar is the one who wants to know what it means, and a second hub row would say
+            // "Tolerance" twice.
+            TextButton(onClick = { navigator.push(PushRoute.ToleranceExplainer) }) {
+                Text(stringResource(R.string.tolerance_explainer_title))
+            }
+        }
+
+        item {
                 InsightsSectionCard(
                     title = stringResource(R.string.toolsb_tolerance_load_title),
                     subtitle = stringResource(R.string.toolsb_tolerance_load_subtitle),

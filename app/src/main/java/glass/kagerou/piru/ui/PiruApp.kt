@@ -105,6 +105,7 @@ import glass.kagerou.piru.ui.journal.TimelineScreen
 import glass.kagerou.piru.ui.tools.AdvancedSearchScreen
 import glass.kagerou.piru.ui.tools.SolutionMathScreen
 import glass.kagerou.piru.ui.tools.PharmaTableScreen
+import glass.kagerou.piru.ui.tools.ToleranceExplainerScreen
 
 /**
  * The app shell: five tabs, a push stack per tab, and a modal above them.
@@ -369,6 +370,7 @@ private fun DefaultDestination(route: PushRoute, navigator: AppNavigator) {
         is PushRoute.DrugClass -> ClassWriteUpScreen(route.className, navigator)
         PushRoute.SubstanceDatabase -> SubstanceDatabaseScreen(navigator)
         PushRoute.AdvancedSearch -> AdvancedSearchScreen()
+        PushRoute.ToleranceExplainer -> ToleranceExplainerScreen()
         PushRoute.SourcePriority -> SourcePriorityOrderScreen(navigator)
         is PushRoute.LibraryTag -> TagBrowseScreen(route.tag, navigator)
         PushRoute.Timeline -> TimelineScreen(navigator)
