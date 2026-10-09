@@ -209,6 +209,83 @@ object BackupCrypto {
     }
 
     /**
+     * Encrypt [plaintext] under a **device key**, as a new envelope.
+     *
+     * The key is a parameter rather than a lookup: upstream reads it from the Keychain, and this port has no such
+     * store, so the caller owns it. That also makes the whole path testable, which the Keychain version could not be.
+     *
+     * The envelope carries the key's [keyID] so a reader can tell *which* key opened a file without trying it — the
+     * point of the field, and the reason `decryptWithDeviceKey` checks it before unsealing.
+     */
+    fun encryptWithDeviceKey(
+        plaintext: ByteArray,
+        key: ByteArray,
+        appVersion: String,
+        now: Instant = Instant.now(),
+    ): ByteArray {
+        requireKeyLength(key)
+        val id = keyID(key)
+        // No `kdf` block: a device-key envelope derives nothing, so writing an empty one would claim a derivation
+        // that did not happen. The AAD is built without it and the reader requires its absence in the same way.
+        val aad = headerAAD(format = FORMAT, kind = Envelope.Kind.DEVICE_KEY, kdf = null, keyID = id)
+        val envelope = Envelope(
+            format = FORMAT,
+            kind = Envelope.Kind.DEVICE_KEY,
+            kdf = null,
+            keyID = id,
+            sealed = base64Encoder.encodeToString(seal(plaintext, key, aad)),
+            createdAt = iso8601.format(now.truncatedTo(ChronoUnit.SECONDS)),
+            appVersion = appVersion,
+        )
+        return json.encodeToString(Envelope.serializer(), envelope).toByteArray(Charsets.UTF_8)
+    }
+
+    /**
+     * Decrypt a **device-key** envelope.
+     *
+     * A passphrase envelope here is [Failure.MALFORMED] rather than a message about a missing passphrase: the caller
+     * asked for the device key, so a file that needs a passphrase is the wrong file, and saying so is more useful than
+     * implying the passphrase was wrong.
+     *
+     * A **different** key is the same failure as a corrupted file, for the reason [decrypt] gives: GCM verifies a tag,
+     * and every one of those produces a tag mismatch. The key id is checked first and reports
+     * [Failure.DEVICE_KEY_UNAVAILABLE] instead, because that case *is* distinguishable and telling a user "wrong key"
+     * is better than telling them their backup is corrupt.
+     */
+    fun decryptWithDeviceKey(bytes: ByteArray, key: ByteArray): ByteArray {
+        requireKeyLength(key)
+        if (bytes.size > MAX_ENVELOPE_BYTES) throw BackupException(Failure.MALFORMED)
+        val envelope = decodeEnvelope(bytes)
+
+        if (envelope.format != FORMAT) throw BackupException(Failure.UNSUPPORTED_FORMAT)
+        if (envelope.kind != Envelope.Kind.DEVICE_KEY) throw BackupException(Failure.MALFORMED)
+
+        val id = envelope.keyID ?: throw BackupException(Failure.MALFORMED)
+        // The one failure that is worth separating: a file sealed under another device's key cannot be opened here,
+        // and that is a different thing to tell somebody than "this file is damaged".
+        if (id != keyID(key)) throw BackupException(Failure.DEVICE_KEY_UNAVAILABLE)
+
+        val aad = headerAAD(
+            format = envelope.format,
+            kind = envelope.kind,
+            kdf = null,
+            keyID = id,
+        )
+        val sealed = decodeBase64OrNull(envelope.sealed) ?: throw BackupException(Failure.MALFORMED)
+        return open(sealed, key, aad)
+    }
+
+    /**
+     * A device key is exactly [KEY_BYTES].
+     *
+     * Refused rather than padded or truncated: a short key is a bug in the caller, and silently stretching it would
+     * make a backup that a correct implementation cannot open.
+     */
+    private fun requireKeyLength(key: ByteArray) {
+        if (key.size != KEY_BYTES) throw BackupException(Failure.MALFORMED)
+    }
+
+    /**
      * Decrypt [bytes].
      *
      * A wrong passphrase and a corrupted file are **the same failure** and report
