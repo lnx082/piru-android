@@ -50,6 +50,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import glass.kagerou.piru.model.P3Color
 import glass.kagerou.piru.ui.theme.toComposeColor
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.TextButton
 
 /**
  * The library: browse by category, or search the whole catalog, then in.
@@ -83,6 +87,25 @@ fun LibraryScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
      * for. Loaded once per result set: the palette is a database read, not a per-row computation.
      */
     var tints by remember { mutableStateOf<Map<String, P3Color>>(emptyMap()) }
+
+    // The reader's own recent searches: what they looked for last time, which is the best guess at what they want now.
+    val settings = remember { glass.kagerou.piru.data.AppSettingsStore(context) }
+    var history by remember { mutableStateOf(settings.recentSearches()) }
+    // The last term typed, so clearing the field records **once** rather than on every recomposition.
+    var recorded by remember { mutableStateOf("") }
+
+    // The edge is the field **clearing**, not each keystroke. Recording "c", "ca", "caf" as they are typed would fill
+    // the eight-chip row with one word's prefixes and evict everything else; a term still being typed is not yet a
+    // search. Clearing is also what happens when a result is tapped or the reader leaves the screen.
+    LaunchedEffect(query) {
+        if (query.isNotBlank()) {
+            recorded = query
+        } else if (recorded.isNotBlank()) {
+            settings.recordSearch(recorded)
+            history = settings.recentSearches()
+            recorded = ""
+        }
+    }
 
     LaunchedEffect(results) {
         val names = results.map { it.substance.name }
@@ -141,6 +164,19 @@ fun LibraryScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
                 modifier = Modifier.padding(top = 16.dp),
             )
         } else if (query.isBlank()) {
+            // A plain `Column`, so these are siblings rather than `item {}` blocks — the mistake I made first, and the
+            // compiler named it. The history comes first because with an empty field it is the only thing the screen
+            // knows about what this reader wants.
+            if (history.isNotEmpty()) {
+                RecentSearchRow(
+                    terms = history,
+                    onPick = { query = it },
+                    onClear = {
+                        settings.clearRecentSearches()
+                        history = settings.recentSearches()
+                    },
+                )
+            }
             CategoryGrid(categories, navigator)
         } else if (CrisisKeywords.matches(query)) {
             // Shown **instead of** the results, not above them. Someone who typed "overdose" into the
@@ -332,6 +368,54 @@ private fun CategoryGrid(
                         color = PiruTheme.colors.secondaryLabel,
                     )
                 }
+            }
+        }
+    }
+}
+
+/**
+ * The reader's recent searches, as chips, with a way to forget them.
+ *
+ * ## Why it is worth showing
+ * A search box with an empty field offers the reader nothing. The history is the one thing the screen knows about what
+ * this person looks for, and it is the cheapest possible input: one tap instead of typing a substance name.
+ *
+ * ## Why Clear is beside the heading rather than in the row
+ * Every chip in that row performs an action **on a term**. "Clear" among them would be a trap: the tap that looked like
+ * it would search for the neighbouring word would empty the list instead.
+ *
+ * ## No per-term removal, stated
+ * The store can only forget everything, so there is no per-chip delete and no long-press. An affordance that silently
+ * did nothing would be worse than not offering it, and a per-term delete needs a store method that does not exist yet.
+ */
+@Composable
+private fun RecentSearchRow(
+    terms: List<String>,
+    onPick: (String) -> Unit,
+    onClear: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxWidth().padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                stringResource(R.string.shell_library_recent_searches),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            TextButton(onClick = onClear) {
+                Text(stringResource(R.string.shell_library_clear_recent))
+            }
+        }
+        // Scrollable: eight terms in another language will not fit one phone width.
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            for (term in terms) {
+                AssistChip(onClick = { onPick(term) }, label = { Text(term) })
             }
         }
     }

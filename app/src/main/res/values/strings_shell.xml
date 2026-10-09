@@ -892,4 +892,6 @@
     <string name="med_times_offset_note">Minutes after the scheduled time to remind. Zero reminds at the scheduled time, and a later reminder follows a habit rather than insisting on the plan.</string>
     <string name="med_times_offset_unit">minutes</string>
     <string name="shell_settings_logging">Logging</string>
+    <string name="shell_library_recent_searches">Recent searches</string>
+    <string name="shell_library_clear_recent">Clear</string>
 </resources>

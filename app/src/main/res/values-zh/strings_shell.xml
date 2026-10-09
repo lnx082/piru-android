@@ -858,4 +858,6 @@
     <string name="med_times_offset_note">在预定时间之后多少分钟提醒。零表示按预定时间提醒，稍晚的提醒是跟随习惯，而不是坚持计划。</string>
     <string name="med_times_offset_unit">分钟</string>
     <string name="shell_settings_logging">记录</string>
+    <string name="shell_library_recent_searches">最近搜索</string>
+    <string name="shell_library_clear_recent">清除</string>
 </resources>
