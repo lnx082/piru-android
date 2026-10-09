@@ -27,12 +27,14 @@ import org.junit.jupiter.api.Test
 class SessionBodyLoadModelTest {
 
     /**
-     * The clock the model is given, taken from the **real** one.
+     * The clock the model is given: the fixture's own anchor.
      *
-     * `ActiveSubstanceCalculator` uses `Instant.now()` internally and is not passed a clock, so a fixture dated from
-     * a fixed epoch is years old to it and every dose is dropped. These tests therefore share the real instant.
+     * The **same** instant the entries are dated from, not a second one captured separately.
+     * `ActiveSubstanceCalculator` measures elapsed time against its own `Instant.now()` and skips a dose whose elapsed
+     * time is negative, so a `now` that landed after an entry's stamp made that entry a future dose and silently
+     * emptied its row — which is why this is one value shared by both sides rather than two that happen to be close.
      */
-    private val now: Instant = Instant.now()
+    private val now: Instant = BodyLoadFixtures.ANCHOR
 
     private fun make(
         entries: List<glass.kagerou.piru.data.entity.DoseEntryEntity>,
