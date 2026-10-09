@@ -276,4 +276,10 @@
     <string name="history_dose_range">%1$s – %2$s %3$s</string>
     <string name="history_most_common">最常见：%1$s %2$s</string>
     <string name="history_show_all">显示全部 %1$d 剂</string>
+    <string name="share_level_minimal">精简</string>
+    <string name="share_level_standard">标准</string>
+    <string name="share_level_rich">详尽</string>
+    <string name="share_title">分享此物质</string>
+    <string name="share_detail_label">详细程度</string>
+    <string name="share_button">分享</string>
 </resources>

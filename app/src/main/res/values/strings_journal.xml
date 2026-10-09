@@ -316,4 +316,10 @@
     <string name="history_dose_range">%1$s – %2$s %3$s</string>
     <string name="history_most_common">Most common: %1$s %2$s</string>
     <string name="history_show_all">Show all %1$d doses</string>
+    <string name="share_level_minimal">Minimal</string>
+    <string name="share_level_standard">Standard</string>
+    <string name="share_level_rich">Rich</string>
+    <string name="share_title">Share this substance</string>
+    <string name="share_detail_label">Detail</string>
+    <string name="share_button">Share</string>
 </resources>

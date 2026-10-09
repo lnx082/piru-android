@@ -322,6 +322,16 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
             // because the fold needs all of them while the page's other sections need only a count.
             item { HistoryCard(substanceName = name, defaultUnit = "mg") }
 
+            // Sharing, beside the other reader-facing blocks. An action rather than a section, so it is a button
+            // rather than a card: the page's rhythm is one card per subject.
+            item {
+                SubstanceShareRow(
+                    substance = resolved,
+                    route = resolved.routes.firstOrNull { it.route == resolved.defaultRoute },
+                    routeChoice = resolved.defaultRoute,
+                )
+            }
+
             item { AlsoActiveCard(activeNow) }
 
             // Says why the dose card is missing, where the page would otherwise just be missing its
