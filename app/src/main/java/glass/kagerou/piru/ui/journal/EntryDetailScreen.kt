@@ -296,6 +296,51 @@ fun EntryDetailScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
+                // Split, offered only when it can succeed. `SessionRepository.split` returns null for a pivot that
+                // is already the first dose, because there would be nothing left behind — so the card is drawn only
+                // when the dose is **not** the first, and the button therefore cannot be a control that does nothing.
+                //
+                // One of BUG #31's three operations. `merge` and `move` both need a session **target picker**, which is
+                // a new screen rather than an action on this one; they remain open and are named as such.
+                val splitSessionId = current.sessionId
+                var canSplit by remember(splitSessionId, current.rowId) { mutableStateOf(false) }
+                LaunchedEffect(splitSessionId, current.rowId) {
+                    canSplit = splitSessionId?.let { id ->
+                        runCatching { app.sessionRepository().canSplitAt(id, current.rowId) }.getOrDefault(false)
+                    } ?: false
+                }
+                if (canSplit && splitSessionId != null) {
+                    PiruCard(modifier = Modifier.fillMaxWidth()) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Text(
+                                stringResource(R.string.entry_split_title),
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                            Text(
+                                stringResource(R.string.entry_split_detail),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = PiruTheme.colors.secondaryLabel,
+                            )
+                            TextButton(onClick = {
+                                scope.launch {
+                                    val created = app.sessionRepository().split(splitSessionId, current.rowId)
+                                    // Only navigated when a session was actually created, so a refusal leaves the reader
+                                    // where they were rather than on a screen for something that did not happen.
+                                    if (created != null) {
+                                        navigator.invalidate()
+                                        navigator.push(PushRoute.Session(created.toString()))
+                                    }
+                                }
+                            }) {
+                                Text(stringResource(R.string.entry_split_done))
+                            }
+                        }
+                    }
+                    }
+
                 current.sessionId?.let { sessionId ->
                     TextButton(onClick = { navigator.push(PushRoute.Session(sessionId.toString())) }) {
                         Text(stringResource(R.string.journal_entry_part_of_session))

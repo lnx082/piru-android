@@ -875,4 +875,7 @@
     <string name="saturation_target_result">所需浓度：%1$s</string>
     <string name="saturation_target_unreachable">完全饱和只能无限接近、永远达不到，所以没有任何浓度能达到它。</string>
     <string name="saturation_missing">请输入浓度与 Km。</string>
+    <string name="entry_split_title">在此处拆分会话</string>
+    <string name="entry_split_detail">把这一剂及之后的每一剂移入新会话。适用于两次会话被记成了一次。</string>
+    <string name="entry_split_done">已拆分为新会话</string>
 </resources>

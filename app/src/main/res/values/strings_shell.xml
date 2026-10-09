@@ -909,4 +909,7 @@
     <string name="saturation_target_result">Concentration needed: %1$s</string>
     <string name="saturation_target_unreachable">Full saturation is approached and never reached, so no concentration gives it.</string>
     <string name="saturation_missing">Enter a concentration and a Km.</string>
+    <string name="entry_split_title">Split session here</string>
+    <string name="entry_split_detail">Move this dose and every later one into a new session. Useful when two sessions were logged as one.</string>
+    <string name="entry_split_done">Split into a new session</string>
 </resources>

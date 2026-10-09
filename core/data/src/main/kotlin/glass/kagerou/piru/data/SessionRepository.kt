@@ -189,6 +189,22 @@ class SessionRepository(
     }
 
     /**
+     * Whether [split] would do anything at [pivotRowId].
+     *
+     * Exists so a caller can **offer** the action only when it can succeed. `split` already refuses a pivot that is the
+     * session's first dose by returning null, and a UI that drew the button anyway would be a control that silently does
+     * nothing. Asking first is cheaper than a failed write and an unchanged screen, and it keeps the refusal rule in one
+     * place rather than in both the repository and the caller.
+     *
+     * Uses the same ordering as [split] — the list `doses.dosesFor` returns — so the two can never disagree about which
+     * dose is the pivot.
+     */
+    suspend fun canSplitAt(sessionId: UUID, pivotRowId: Long): Boolean {
+        val ordered = doses.dosesFor(sessionId)
+        return ordered.indexOfFirst { it.rowId == pivotRowId } > 0
+    }
+
+    /**
      * Move [pivotRowId] and every later dose into a new session. Null when the
      * pivot is already the first dose — there would be nothing left behind.
      */

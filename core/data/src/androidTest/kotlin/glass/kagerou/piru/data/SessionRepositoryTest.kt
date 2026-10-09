@@ -341,4 +341,65 @@ class SessionRepositoryTest {
         /** A fixed now, so nothing here depends on the wall clock. */
         val NOW = 1_700_000_000_000L
     }
+
+    /** The guard is false at the first dose, which is exactly where `split` refuses. */
+    @Test
+    fun canSplitAtIsFalseAtTheFirstDose(): Unit = runBlocking {
+        val repo = repository()
+        val session = assign(repo, logDose(hoursAgo = 2.0))
+        assign(repo, logDose(hoursAgo = 1.0))
+
+        val firstRow = db.doseEntryDao().dosesFor(session).first().rowId
+        repo.canSplitAt(session, firstRow) shouldBe false
+        // And `split` agrees, so the button being hidden matches the write being refused.
+        repo.split(session, firstRow) shouldBe null
+    }
+
+    /** And true at every later dose, so the action is offered wherever it can succeed. */
+    @Test
+    fun canSplitAtIsTrueAtEveryLaterDose(): Unit = runBlocking {
+        val repo = repository()
+        val session = assign(repo, logDose(hoursAgo = 4.0))
+        assign(repo, logDose(hoursAgo = 3.0))
+        assign(repo, logDose(hoursAgo = 2.0))
+
+        val ordered = db.doseEntryDao().dosesFor(session)
+        for (index in 1 until ordered.size) {
+            repo.canSplitAt(session, ordered[index].rowId) shouldBe true
+        }
+    }
+
+    /**
+     * The guard and the operation never disagree about the pivot.
+     *
+     * The case that makes the other two worth having: asserting either alone would pass with a guard that always said
+     * true and a button that silently failed. This walks every dose of one session and requires the guard's answer to
+     * match whether `split` would actually move anything — which is `null` only at the first dose.
+     */
+    @Test
+    fun theGuardAndTheOperationAgreeOnEveryDose(): Unit = runBlocking {
+        val repo = repository()
+        val session = assign(repo, logDose(hoursAgo = 4.0))
+        assign(repo, logDose(hoursAgo = 3.0))
+        assign(repo, logDose(hoursAgo = 2.0))
+
+        val ordered = db.doseEntryDao().dosesFor(session)
+        ordered.size shouldBe 3
+        // The first dose is the only one `split` refuses, so it is the only one the guard may refuse.
+        for ((index, dose) in ordered.withIndex()) {
+            repo.canSplitAt(session, dose.rowId) shouldBe (index > 0)
+        }
+    }
+
+    /** A dose in no session cannot be a pivot, because there is no session to split. */
+    @Test
+    fun canSplitAtIsFalseForAMissingPivot(): Unit = runBlocking {
+        val repo = repository()
+        val session = assign(repo, logDose(hoursAgo = 2.0))
+        assign(repo, logDose(hoursAgo = 1.0))
+
+        // A row id that belongs to no dose: the guard must answer false rather than throw, because a UI calls it while
+        // the row is on screen and a delete may have raced it.
+        repo.canSplitAt(session, Long.MAX_VALUE) shouldBe false
+    }
 }
