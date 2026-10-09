@@ -224,14 +224,32 @@ class AppSettingsStore(private val context: Context) {
         prefs().edit().putBoolean(KEY_TAB_LABELS, value).apply()
     }
 
-    /** Whether the journal offers the quick-log chip dock. */
+    /**
+     * Whether the journal offers the quick-log chip dock.
+     *
+     * **Nothing reads this yet, and that is recorded rather than left to be discovered.** The journal has no chip row:
+     * `QuickLogSheet` is presented from a `FloatingActionButton`, and the port's own note says the dock's *collapsed
+     * presentation* was not ported. A switch on the settings screen for it was removed for that reason — an inert
+     * toggle says "this is controllable" about something that is not.
+     *
+     * The accessor stays, and stays exported, because the missing half is a UI feature and this is the data half: when
+     * the dock is drawn, wiring it is a one-line read rather than a preference-file migration. The same reasoning as
+     * [adherenceReminderOffsetMinutes].
+     */
     fun showQuickLogDock(): Boolean = prefs().getBoolean(KEY_SHOW_QUICK_LOG_DOCK, true)
 
     fun setShowQuickLogDock(value: Boolean) {
         prefs().edit().putBoolean(KEY_SHOW_QUICK_LOG_DOCK, value).apply()
     }
 
-    /** Whether scheduled-med reminders are delivered. */
+    /**
+     * Whether scheduled-med reminders are delivered.
+     *
+     * This one **is** read: `MedReminderScheduler` calls `NotificationPreferencesStore.allows(…
+     * NotificationType.ROUTINE)`, which is the store that owns the decision, and the settings screen writes this
+     * alongside it so a reader looking under "logging" finds the switch rather than having to know it lives under
+     * notifications. Two surfaces over one decision, which is why the screen's own doc says so.
+     */
     fun adherenceRemindersEnabled(): Boolean = prefs().getBoolean(KEY_ADHERENCE_REMINDERS_ENABLED, true)
 
     fun setAdherenceRemindersEnabled(value: Boolean) {
@@ -244,6 +262,11 @@ class AppSettingsStore(private val context: Context) {
      * Clamped rather than trusted: a negative offset would fire *before* the dose is due, and more than a day would
      * fire after the next one. Both are arithmetic the reminder scheduler should not have to defend against, so the
      * store refuses to hold them — the same rule [timelineZoom] follows for its ladder.
+     *
+     * **Nothing reads this yet.** `DailyDoseItemEntity.reminderTimesJson` is read by `MedReminderScheduler` and written
+     * by **nothing in the UI** — only by an import — so there is no way for a user to set a time for this to offset. The
+     * settings field for it was removed for that reason; the accessor stays for the same one as
+     * [showQuickLogDock]: the missing half is a per-item time editor, and this is the data half.
      */
     fun adherenceReminderOffsetMinutes(): Int =
         prefs().getInt(KEY_ADHERENCE_REMINDER_OFFSET, 0).coerceIn(0, 24 * 60)

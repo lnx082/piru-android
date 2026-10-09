@@ -31,22 +31,26 @@ import glass.kagerou.piru.ui.components.PiruCard
 import glass.kagerou.piru.ui.theme.PiruTheme
 
 /**
- * The logging and medication-time preferences.
+ * The medication-reminder preference.
  *
- * ## Why these three and not more
- * Each is a switch over something the app already does and had no way to turn off:
+ * ## What this screen offers, after two controls were removed from it
+ * One switch: whether scheduled-medication reminders are delivered. `NotificationPreferencesStore` already gates them
+ * by `NotificationType.ROUTINE`, so this is a second surface over one decision — the honest description is that the
+ * notifications screen owns it and this screen repeats it under a name a reader is looking for.
  *
- * - **The quick-log dock** is the only thing on the journal that is an *offer* rather than a record. Someone who logs
- *   from the substance page does not want a row of chips over their timeline.
- * - **Reminders** had a per-item `remind` flag and no global switch, so silencing them meant editing every item.
- * - **The reminder delay** is the "med times" figure the settings list asks for: a dose taken at 08:00 that a user
- *   actually takes at 08:30 needs the reminder to follow the habit, and editing every item's time makes the setting
- *   useless.
+ * ## What it deliberately does not offer, and why
+ * I first shipped this with two more controls, and **both were inert**:
  *
- * ## The offset is a text field
- * A slider moving in fives cannot express ten minutes, and the store clamps what it holds, so the field does not have
- * to. A value that does not parse is held as typed and **not** written, so a half-typed number never becomes a
- * preference.
+ * - **A quick-log dock switch.** The journal has no chip row to hide. `QuickLogSheet` is presented from a
+ *   `FloatingActionButton`, and the port's own note records that the dock's collapsed presentation was not ported.
+ * - **A reminder-delay field.** `DailyDoseItemEntity.reminderTimesJson` is read by `MedReminderScheduler` and written
+ *   by **nothing in the UI** — only by an import. An offset applied to times a user cannot set is a second knob on a
+ *   dial that does not exist.
+ *
+ * Both store accessors are kept and exported, with the reason recorded beside them. A preference with no consumer is
+ * not the same as a preference with no reader *yet*: the dock needs its collapsed presentation, and the times need a
+ * per-item editor. **An inert toggle is worse than a missing feature, because it says "this is controllable" about
+ * something that is not.**
  */
 @Composable
 fun LogPreferencesScreen(modifier: Modifier = Modifier) {
@@ -56,9 +60,7 @@ fun LogPreferencesScreen(modifier: Modifier = Modifier) {
     // which does not exist — the same guess-before-reading this project keeps re-learning.
     val settings = remember { glass.kagerou.piru.data.AppSettingsStore(context) }
 
-    var dock by remember { mutableStateOf(settings.showQuickLogDock()) }
     var reminders by remember { mutableStateOf(settings.adherenceRemindersEnabled()) }
-    var offset by remember { mutableStateOf(settings.adherenceReminderOffsetMinutes().toString()) }
 
     LazyColumn(
         modifier = modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -78,35 +80,6 @@ fun LogPreferencesScreen(modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = PiruTheme.colors.secondaryLabel,
             )
-        }
-
-        item {
-            PiruCard(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            stringResource(R.string.log_prefs_dock_title),
-                            style = MaterialTheme.typography.titleSmall,
-                        )
-                        Switch(
-                            checked = dock,
-                            onCheckedChange = {
-                                dock = it
-                                settings.setShowQuickLogDock(it)
-                            },
-                        )
-                    }
-                    Text(
-                        stringResource(R.string.log_prefs_dock_note),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = PiruTheme.colors.secondaryLabel,
-                    )
-                }
-            }
         }
 
         item {
@@ -139,26 +112,6 @@ fun LogPreferencesScreen(modifier: Modifier = Modifier) {
                     }
                     Text(
                         stringResource(R.string.med_times_reminders_note),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = PiruTheme.colors.secondaryLabel,
-                    )
-
-                    OutlinedTextField(
-                        value = offset,
-                        onValueChange = { typed ->
-                            offset = typed
-                            // Written only when it parses, so a half-typed number never becomes a preference. The store
-                            // clamps; this does not have to.
-                            typed.toIntOrNull()?.let { settings.setAdherenceReminderOffsetMinutes(it) }
-                        },
-                        label = { Text(stringResource(R.string.med_times_offset)) },
-                        suffix = { Text(stringResource(R.string.med_times_offset_unit)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                    )
-                    Text(
-                        stringResource(R.string.med_times_offset_note),
                         style = MaterialTheme.typography.bodySmall,
                         color = PiruTheme.colors.secondaryLabel,
                     )
