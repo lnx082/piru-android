@@ -185,6 +185,13 @@ fun JournalScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
             }
         }
 
+        // The quick-log dock, first because it is the fastest action the screen offers: a repeat dose is the commonest
+        // thing a user logs, and putting it under the log would make the quickest action the furthest away. It reads
+        // `showQuickLogDock` and draws nothing when that is off, so the preference finally has a consumer.
+        item {
+            JournalQuickLogDock(navigator = navigator)
+        }
+
         // Above the loading and empty branches, not after the timeline graph.
         // The graph renders only when there are doses, so a card placed there
         // would disappear on an empty log — which is exactly the fresh install

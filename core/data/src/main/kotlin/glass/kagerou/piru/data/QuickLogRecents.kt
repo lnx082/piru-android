@@ -172,6 +172,36 @@ object QuickLogRecents {
      * journal has a hundred rows in it. Only used when the table **is empty**, which is what "once" means here: a
      * user who removed every chip has said something, and re-seeding would overrule it.
      */
+    /**
+     * The stored chips, **in the order the user arranged them**.
+     *
+     * The read the journal's dock needs, and not the same as [seed]: that one derives chips from the dose log for a
+     * first run and sorts by timestamp, while this returns exactly what [fold] wrote. The difference is the whole point
+     * of the floating order — a used chip moves to the front of its group, and re-sorting by timestamp here would undo
+     * that and move the chip out from under the thumb that was about to press it.
+     *
+     * The identity is recomputed from the stored fields rather than persisted, because every other path derives it
+     * too: a stored identity could disagree with a recomputed one after a catalogue change, and then two chips would
+     * name one substance.
+     */
+    fun stored(rows: List<QuickLogDoseEntity>): List<LoggedDose> = rows.map { row ->
+        LoggedDose(
+            substance = row.substance,
+            route = row.route,
+            amount = row.amount,
+            unit = row.unit,
+            substanceUID = row.substanceUID,
+            isomer = row.isomer,
+            releaseForm = row.releaseForm,
+            saltForm = row.saltForm,
+            productName = row.productName,
+            volumeML = row.volumeML,
+            abv = row.abv,
+            drinkName = row.drinkName,
+            emoji = row.emoji,
+        )
+    }
+
     fun seed(history: List<DoseEntryEntity>, limitPerGroup: Int = QuickLogDoseEntity.PER_GROUP_LIMIT): List<LoggedDose> {
         if (history.isEmpty()) return emptyList()
         // Most recent first, then the first `limitPerGroup` distinct measurements per (identity, route).
