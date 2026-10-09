@@ -284,4 +284,8 @@
     <string name="share_button">分享</string>
     <string name="journal_timeline_vitals">心率轨道</string>
     <string name="journal_timeline_vitals_detail">在会话图表上绘制来自 Health Connect 的心率与血压。仅在 Health Connect 有该时间段读数时显示。</string>
+    <string name="journal_grouping_title">分组</string>
+    <string name="journal_grouping_detail">按会话：卡片标记会话开始的日期。按日：每一剂都归入它实际服用的那一天，所以跨午夜的会话会出现在两天。</string>
+    <string name="journal_grouping_by_session">按会话</string>
+    <string name="journal_grouping_by_day">按日（连续）</string>
 </resources>

@@ -134,6 +134,20 @@ class AppSettingsStore(private val context: Context) {
     /** Whether the session chart draws the cardio lane. */
     fun timelineVitalsShown(): Boolean = prefs().getBoolean(KEY_TIMELINE_VITALS, true)
 
+    /** How the journal groups its list. Falls back to the session grouping for an unknown stored value. */
+    fun journalGrouping(): String = prefs().getString(KEY_JOURNAL_GROUPING, null) ?: "bySession"
+
+    /** Writes the grouping, refusing to store a value that is not one of the two known ones. */
+    fun setJournalGrouping(wireValue: String) {
+        if (wireValue != "bySession" && wireValue != "byDay") {
+            // Refused rather than stored: an unrecognised value would read back as the default, so storing it would
+            // make the write look successful and change nothing — the inert-preference shape this project has already
+            // had to undo once.
+            return
+        }
+        prefs().edit().putString(KEY_JOURNAL_GROUPING, wireValue).apply()
+    }
+
     fun setTimelineVitalsShown(value: Boolean) {
         prefs().edit().putBoolean(KEY_TIMELINE_VITALS, value).apply()
     }
@@ -330,6 +344,7 @@ class AppSettingsStore(private val context: Context) {
             .remove(KEY_TIMELINE_PK_CURVES)
             .remove(KEY_TIMELINE_SHOWS_AXIS)
             .remove(KEY_TIMELINE_VITALS)
+            .remove(KEY_JOURNAL_GROUPING)
             .remove(KEY_TIMELINE_BUBBLE_STYLE)
             .remove(KEY_QUICK_LOG_FIXED_ORDER)
             .remove(KEY_QUICK_LOG_SUPPRESSED)
@@ -396,6 +411,15 @@ class AppSettingsStore(private val context: Context) {
      * and does not want heart rate over their timeline.
      */
     const val KEY_TIMELINE_VITALS: String = "timelineVitalsShown"
+
+    /**
+     * How the journal groups its list: one card per session, or one card per day with the day's sessions inside it.
+     *
+     * Defaults to the session grouping, which is what every version before this one did; a preference that changed the
+     * layout on upgrade would move every existing reader's log without being asked. Stored as the enum's wire value
+     * rather than an ordinal, so reordering the enum cannot silently reinterpret a stored preference.
+     */
+    const val KEY_JOURNAL_GROUPING: String = "journalGrouping"
     const val KEY_TIMELINE_BUBBLE_STYLE: String = "timelineBubbleStyle"
 
     const val KEY_VISIBLE_TABS: String = "visibleTabs"

@@ -89,6 +89,9 @@ data class PiruSettingsData(
         /** This port's key for whether the session chart draws the cardio lane. */
         const val KEY_TIMELINE_VITALS: String = "timelineVitalsShown"
 
+        /** This port's key for how the journal groups its list. */
+        const val KEY_JOURNAL_GROUPING: String = "journalGrouping"
+
         /** Upstream's key for the timeline's bubble style, a string on that side. */
         const val KEY_TIMELINE_BUBBLE_STYLE: String = "timelineBubbleStyle"
 

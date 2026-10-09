@@ -9,6 +9,7 @@ import java.time.ZoneId
 import java.util.Date
 import java.util.UUID
 import org.junit.jupiter.api.Test
+import io.kotest.matchers.collections.shouldContainExactly
 
 /**
  * The session card's derived text, and the three decisions behind it.
@@ -364,5 +365,106 @@ class SessionCardModelTest {
             displayTitleFor = identity,
         )
         days.single().sessions.map { it.substanceSummary } shouldBe listOf("MDMA", "Caffeine")
+    }
+
+    // MARK: - The continuous (by-day) grouping
+
+    /**
+     * A session that crosses midnight is filed under **two** days, one per dose.
+     *
+     * The case the whole grouping exists for. Under `sessionDays` both doses land on the 14th, because the card is dated
+     * by where the session started — so a dose taken at 00:10 on the 15th is shown under the 14th, and a reader asking
+     * "what did I take today" is told about a dose from yesterday evening.
+     */
+    @Test
+    fun `a session crossing midnight is filed under both days`() {
+        val late = UUID.randomUUID()
+        val beforeMidnight = Instant.parse("2026-03-14T23:50:00Z")
+        val afterMidnight = Instant.parse("2026-03-15T00:10:00Z")
+        val days = sessionDaysByDay(
+            entries = listOf(
+                entry("MDMA", beforeMidnight, sessionId = late),
+                entry("MDMA", afterMidnight, sessionId = late),
+            ),
+            sessions = mapOf(late.toString() to session(late, start = beforeMidnight)),
+            zone = zone,
+            today = java.time.LocalDate.of(2026, 3, 15),
+            displayTitleFor = identity,
+        )
+
+        days.map { it.date } shouldContainExactly listOf(
+            java.time.LocalDate.of(2026, 3, 15),
+            java.time.LocalDate.of(2026, 3, 14),
+        )
+        // Each day holds exactly the dose taken on it — one each, not both on either.
+        days.all { day -> day.sessions.sumOf { it.doseCount } == 1 } shouldBe true
+    }
+
+    /**
+     * The session grouping files the same two doses on **one** day, which is the difference stated as a case.
+     *
+     * Asserted side by side with the case above on purpose: a reader comparing the two sees the whole change, and a
+     * future edit that made the groupings identical would fail this pair rather than one of them.
+     */
+    @Test
+    fun `the session grouping files that same session on one day`() {
+        val late = UUID.randomUUID()
+        val beforeMidnight = Instant.parse("2026-03-14T23:50:00Z")
+        val afterMidnight = Instant.parse("2026-03-15T00:10:00Z")
+        val days = sessionDays(
+            entries = listOf(
+                entry("MDMA", beforeMidnight, sessionId = late),
+                entry("MDMA", afterMidnight, sessionId = late),
+            ),
+            sessions = mapOf(late.toString() to session(late, start = beforeMidnight)),
+            zone = zone,
+            today = java.time.LocalDate.of(2026, 3, 15),
+            displayTitleFor = identity,
+        )
+
+        days.map { it.date } shouldContainExactly listOf(java.time.LocalDate.of(2026, 3, 14))
+    }
+
+    /** A dose with no session still appears, as its own card — a log that silently drops entries is worse. */
+    @Test
+    fun `a straggler with no session is still its own card`() {
+        val day = Instant.parse("2026-03-14T12:00:00Z")
+        val days = sessionDaysByDay(
+            entries = listOf(entry("Caffeine", day, sessionId = null)),
+            sessions = emptyMap(),
+            zone = zone,
+            today = java.time.LocalDate.of(2026, 3, 14),
+            displayTitleFor = identity,
+        )
+
+        days.size shouldBe 1
+        days.single().sessions.size shouldBe 1
+    }
+
+    /** Days come newest first, and a day holds its sessions newest first, so the list reads as a run of time. */
+    @Test
+    fun `days and their sessions are newest first`() {
+        val first = UUID.randomUUID()
+        val second = UUID.randomUUID()
+        val morning = Instant.parse("2026-03-14T09:00:00Z")
+        val evening = Instant.parse("2026-03-14T21:00:00Z")
+        val days = sessionDaysByDay(
+            entries = listOf(
+                entry("MDMA", morning, sessionId = first),
+                entry("Ketamine", evening, sessionId = second),
+            ),
+            sessions = mapOf(
+                first.toString() to session(first, start = morning),
+                second.toString() to session(second, start = evening),
+            ),
+            zone = zone,
+            today = java.time.LocalDate.of(2026, 3, 14),
+            displayTitleFor = identity,
+        )
+
+        days.size shouldBe 1
+        // One day, two sessions in it, the later one first.
+        days.single().sessions.size shouldBe 2
+        (days.single().sessions.first().startDate > days.single().sessions.last().startDate) shouldBe true
     }
 }

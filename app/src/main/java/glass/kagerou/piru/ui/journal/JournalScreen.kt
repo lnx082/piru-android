@@ -305,13 +305,30 @@ fun JournalScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
             // drawing a heading with nothing under it.
             val visible = filter.apply(entries) { name -> catalog?.lookup(name)?.category }
 
-            val days = sessionDays(
-                entries = visible,
-                sessions = sessionsById,
-                zone = zone,
-                today = today,
-                displayTitleFor = { name -> catalog?.lookup(name)?.displayTitle ?: name },
-            )
+            // Which grouping is in force, read once per pass so a change on the preferences screen shows on return
+            // rather than on the next launch — the same reason `display` above is re-read.
+            //
+            // `BY_DAY` is the continuous timeline: doses are filed under **their own day**, so a session that crosses
+            // midnight appears in both days rather than being dated by where it started. `BY_SESSION` is what every
+            // version before this one did, and it stays the default.
+            val grouping = JournalGrouping.from(AppSettingsStore(context).journalGrouping())
+            val days = if (grouping == JournalGrouping.BY_DAY) {
+                sessionDaysByDay(
+                    entries = visible,
+                    sessions = sessionsById,
+                    zone = zone,
+                    today = today,
+                    displayTitleFor = { name -> catalog?.lookup(name)?.displayTitle ?: name },
+                )
+            } else {
+                sessionDays(
+                    entries = visible,
+                    sessions = sessionsById,
+                    zone = zone,
+                    today = today,
+                    displayTitleFor = { name -> catalog?.lookup(name)?.displayTitle ?: name },
+                )
+            }
             // The search field and the facet menu. Above the list, because they change what the list is.
             item(key = "journal-filter") {
                 JournalFilterBar(

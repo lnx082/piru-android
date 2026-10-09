@@ -129,6 +129,48 @@ internal fun sessionCard(
  * `sessionId` becomes its own single-dose card, which is what upstream does with a straggler — and the card is
  * non-navigable, because there is no session to open.
  */
+/**
+ * The journal's list grouped **by day**, with each day's sessions as sections inside it — the continuous timeline.
+ *
+ * ## How it differs from [sessionDays], and the case that shows it
+ * [sessionDays] builds one card per session and dates it by the session's **start**. This builds cards per day and
+ * dates each by the doses it actually holds, so a session that crosses midnight becomes **two** cards — the doses taken
+ * before midnight under that day, the ones after under the next.
+ *
+ * That is the whole difference, and it is the reason this exists: under the session grouping a dose at 00:10 is filed
+ * under the previous day, so "yesterday" and "today" disagree with the clock and with [glass.kagerou.piru.data.SessionDay]'s
+ * own boundary, which the rest of the app uses.
+ *
+ * ## The one thing that stays the same
+ * A dose with no `sessionId` is still its own single-dose card, because a log that silently drops entries is worse than
+ * a card with nothing to open. The *splitting* is on the day, not on whether a session exists.
+ */
+internal fun sessionDaysByDay(
+    entries: List<DoseEntryEntity>,
+    sessions: Map<String, SessionEntity>,
+    zone: ZoneId,
+    today: java.time.LocalDate,
+    displayTitleFor: (String) -> String,
+): List<SessionDay> {
+    // Grouped by the **dose's own day first**, so no dose can be filed under a day it was not taken on. Within a day,
+    // sessions are the sections — and a session split by midnight therefore appears in both days, which is correct
+    // rather than a duplication: the doses themselves are each in exactly one place.
+    val byDay = entries.groupBy { it.timestamp.toInstant().atZone(zone).toLocalDate() }
+    return byDay.entries
+        .sortedByDescending { it.key }
+        .map { (day, doses) ->
+            val bySession = doses.groupBy { it.sessionId?.toString().orEmpty() }
+            SessionDay(
+                date = day,
+                sessions = bySession
+                    .map { (sessionId, sessionDoses) ->
+                        sessionCard(sessions[sessionId], sessionDoses, zone, displayTitleFor)
+                    }
+                    .sortedByDescending { it.startDate },
+            )
+        }
+}
+
 internal fun sessionDays(
     entries: List<DoseEntryEntity>,
     sessions: Map<String, SessionEntity>,

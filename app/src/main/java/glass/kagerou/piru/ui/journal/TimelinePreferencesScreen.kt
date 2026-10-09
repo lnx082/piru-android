@@ -25,6 +25,7 @@ import glass.kagerou.piru.data.AppSettingsStore
 import glass.kagerou.piru.ui.components.PiruCard
 import glass.kagerou.piru.ui.theme.PiruTheme
 import glass.kagerou.piru.data.TimelineBubbleStyleName
+import androidx.compose.ui.semantics.Role
 
 /**
  * The vertical timeline's display options.
@@ -60,6 +61,7 @@ fun TimelinePreferencesScreen(modifier: Modifier = Modifier) {
     var zoom by remember { mutableStateOf(store.timelineZoom()) }
     var showsAxis by remember { mutableStateOf(store.timelineShowsAxis()) }
     var showsVitals by remember { mutableStateOf(store.timelineVitalsShown()) }
+    var grouping by remember { mutableStateOf(JournalGrouping.from(store.journalGrouping())) }
     var bubbleStyle by remember { mutableStateOf(TimelineBubbleStyleName.from(store.timelineBubbleStyle())) }
 
     val rows = TimelineOptions.rows(showsAxis)
@@ -99,6 +101,55 @@ fun TimelinePreferencesScreen(modifier: Modifier = Modifier) {
                     store.setTimelineVitalsShown(it)
                 },
             )
+        }
+
+        // Radio rows rather than a switch: neither grouping is the "on" state, so a switch would imply that off means
+        // something other than a complete layout. The zoom ladder below is drawn the same way for the same reason.
+        PiruCard(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    stringResource(R.string.journal_grouping_title),
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                Text(
+                    stringResource(R.string.journal_grouping_detail),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = PiruTheme.colors.secondaryLabel,
+                )
+                for (option in JournalGrouping.entries) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(
+                                selected = grouping == option,
+                                role = Role.RadioButton,
+                                onClick = {
+                                    grouping = option
+                                    // Written through the store's own guard, which refuses an unknown value rather
+                                    // than storing one that would read back as the default.
+                                    store.setJournalGrouping(option.wireValue)
+                                },
+                            )
+                            .padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        RadioButton(selected = grouping == option, onClick = null)
+                        Text(
+                            stringResource(
+                                when (option) {
+                                    JournalGrouping.BY_SESSION -> R.string.journal_grouping_by_session
+                                    JournalGrouping.BY_DAY -> R.string.journal_grouping_by_day
+                                },
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
+            }
         }
 
         if (TimelineOptions.Row.ZOOM in rows) {

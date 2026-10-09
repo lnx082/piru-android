@@ -76,3 +76,32 @@ internal object TimelineOptions {
      */
     fun retainsHiddenPreferences(): Boolean = true
 }
+
+/**
+ * How the journal's list is grouped.
+ *
+ * ## Why there are two, and what each is for
+ * - [BY_SESSION] is the default and what upstream does: a session is the unit, and its card is dated where the session
+ *   **started**. A reader thinking in terms of "that evening" gets what they expect.
+ * - [BY_DAY] is the continuous timeline: doses are grouped under **their own day**, and sessions appear as sections
+ *   inside it. A reader thinking in terms of "what did I take yesterday" gets what they expect.
+ *
+ * The difference only shows for a session that **crosses midnight**, and it is not cosmetic: under [BY_SESSION] a dose
+ * taken at 00:10 belongs to the previous day's card, so "yesterday" and "today" do not match the clock.
+ *
+ * Neither is more correct — they answer different questions — which is why this is a preference rather than a fix.
+ */
+enum class JournalGrouping(val wireValue: String) {
+    /** A card per session, dated where the session started. The default. */
+    BY_SESSION("bySession"),
+
+    /** A card per day, with that day's sessions as sections inside it. The continuous timeline. */
+    BY_DAY("byDay"),
+    ;
+
+    companion object {
+        /** Parses a stored value, falling back to [BY_SESSION] so an unknown string cannot change the layout. */
+        fun from(wireValue: String?): JournalGrouping =
+            entries.firstOrNull { it.wireValue == wireValue } ?: BY_SESSION
+    }
+}

@@ -324,4 +324,8 @@
     <string name="share_button">Share</string>
     <string name="journal_timeline_vitals">Cardio lane</string>
     <string name="journal_timeline_vitals_detail">Draw heart rate and blood pressure from Health Connect along the session chart. Shown only when Health Connect has readings for that window.</string>
+    <string name="journal_grouping_title">Grouping</string>
+    <string name="journal_grouping_detail">By session dates a card where the session started. By day files every dose under the day it was taken, so a session past midnight appears on both days.</string>
+    <string name="journal_grouping_by_session">By session</string>
+    <string name="journal_grouping_by_day">By day (continuous)</string>
 </resources>
