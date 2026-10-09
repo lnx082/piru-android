@@ -282,6 +282,11 @@ private val TOOL_GROUPS = listOf(
                 R.string.tools_solution_detail,
             ),
             ToolEntry(
+                PushRoute.ToolKind.SATURATION,
+                R.string.tools_saturation_title,
+                R.string.tools_saturation_detail,
+            ),
+            ToolEntry(
                 PushRoute.ToolKind.COMEDOWN,
                 R.string.tools_comedown_title,
                 R.string.tools_comedown_detail,

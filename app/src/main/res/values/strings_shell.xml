@@ -894,4 +894,19 @@
     <string name="shell_settings_logging">Logging</string>
     <string name="shell_library_recent_searches">Recent searches</string>
     <string name="shell_library_clear_recent">Clear</string>
+    <string name="tools_saturation_title">Saturation</string>
+    <string name="tools_saturation_detail">How much of a capacity a concentration occupies, and where the effect stops scaling.</string>
+    <string name="saturation_title">Saturation kinetics</string>
+    <string name="saturation_intro">A saturable process follows v = Vmax x [S] / (Km + [S]). The fraction below is how much of the capacity the concentration occupies — the reason a doubled dose does not double the effect.</string>
+    <string name="saturation_concentration">Concentration</string>
+    <string name="saturation_km">Km</string>
+    <string name="saturation_fraction">Fraction of Vmax</string>
+    <string name="saturation_regime">Regime</string>
+    <string name="saturation_regime_linear">Linear — effect scales with concentration</string>
+    <string name="saturation_regime_transitional">Transitional — a doubling buys less than double</string>
+    <string name="saturation_regime_saturated">Saturated — more barely changes the rate</string>
+    <string name="saturation_target">To reach a fraction</string>
+    <string name="saturation_target_result">Concentration needed: %1$s</string>
+    <string name="saturation_target_unreachable">Full saturation is approached and never reached, so no concentration gives it.</string>
+    <string name="saturation_missing">Enter a concentration and a Km.</string>
 </resources>

@@ -860,4 +860,19 @@
     <string name="shell_settings_logging">记录</string>
     <string name="shell_library_recent_searches">最近搜索</string>
     <string name="shell_library_clear_recent">清除</string>
+    <string name="tools_saturation_title">饱和</string>
+    <string name="tools_saturation_detail">浓度占多少能力，以及效应从哪里开始不再成比例。</string>
+    <string name="saturation_title">饱和动力学</string>
+    <string name="saturation_intro">可饱和过程遵循 v = Vmax x [S] / (Km + [S])。下面的比例是浓度占据的能力份额 —— 这就是剂量翻倍而效应不翻倍的原因。</string>
+    <string name="saturation_concentration">浓度</string>
+    <string name="saturation_km">Km</string>
+    <string name="saturation_fraction">Vmax 占比</string>
+    <string name="saturation_regime">区域</string>
+    <string name="saturation_regime_linear">线性 —— 效应随浓度成比例</string>
+    <string name="saturation_regime_transitional">过渡 —— 翻倍得到的不到两倍</string>
+    <string name="saturation_regime_saturated">饱和 —— 再多也几乎不改变速率</string>
+    <string name="saturation_target">达到某个占比</string>
+    <string name="saturation_target_result">所需浓度：%1$s</string>
+    <string name="saturation_target_unreachable">完全饱和只能无限接近、永远达不到，所以没有任何浓度能达到它。</string>
+    <string name="saturation_missing">请输入浓度与 Km。</string>
 </resources>

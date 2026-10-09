@@ -116,6 +116,7 @@ import glass.kagerou.piru.ui.launch.launchPrefs
 import glass.kagerou.piru.ui.settings.CustomSubstancesScreen
 import glass.kagerou.piru.ui.journal.TimelinePreferencesScreen
 import glass.kagerou.piru.ui.settings.LogPreferencesScreen
+import glass.kagerou.piru.ui.tools.SaturationScreen
 
 /**
  * The app shell: five tabs, a push stack per tab, and a modal above them.
@@ -394,6 +395,7 @@ private fun DefaultDestination(route: PushRoute, navigator: AppNavigator) {
             PushRoute.ToolKind.HELP -> HelpScreen(navigator)
             PushRoute.ToolKind.EDUCATION -> EducationCardsScreen(navigator)
             PushRoute.ToolKind.SOLUTION_MATH -> SolutionMathScreen()
+            PushRoute.ToolKind.SATURATION -> SaturationScreen()
             PushRoute.ToolKind.PHARMA_TABLE -> PharmaTableScreen()
         }
 
