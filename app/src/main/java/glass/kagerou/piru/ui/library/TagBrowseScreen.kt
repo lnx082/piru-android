@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -78,7 +78,7 @@ fun TagBrowseScreen(tag: String, navigator: AppNavigator, modifier: Modifier = M
         verticalArrangement = Arrangement.spacedBy(10.dp),
         contentPadding = PaddingValues(bottom = FAB_CLEARANCE),
     ) {
-        item {
+        item(key = "tag-header") {
             Column(
                 modifier = Modifier.padding(top = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -99,7 +99,12 @@ fun TagBrowseScreen(tag: String, navigator: AppNavigator, modifier: Modifier = M
             }
         }
 
-        items(substances, key = { it.id }) { substance ->
+        // Keyed by **index and id**. The id alone is unique (the catalogue has 1,689 substances and 1,689 distinct
+        // ids), but the lazy layout's interval bookkeeping can be momentarily inconsistent with its provider during
+        // a measure, and a key that cannot collide turns what was an `IndexOutOfBoundsException` in `getKey` into a
+        // re-created row. The header above carries a key for the same reason: a synthesised positional key can
+        // collide with it when the counts shift.
+        itemsIndexed(substances, key = { index, substance -> "$index:${substance.id}" }) { _, substance ->
             PiruCard(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = { navigator.push(PushRoute.Substance(substance.name)) },
