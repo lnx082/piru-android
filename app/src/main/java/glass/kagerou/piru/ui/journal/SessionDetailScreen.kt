@@ -212,6 +212,35 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
                 val shareEntries = doses.sortedBy { it.timestamp.time }
                 val shareId = loaded.id.toString()
                 item {
+                    // Merge, one of BUG #31's three operations. It is a statement about the **whole session** — "this
+                    // is the same occasion as that other one" — so it belongs here rather than on a dose.
+                    PiruCard(modifier = Modifier.fillMaxWidth()) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Text(
+                                stringResource(R.string.session_merge_action),
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                            Text(
+                                stringResource(R.string.session_merge_detail),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = PiruTheme.colors.secondaryLabel,
+                            )
+                            TextButton(onClick = {
+                                navigator.push(
+                                    PushRoute.SessionPicker(
+                                        kind = PushRoute.SessionPicker.Kind.MERGE.wireValue,
+                                        sourceId = sessionId,
+                                    ),
+                                )
+                            }) {
+                                Text(stringResource(R.string.session_merge_action))
+                            }
+                        }
+                    }
+
                     TextButton(
                         enabled = !sharing,
                         onClick = {

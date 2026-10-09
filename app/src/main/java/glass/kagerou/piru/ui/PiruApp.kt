@@ -117,6 +117,7 @@ import glass.kagerou.piru.ui.settings.CustomSubstancesScreen
 import glass.kagerou.piru.ui.journal.TimelinePreferencesScreen
 import glass.kagerou.piru.ui.settings.LogPreferencesScreen
 import glass.kagerou.piru.ui.tools.SaturationScreen
+import glass.kagerou.piru.ui.journal.SessionPickerScreen
 
 /**
  * The app shell: five tabs, a push stack per tab, and a modal above them.
@@ -350,6 +351,11 @@ private fun DefaultDestination(route: PushRoute, navigator: AppNavigator) {
         is PushRoute.Entry -> EntryDetailScreen(route.timestampEpochMillis, route.id, navigator)
         is PushRoute.Substance -> SubstanceDetailScreen(route.name, navigator)
         is PushRoute.Session -> SessionDetailScreen(route.id, navigator)
+        is PushRoute.SessionPicker -> SessionPickerScreen(
+            kindWire = route.kind,
+            sourceId = route.sourceId,
+            navigator = navigator,
+        )
         PushRoute.SubstanceColors -> SubstanceColorsScreen(onChanged = { navigator.invalidate() })
         PushRoute.Settings -> SettingsScreen(navigator)
         PushRoute.HealthData -> HealthConnectScreen(onChanged = { navigator.invalidate() })

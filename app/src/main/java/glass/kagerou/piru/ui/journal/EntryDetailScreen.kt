@@ -296,6 +296,40 @@ fun EntryDetailScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = PiruTheme.colors.secondaryLabel,
                 )
+                // Move, the third of BUG #31's operations. Beside the split action because both are statements about
+                // **one dose**; it needs the picker because the target is a session the reader has to name.
+                val moveSource = current.sessionId
+                if (moveSource != null) {
+                    PiruCard(modifier = Modifier.fillMaxWidth()) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Text(
+                                stringResource(R.string.entry_move_action),
+                                style = MaterialTheme.typography.titleSmall,
+                            )
+                            Text(
+                                stringResource(R.string.entry_move_detail),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = PiruTheme.colors.secondaryLabel,
+                            )
+                            TextButton(onClick = {
+                                navigator.push(
+                                    PushRoute.SessionPicker(
+                                        kind = PushRoute.SessionPicker.Kind.MOVE.wireValue,
+                                        // The **dose** row id, which is what `move` takes. The route carries one
+                                        // string for both kinds so the picker has a single shape.
+                                        sourceId = current.rowId.toString(),
+                                    ),
+                                )
+                            }) {
+                                Text(stringResource(R.string.entry_move_action))
+                            }
+                        }
+                    }
+                }
+
                 // Split, offered only when it can succeed. `SessionRepository.split` returns null for a pivot that
                 // is already the first dose, because there would be nothing left behind — so the card is drawn only
                 // when the dose is **not** the first, and the button therefore cannot be a control that does nothing.

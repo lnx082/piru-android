@@ -912,4 +912,15 @@
     <string name="entry_split_title">Split session here</string>
     <string name="entry_split_detail">Move this dose and every later one into a new session. Useful when two sessions were logged as one.</string>
     <string name="entry_split_done">Split into a new session</string>
+    <string name="session_picker_merge_title">Merge into another session</string>
+    <string name="session_picker_move_title">Move to another session</string>
+    <string name="session_picker_detail">Every dose of the chosen session is kept; only which session they belong to changes.</string>
+    <string name="session_picker_empty">There is no other session to choose. Log a dose at a different time first.</string>
+    <string name="session_picker_dose_count">%1$s doses</string>
+    <string name="session_picker_done">Merged into another session</string>
+    <string name="session_picker_moved">Moved to another session</string>
+    <string name="session_merge_action">Merge into another session</string>
+    <string name="session_merge_detail">Move every dose of this session into another one, for when two occasions were logged separately.</string>
+    <string name="entry_move_action">Move to another session</string>
+    <string name="entry_move_detail">Move just this dose into another session, leaving the rest where they are.</string>
 </resources>

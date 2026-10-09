@@ -67,6 +67,39 @@ sealed interface PushRoute {
     @Serializable
     data class Session(val id: String) : PushRoute
 
+    /**
+     * Choose a session to merge a session into, or to move one dose into.
+     *
+     * ## Why one route for two operations
+     * `merge` moves every dose of a source and `move` moves one, but the reader is picking a **session** either way, and
+     * the list they choose from is the same. The [kind] says which operation will run; the screen is one screen.
+     *
+     * ## Why the ids are strings
+     * The route is serialised into the navigation state, and a `UUID` or a `Long` would need a converter for no gain.
+     * Parsing happens once, in the screen, with a pre-parse fallback that leaves the reader on the screen rather than
+     * crashing on a malformed id.
+     */
+    @Serializable
+    data class SessionPicker(
+        val kind: String,
+        /** The session being merged (kind `merge`) or the dose being moved (kind `move`). */
+        val sourceId: String,
+    ) : PushRoute {
+        /** The two operations this screen serves. */
+        enum class Kind(val wireValue: String) {
+            /** Move every dose of `sourceId` into the chosen session and delete the emptied source. */
+            MERGE("merge"),
+
+            /** Move the single dose `sourceId` into the chosen session. */
+            MOVE("move"),
+            ;
+
+            companion object {
+                fun from(wireValue: String?): Kind? = entries.firstOrNull { it.wireValue == wireValue }
+            }
+        }
+    }
+
     @Serializable
     data class Entry(val timestampEpochMillis: Long, val id: String? = null) : PushRoute
 
@@ -359,6 +392,7 @@ fun PushRoute.key(): String = when (this) {
     // A `key()` arm as well as a path: the two are separate exhaustiveness requirements, and the compiler named only
     // the first — the route would have crashed at the first navigation rather than at the build.
     PushRoute.LogPreferences -> "log-preferences"
+    is PushRoute.SessionPicker -> "session-picker:${kind}:$sourceId"
     is PushRoute.InventoryItem -> "inventory:$id"
     is PushRoute.InventoryItemForm -> "inventory-form:${id ?: "new"}"
     is PushRoute.InteractionTimeline -> "interaction:$substanceA:$substanceB"

@@ -878,4 +878,15 @@
     <string name="entry_split_title">在此处拆分会话</string>
     <string name="entry_split_detail">把这一剂及之后的每一剂移入新会话。适用于两次会话被记成了一次。</string>
     <string name="entry_split_done">已拆分为新会话</string>
+    <string name="session_picker_merge_title">合并到另一个会话</string>
+    <string name="session_picker_move_title">移动到另一个会话</string>
+    <string name="session_picker_detail">所选会话的每一剂都会保留；变化的只是它们属于哪个会话。</string>
+    <string name="session_picker_empty">没有其他会话可选。请先在另一个时间记录一剂。</string>
+    <string name="session_picker_dose_count">%1$s 剂</string>
+    <string name="session_picker_done">已合并到另一个会话</string>
+    <string name="session_picker_moved">已移动到另一个会话</string>
+    <string name="session_merge_action">合并到另一个会话</string>
+    <string name="session_merge_detail">把本会话的每一剂移入另一个会话，适用于同一场合被分开记录的情况。</string>
+    <string name="entry_move_action">移动到另一个会话</string>
+    <string name="entry_move_detail">只把这一剂移入另一个会话，其余保持不变。</string>
 </resources>
