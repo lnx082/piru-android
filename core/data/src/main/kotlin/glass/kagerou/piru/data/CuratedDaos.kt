@@ -70,6 +70,16 @@ interface QuickLogDoseDao {
     @Upsert
     suspend fun upsert(row: QuickLogDoseEntity)
 
+    /**
+     * Remove one chip.
+     *
+     * The per-row delete least-recently-used eviction needs. Without it the only way to drop a chip is `deleteAll`
+     * and re-insert the survivors, which **rewrites every other row's `row_id`** — the same mistake the custom
+     * substances DAO had.
+     */
+    @Query("DELETE FROM quick_log_doses WHERE row_id = :rowId")
+    suspend fun deleteByRowId(rowId: Long)
+
     @Query("DELETE FROM quick_log_doses")
     suspend fun deleteAll()
 }

@@ -74,10 +74,26 @@ class ClassAndTagBrowseDeviceTest {
      *
      * The budget is 300 s, which is margin against a 39 s green suite. It is deliberately **not** larger: a failing
      * run already passes at 300 s and a 120 s budget also failed, so raising it is not what makes a bad run pass.
+     *
+     * ## What the two stamps established
+     * In the run where this case stalled, the condition was polled **14 000 times over 275 s** and every one returned
+     * empty — while the screen's own effect had finished at **9 ms with 6 rows**, and the class's **next** case found
+     * its node on the **first** poll, in 18 ms.
+     *
+     * So the condition is satisfiable and the data is present; the tree is empty for whichever case sits in that
+     * position. That is a harness question rather than an app one, and it is stated as such rather than guessed at.
      */
     private fun pollUntil(label: String, condition: () -> Boolean) {
         var polls = 0
         val start = System.currentTimeMillis()
+        // Stamp the idle wait separately from the poll. `waitUntil` does both, and conflating them is why three
+        // theories about the data were all wrong: the effect finishes in milliseconds and the stall is elsewhere.
+        val idleStart = System.currentTimeMillis()
+        compose.waitForIdle()
+        println(
+            "TAGSTAMP " + label + " waitForIdle=" + (System.currentTimeMillis() - idleStart) +
+                "ms conditionNow=" + condition(),
+        )
         compose.waitUntil(timeoutMillis = 300_000) {
             polls++
             if (polls % 2000 == 0) {
@@ -143,5 +159,26 @@ class ClassAndTagBrowseDeviceTest {
             compose.onAllNodesWithText("0 substances").fetchSemanticsNodes().isNotEmpty()
         }
         compose.onNodeWithText("0 substances").assertIsDisplayed()
+    }
+
+    /**
+     * A tag with a **handful** of rows draws its count, quickly.
+     *
+     * Added to isolate the one variable left: `phenethylamine` surfaces 222 rows and its screen intermittently takes
+     * 300 s, while the tag that surfaces none never hangs. `phenothiazine` surfaces 8. It still proves the tag join —
+     * a non-zero count is what the assertion is for — while drawing few enough rows that a stall here would mean the
+     * row count is **not** the trigger.
+     */
+    @Test
+    fun aSmallTagDrawsItsCount() {
+        val catalog = stamp("catalog()") { runBlocking { app().catalog() } }
+        stamp("substancesWithTag") { catalog.substancesWithTag("phenothiazine") }
+
+        compose.setContent { PiruTheme { TagBrowseScreen("phenothiazine", AppNavigator()) } }
+
+        pollUntil("aSmallTagDrawsItsCount") {
+            compose.onAllNodesWithText("substances", substring = true).fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithText("0 substances").assertDoesNotExist()
     }
 }

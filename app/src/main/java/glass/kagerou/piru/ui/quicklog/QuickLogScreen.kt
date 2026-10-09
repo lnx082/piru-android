@@ -50,6 +50,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import glass.kagerou.piru.substance.SubstanceMatch
 import glass.kagerou.piru.engine.TagExtractor
+import glass.kagerou.piru.data.AppSettingsStore
+import glass.kagerou.piru.data.QuickLogRecents
+import android.util.Log
+
+/** The log tag for this screen. */
+private const val TAG = "QuickLog"
 
 /**
  * One dose, staged and not yet committed.
@@ -302,6 +308,30 @@ fun QuickLogSheet(
                                     )
                                     sessionRepository.assignSession(rowId)
                                 }
+
+                                // The dock's recents. One read, N folds, one write: `fold` returns the whole
+                                // intended list, and a batch that saved per dose would re-run every live query per
+                                // dose.
+                                runCatching {
+                                    val dao = app.database.quickLogDoseDao()
+                                    val settings = AppSettingsStore(app)
+                                    val folded = QuickLogRecents.fold(
+                                        doses = doses.map { dose ->
+                                            QuickLogRecents.LoggedDose(
+                                                substance = dose.substance,
+                                                route = dose.route,
+                                                amount = dose.amount ?: 0.0,
+                                                unit = dose.unit,
+                                            )
+                                        },
+                                        existing = dao.all(),
+                                        fixedOrder = settings.quickLogFixedOrder(),
+                                        suppressed = settings.quickLogSuppressedRecents(),
+                                    )
+                                    dao.deleteAll()
+                                    for (row in folded.rows) dao.insert(row)
+                                    settings.setQuickLogSuppressedRecents(folded.suppressed)
+                                }.onFailure { Log.w(TAG, "Quick-log recents update failed", it) }
                                 // The occurrence record, re-derived from the doses just
                                 // written. This is what stops "still need to log X?" for a
                                 // slot the user has now logged, and what re-arms the

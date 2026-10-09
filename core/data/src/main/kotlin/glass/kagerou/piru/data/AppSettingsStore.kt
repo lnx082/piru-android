@@ -74,6 +74,40 @@ class AppSettingsStore(private val context: Context) {
      * Clamped on read as well as on write: the pinch bounds are `[0.5, 5.0]`, and a value outside them that got into
      * the store another way would lay the strip out at a scale no gesture could return from.
      */
+    /**
+     * Whether logging a chip leaves the dock's order alone.
+     *
+     * Off by default, which is upstream's default and the useful one: a dock's whole point is that what you reached
+     * for last is where your thumb already is.
+     */
+    fun quickLogFixedOrder(): Boolean = prefs().getBoolean(KEY_QUICK_LOG_FIXED_ORDER, false)
+
+    fun setQuickLogFixedOrder(value: Boolean) {
+        prefs().edit().putBoolean(KEY_QUICK_LOG_FIXED_ORDER, value).apply()
+    }
+
+    /**
+     * The identities a user has removed from the dock's recents.
+     *
+     * Stored as a separator-joined string because the store is a preferences file, and held **per identity** rather
+     * than per name: a user who removes a Concerta chip has not asked for Ritalin to go too, and those share a
+     * substance name.
+     */
+    fun quickLogSuppressedRecents(): Set<String> =
+        prefs().getString(KEY_QUICK_LOG_SUPPRESSED, null)
+            ?.split(SEPARATOR)
+            ?.filter { it.isNotEmpty() }
+            ?.toSet()
+            ?: emptySet()
+
+    fun setQuickLogSuppressedRecents(values: Set<String>) {
+        // `commit` rather than `apply`: the suppression list is read back inside the same logging pass that writes
+        // it, and an async write would be racing that read.
+        prefs().edit()
+            .putString(KEY_QUICK_LOG_SUPPRESSED, values.joinToString(SEPARATOR))
+            .commit()
+    }
+
     fun timelineZoom(): Double = prefs().getFloat(KEY_TIMELINE_ZOOM, 1.0f).toDouble().coerceIn(0.5, 5.0)
 
     fun setTimelineZoom(value: Double) {
@@ -203,6 +237,8 @@ class AppSettingsStore(private val context: Context) {
         .remove(KEY_TIMELINE_PK_CURVES)
         .remove(KEY_TIMELINE_SHOWS_AXIS)
         .remove(KEY_TIMELINE_BUBBLE_STYLE)
+        .remove(KEY_QUICK_LOG_FIXED_ORDER)
+        .remove(KEY_QUICK_LOG_SUPPRESSED)
             .remove(KEY_TAB_LABELS)
             .apply()
     }
@@ -239,6 +275,13 @@ class AppSettingsStore(private val context: Context) {
      * The timeline's display options. The names are upstream's own, because a settings export from iOS carries
      * them and the two platforms have to agree about what `timelineZoom` means.
      */
+    /**
+     * The quick log's two dock preferences, named as upstream names them so an imported settings file means the same
+     * thing on both platforms.
+     */
+    const val KEY_QUICK_LOG_FIXED_ORDER: String = "quickLogFixedOrder"
+    const val KEY_QUICK_LOG_SUPPRESSED: String = "quickLogSuppressedRecents"
+
     const val KEY_TIMELINE_ZOOM: String = "timelineZoom"
     const val KEY_TIMELINE_COMPRESSION: String = "timelineCompression"
     const val KEY_TIMELINE_PK_CURVES: String = "timelinePKCurves"
@@ -249,5 +292,13 @@ class AppSettingsStore(private val context: Context) {
 
     /** Whether the bottom bar draws its labels. */
     const val KEY_TAB_LABELS: String = "tabLabels"
+
+    /**
+     * How the suppressed-recents list is joined.
+     *
+     * A unit separator rather than a comma or a colon: an identity key is built from a substance name, and a name can
+     * contain any printable character a user or the catalogue chose. `\u001F` cannot appear in one.
+     */
+    private const val SEPARATOR: String = "\u001F"
     }
 }
