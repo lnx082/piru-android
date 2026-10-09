@@ -1371,6 +1371,32 @@ class SubstanceReader(
      *
      * Read by the antidepressant class card, which is this column's first reader in the port.
      */
+    /**
+     * Preparation name -> the molecule its pharmacology is actually measured on.
+     *
+     * A self-join rather than two reads, so a **dangling** `active_ingredient_substance_id` produces no row instead of a
+     * row whose target cannot be named. The catalogue currently holds exactly one such mapping (Cannabis -> THC), and
+     * the shape is a join anyway because the column's whole purpose is to point at another row.
+     *
+     * Keyed by lowercased canonical name, which is what [`glass.kagerou.piru.substance.ActiveIngredient`] expects and
+     * what a caller can produce from a display title.
+     */
+    fun activeIngredientMap(): Map<String, String> = db.query(
+        """
+        SELECT p.canonical_name AS preparation, i.canonical_name AS ingredient
+        FROM substances p
+        JOIN substances i ON i.id = p.active_ingredient_substance_id
+        WHERE p.active_ingredient_substance_id IS NOT NULL
+          AND p.active_ingredient_substance_id != ''
+        """.trimIndent(),
+    ).mapNotNull { row ->
+        // Both names are required: a row whose ingredient name is missing would install a mapping to nothing, and
+        // `ActiveIngredient` would then report that the preparation borrows while naming no molecule.
+        val preparation = row.string("preparation") ?: return@mapNotNull null
+        val ingredient = row.string("ingredient") ?: return@mapNotNull null
+        preparation.lowercase() to ingredient
+    }.toMap()
+
     fun drugClassFor(substanceID: Long): String? {
         return db.query("SELECT drug_class FROM substances WHERE id = ?", listOf(substanceID))
             .firstOrNull()

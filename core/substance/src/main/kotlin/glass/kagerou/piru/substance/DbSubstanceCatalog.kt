@@ -530,6 +530,25 @@ class DbSubstanceCatalog private constructor(
      * Two steps, both of which can fail to resolve: the name to a catalogue id, and the id to a class. A name the
      * catalogue has never heard of is null rather than an error — the class card simply does not draw.
      */
+    /**
+     * Preparation name -> the molecule its pharmacology is measured on, or null when it speaks for itself.
+     *
+     * Delegates to [`glass.kagerou.piru.substance.ActiveIngredient`], which holds the map installed from the catalogue's
+     * `active_ingredient_substance_id`. The map is installed **once when this catalogue is built** rather than read per
+     * call: a lazy first read would mean the first pharmacology query of a session could see an empty map and attribute
+     * the preparation's borrowed numbers to the preparation — the failure the rule exists to prevent, appearing only
+     * sometimes, which is the worst way for it to appear.
+     */
+    fun activeIngredientFor(nameOrAlias: String): String? = ActiveIngredient.resolve(nameOrAlias)
+
+    /**
+     * The name pharmacology should be read under: the active ingredient when there is one, else the substance itself.
+     *
+     * Every pharmacology read in the app should go through this rather than the catalogue directly with a preparation's
+     * own name.
+     */
+    fun pharmacologyNameFor(nameOrAlias: String): String = ActiveIngredient.pharmacologyName(nameOrAlias)
+
     fun drugClassFor(nameOrAlias: String): String? {
         // \index.resolve\, which is what every other passthrough here uses. I wrote eader.idFor\ first, which does
         // not exist: the name-to-id step belongs to the index, and the reader takes an id.
@@ -896,6 +915,11 @@ class DbSubstanceCatalog private constructor(
             region: String? = null,
         ): DbSubstanceCatalog {
             val reader = SubstanceReader(db, order, language)
+            // Installed **here**, at the one place a reader is built, rather than lazily on first pharmacology read.
+            // A lazy install would let the first read of a session see an empty map and attribute a preparation's
+            // borrowed numbers to the preparation itself — the failure the rule exists to prevent, appearing only
+            // sometimes, which is the worst way for it to appear.
+            ActiveIngredient.load(reader.activeIngredientMap())
             return DbSubstanceCatalog(
                 reader = reader,
                 index = SubstanceIdentityIndex.build(db),
