@@ -294,4 +294,20 @@
     <string name="journal_session_recovery">Recovery tips</string>
     <string name="journal_session_recovery_all">All recovery tips</string>
     <string name="journal_entry_in_your_body">In your body</string>
+    <string name="metabolite_also_active">Also active</string>
+    <string name="metabolite_outlasts_duration">%1$s is still going after %2$s has worn off</string>
+    <string name="metabolite_persists_beyond">%1$s keeps working after %2$s</string>
+    <string name="metabolite_comparable">About %1$s %2$s, dose for dose</string>
+    <string name="metabolite_stronger_with_share">About %1$s %2$s, and %3$s of a dose becomes it</string>
+    <string name="metabolite_stronger_share_unrecorded">About %1$s %2$s molecule for molecule; how much of a dose converts is unrecorded</string>
+    <string name="metabolite_qualified">Measured at %1$s %4$s by %2$s at %3$s</string>
+    <string name="metabolite_divergent">Acts differently to %1$s rather than simply more weakly</string>
+    <string name="metabolite_relationship">Your body turns %1$s into %2$s, which is active too</string>
+    <string name="metabolite_basis_clinical">clinical potency</string>
+    <string name="metabolite_basis_receptor_affinity">receptor affinity</string>
+    <string name="metabolite_basis_in_vitro">in-vitro activity</string>
+    <string name="metabolite_basis_unknown">an unstated measure</string>
+    <string name="metabolite_target_unspecified">an unspecified target</string>
+    <string name="metabolite_footnote">What the body makes from this dose. Not a measured level.</string>
+    <string name="metabolite_open">Open</string>
 </resources>

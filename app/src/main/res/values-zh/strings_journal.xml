@@ -254,4 +254,20 @@
     <string name="journal_session_recovery">恢复建议</string>
     <string name="journal_session_recovery_all">全部恢复建议</string>
     <string name="journal_entry_in_your_body">体内</string>
+    <string name="metabolite_also_active">同时活跃</string>
+    <string name="metabolite_outlasts_duration">%2$s 已过效，%1$s 仍在起作用</string>
+    <string name="metabolite_persists_beyond">%2$s 之后 %1$s 仍在起效</string>
+    <string name="metabolite_comparable">等剂量下约为 %2$s 的 %1$s</string>
+    <string name="metabolite_stronger_with_share">按分子计约为 %2$s 的 %1$s，且一剂中有 %3$s 转化为它</string>
+    <string name="metabolite_stronger_share_unrecorded">按分子计约为 %2$s 的 %1$s；一剂中有多少转化，尚无记录</string>
+    <string name="metabolite_qualified">在 %3$s 处测得为 %4$s 的 %1$s（依据：%2$s）</string>
+    <string name="metabolite_divergent">与 %1$s 作用方式不同，而不只是更弱</string>
+    <string name="metabolite_relationship">你的身体会把 %1$s 变成 %2$s，它同样有活性</string>
+    <string name="metabolite_basis_clinical">临床效力</string>
+    <string name="metabolite_basis_receptor_affinity">受体亲和力</string>
+    <string name="metabolite_basis_in_vitro">体外活性</string>
+    <string name="metabolite_basis_unknown">未说明的测量方式</string>
+    <string name="metabolite_target_unspecified">未说明的靶点</string>
+    <string name="metabolite_footnote">身体由这一剂生成的东西。不是实测水平。</string>
+    <string name="metabolite_open">打开</string>
 </resources>

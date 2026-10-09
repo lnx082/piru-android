@@ -54,6 +54,7 @@ import androidx.compose.material3.Surface
 import glass.kagerou.piru.ui.meds.LocationPickerScreen
 import glass.kagerou.piru.ui.meds.PickedLocation
 import glass.kagerou.piru.model.P3Color
+import glass.kagerou.piru.engine.ActiveMetaboliteFold
 
 /**
  * One logged dose, read and edited.
@@ -119,6 +120,9 @@ fun EntryDetailScreen(
     // What is still in the body from **this** dose. Built from the same model the session page uses, with the entry
     // page's own heading and the cleared rows filtered out.
     var bodyLoad by remember { mutableStateOf(SessionBodyLoadModel.Result()) }
+
+    // What the body makes from this dose: the "Also Active" block, built from the catalogue's metabolism rows.
+    var metabolites by remember { mutableStateOf<List<ActiveMetaboliteFold.Entry>>(emptyList()) }
     var saved by remember { mutableStateOf(false) }
 
     /**
@@ -210,6 +214,16 @@ fun EntryDetailScreen(
                 other.rowId != row.rowId &&
                     kotlin.math.abs(other.timestamp.time - row.timestamp.time) <= 24L * 3_600_000L
             }
+            // The metabolites of this dose, folded from the catalogue's metabolism rows. Same read as everything
+            // else on this screen.
+            metabolites = runCatching {
+                val rows = (catalog as? glass.kagerou.piru.substance.DbSubstanceCatalog)
+                    // `row`, not `current`: this is the load effect, where the smart-cast name does not exist.
+                    ?.metabolismRows(row.substance)
+                    .orEmpty()
+                ActiveMetaboliteFold.fold(rows)
+            }.getOrDefault(emptyList())
+
             // The body load for this one dose, from the same catalogue read as everything else here. The tints come
             // from the palette the journal already resolves, so a row's dot matches the same substance elsewhere.
             bodyLoad = runCatching {
@@ -505,10 +519,7 @@ fun EntryDetailScreen(
                     }
                 }
 
-                // What else was going on. Before the unknown-dose note, because it is about the dose rather
-                // than about a gap in the data.
-                // What is still in the body from this dose. Above the context block, because it is about the dose
-                // itself rather than about what else was going on.
+                // What is still in the body from this dose.
                 SessionBodyLoadCard(
                     result = bodyLoad,
                     onOpenSubstance = { name -> navigator.push(PushRoute.Substance(name)) },
@@ -530,6 +541,24 @@ fun EntryDetailScreen(
                             }
                         }
                     },
+                )
+
+                // What the body makes from this dose. Below what is left of it: that card says how much, this one
+                // says of what.
+                ActiveMetaboliteCard(
+                    entries = metabolites,
+                    parentName = current.substance,
+                    parentHalfLifeMinutes = catalog?.lookup(current.substance)?.halfLifeMinutes,
+                    // The **longest** route duration, which is the window the outlasts claim is measured against.
+                    // Null when the catalogue has no acute profile — the chronic-medication case, where the
+                    // half-life decides instead.
+                    parentDurationMinutes = catalog?.lookup(current.substance)
+                        ?.routes
+                        ?.mapNotNull { it.duration?.estimatedTotalMinutes }
+                        ?.maxOrNull(),
+                    accent = PiruTheme.colors.accent,
+                    formationFractionPct = null,
+                    onOpenSubstance = { name -> navigator.push(PushRoute.Substance(name)) },
                 )
 
                 if (current.isUnknownDose) {
