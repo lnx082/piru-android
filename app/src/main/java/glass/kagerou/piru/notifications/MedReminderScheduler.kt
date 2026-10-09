@@ -205,6 +205,12 @@ object MedReminderScheduler {
         val satisfied = app.routineOccurrences().satisfiedSlotKeys(now = now, zone = zone)
         val askAgainDefault = NotificationPreferencesStore(context).load().askAgainDefaultMinutes
 
+        // The global reminder offset, read once per sync rather than once per med. From `AppSettingsStore` rather than
+        // the notification preferences, because that is where the settings screen writes it — one decision with two
+        // homes is how the two come to disagree.
+        val reminderOffsetMinutes = glass.kagerou.piru.data.AppSettingsStore(context)
+            .adherenceReminderOffsetMinutes()
+
         val scheduled = meds.filter { !it.isAsNeeded && it.remind && it.reminderTimesMinutes.isNotEmpty() }
 
         val followUps = ArrayList<PlannedFollowUp>()
@@ -227,7 +233,7 @@ object MedReminderScheduler {
                 val threadId = medThreadIdentifier(anchorSlug(med))
                 val deepLink = groupDeepLink(TimeGroup.of(time).slug)
 
-                for ((index, fireAt) in primaryFireDates(med, time, now, zone).withIndex()) {
+                for ((index, fireAt) in primaryFireDates(med, time, now, zone, reminderOffsetMinutes).withIndex()) {
                     val isToday = fireAt < now.atZone(zone).toLocalDate().plusDays(1).atStartOfDay(zone).toInstant()
                     if (isToday && isSatisfied) continue
                     // A daily med's first upcoming slot keeps the un-suffixed
@@ -506,9 +512,18 @@ object MedReminderScheduler {
         )
     }
 
-    private fun primaryFireDates(med: DailyDoseItemEntity, timeMinutes: Int, now: Instant, zone: ZoneId): List<Instant> =
+    private fun primaryFireDates(
+        med: DailyDoseItemEntity,
+        timeMinutes: Int,
+        now: Instant,
+        zone: ZoneId,
+        offsetMinutes: Int = 0,
+    ): List<Instant> =
         dueDays(med, DUE_PRIMARIES_PER_SLOT, now, zone)
-            .map { it.atStartOfDay(zone).toInstant().plusSeconds(timeMinutes * 60L) }
+            .map { day ->
+                val fireMinute = ReminderOffset.apply(scheduledMinutes = timeMinutes, offsetMinutes = offsetMinutes)
+                day.atStartOfDay(zone).toInstant().plusSeconds(fireMinute * 60L)
+            }
             .filter { it > now }
 
     private fun dailyFireDates(timeMinutes: Int, now: Instant, zone: ZoneId): List<Instant> {
@@ -595,4 +610,40 @@ class MedReminderReconcileWorker(
         // read is the failure mode this whole type exists to avoid.
         onFailure = { Result.retry() },
     )
+}
+
+/**
+ * When a reminder actually fires, given its scheduled time and the user's global delay.
+ *
+ * ## The clamp is not optional
+ * A plain `scheduled + offset` can push a 23:50 reminder into the **next day**, which breaks two things at once: the
+ * satisfaction check compares a fire date against the slot key of the *scheduled* time, so a reminder arriving after
+ * midnight is checked against a slot that has already expired; and the "first upcoming slot" arithmetic, which the
+ * un-suffixed notification identifier depends on, would see a date belonging to tomorrow.
+ *
+ * So the delay is clamped to the minutes left in the day. A 23:50 reminder with a 30-minute delay fires at 23:59 —
+ * later than asked and on the right day, which is the better of the two failures. The setting says "minutes after the
+ * scheduled time", and this is the one case where it cannot be exactly that.
+ *
+ * Extracted from the scheduler's private arithmetic so the rule has a test: the failure it prevents is invisible on
+ * screen and only shows as a reminder that never appears.
+ */
+internal object ReminderOffset {
+
+    /** Minutes in a day, the bound the clamp works against. */
+    const val MINUTES_PER_DAY: Int = 24 * 60
+
+    /**
+     * The minute of the day this reminder fires at.
+     *
+     * A negative offset is treated as zero rather than moving the reminder **earlier** than the dose is due: the store
+     * clamps what it holds, so a negative here is a bug rather than a preference, and firing before the dose is due is
+     * the worse of the two ways to be wrong about it.
+     */
+    fun apply(scheduledMinutes: Int, offsetMinutes: Int): Int {
+        val scheduled = scheduledMinutes.coerceIn(0, MINUTES_PER_DAY - 1)
+        val untilMidnight = MINUTES_PER_DAY - 1 - scheduled
+        val applied = offsetMinutes.coerceIn(0, untilMidnight)
+        return scheduled + applied
+    }
 }
