@@ -190,79 +190,211 @@ class ActiveMetaboliteFoldTest {
         folded.map { it.name } shouldContainExactly listOf("zebra-metabolite", "alpha-metabolite")
     }
 
-    // MARK: - The outlasts gate
+    /**
+     * One folded entry, built **through the fold** rather than by hand.
+     *
+     * Going through `fold` keeps this honest: a hand-built `Entry` could carry a combination of fields the fold would
+     * never produce, and a statement case written against that would pass while the real pipeline behaved differently.
+     */
+    private fun entryWith(
+        halfLife: Double? = null,
+        potency: Double? = null,
+        basis: MetabolitePotencyBasis? = null,
+        target: String? = null,
+        mechanism: MetaboliteMechanism = MetaboliteMechanism.UNKNOWN,
+    ): ActiveMetaboliteFold.Entry = ActiveMetaboliteFold.fold(
+        listOf(
+            row(
+                name = "norketamine",
+                halfLife = halfLife,
+                potency = potency,
+                basis = basis,
+                target = target,
+                mechanism = mechanism,
+            ),
+        ),
+    ).single()
+
+    // MARK: - The gate: what earns a section
 
     /**
-     * A metabolite outlives the dose when it lasts longer than the parent's window.
+     * A metabolite between **1× and 2×** the parent, with no duration, does **not** earn a section.
      *
-     * The window is the **longer** of the parent's half-life and its longest acute duration, because the claim is
-     * "this is still going when the parent is not" and a parent is perceptible for its duration, not merely for one
-     * half-life.
+     * The case my first version of this rule got wrong, and the only input where "longer than the parent" and "twice
+     * the parent" disagree. Its absence is why the error survived a green test run: every case I had written was on
+     * one side of the boundary or the other, and none was between them.
      */
     @Test
-    fun `a metabolite outlives the dose`() {
-        // Parent: 180-minute half-life, 360-minute duration. The window is 360.
-        ActiveMetaboliteFold.outlastsDose(
-            metaboliteHalfLifeMinutes = 600.0,
-            parentHalfLifeMinutes = 180.0,
-            parentDurationMinutes = 360.0,
-        ) shouldBe true
-
-        // Shorter than the window: a pathway, not a live substance.
-        ActiveMetaboliteFold.outlastsDose(
-            metaboliteHalfLifeMinutes = 120.0,
-            parentHalfLifeMinutes = 180.0,
-            parentDurationMinutes = 360.0,
+    fun `a metabolite under twice the parent does not earn a section`() {
+        val entry = entryWith(halfLife = 300.0, mechanism = MetaboliteMechanism.SCALED)
+        ActiveMetaboliteFold.earnsOwnSection(
+            entry = entry,
+            parentHalfLifeMinutes = 200.0,
+            parentDurationMinutes = null,
+            materiallyActive = true,
         ) shouldBe false
     }
 
     /**
-     * With no duration profile the half-life decides.
+     * A metabolite at **exactly** the parent's duration earns a section.
      *
-     * The chronic-medication case: an SSRI carries a half-life and no acute duration table, and requiring a duration
-     * would silence the block for exactly the drugs whose metabolites matter most.
+     * The comparison is `>=`, not `>`: a metabolite that lasts as long as the parent's duration outlasts the *effect*,
+     * which is the claim the sentence makes.
      */
     @Test
-    fun `with no duration the half-life decides`() {
-        ActiveMetaboliteFold.outlastsDose(
-            metaboliteHalfLifeMinutes = 1_440.0,
-            parentHalfLifeMinutes = 900.0,
-            parentDurationMinutes = null,
-        ) shouldBe true
-        ActiveMetaboliteFold.outlastsDose(
-            metaboliteHalfLifeMinutes = 400.0,
-            parentHalfLifeMinutes = 900.0,
-            parentDurationMinutes = null,
-        ) shouldBe false
+    fun `a metabolite matching the duration exactly earns a section`() {
+        val entry = entryWith(halfLife = 360.0)
+        val statement = ActiveMetaboliteFold.statement(
+            entry = entry,
+            parentName = "Ketamine",
+            parentHalfLifeMinutes = 180.0,
+            parentDurationMinutes = 360.0,
+            formationFractionPct = null,
+            materiallyActive = true,
+        )
+        statement shouldBe ActiveMetaboliteFold.Statement.OutlastsDuration("norketamine", "Ketamine")
+        ActiveMetaboliteFold.earnsOwnSection(entry, 180.0, 360.0, materiallyActive = true) shouldBe true
     }
 
     /**
-     * With nothing known about the parent, nothing is claimed.
+     * With no duration, **twice** the parent half-life earns a section.
      *
-     * A zero window would make every metabolite "outlast" it, which would put the block on every dose of every
-     * substance the catalogue knows nothing about — the opposite of the gate's purpose.
+     * The chronic-medication branch: requiring a duration would silence the block for exactly the drugs whose
+     * metabolites matter most.
      */
+    @Test
+    fun `twice the parent half-life earns a section`() {
+        val entry = entryWith(halfLife = 1_800.0)
+        ActiveMetaboliteFold.statement(
+            entry, "Fluoxetine", parentHalfLifeMinutes = 900.0, parentDurationMinutes = null,
+            formationFractionPct = null, materiallyActive = true,
+        ) shouldBe ActiveMetaboliteFold.Statement.PersistsBeyondParent("norketamine", "Fluoxetine")
+    }
+
+    /** With nothing known about the parent, nothing is claimed — a zero parent would let everything through. */
     @Test
     fun `an unknown parent claims nothing`() {
-        ActiveMetaboliteFold.outlastsDose(
-            metaboliteHalfLifeMinutes = 600.0,
-            parentHalfLifeMinutes = null,
-            parentDurationMinutes = null,
-        ) shouldBe false
-        ActiveMetaboliteFold.outlastsDose(
-            metaboliteHalfLifeMinutes = 600.0,
-            parentHalfLifeMinutes = 0.0,
-            parentDurationMinutes = 0.0,
-        ) shouldBe false
+        val entry = entryWith(halfLife = 600.0)
+        ActiveMetaboliteFold.earnsOwnSection(entry, null, null, materiallyActive = true) shouldBe false
     }
 
-    /** A metabolite with no recorded half-life cannot be claimed to outlast anything. */
+    /** A metabolite with no half-life cannot outlast anything, however the parent is described. */
     @Test
     fun `a metabolite with no half-life claims nothing`() {
-        ActiveMetaboliteFold.outlastsDose(
-            metaboliteHalfLifeMinutes = null,
-            parentHalfLifeMinutes = 180.0,
-            parentDurationMinutes = 360.0,
-        ) shouldBe false
+        val entry = entryWith(halfLife = null)
+        ActiveMetaboliteFold.earnsOwnSection(entry, 180.0, 360.0, materiallyActive = true) shouldBe false
+    }
+
+    // MARK: - The statement resolver's order
+
+    /**
+     * **Divergence outranks everything**, including a duration consequence.
+     *
+     * Norperidine is a convulsant where pethidine is an analgesic, and saying "it outlasts the dose" would bury the
+     * one thing that matters about it.
+     */
+    @Test
+    fun `divergence outranks a duration consequence`() {
+        val entry = entryWith(halfLife = 10_000.0, mechanism = MetaboliteMechanism.DIVERGENT)
+        ActiveMetaboliteFold.statement(
+            entry, "Pethidine", parentHalfLifeMinutes = 180.0, parentDurationMinutes = 240.0,
+            formationFractionPct = null, materiallyActive = true,
+        ) shouldBe ActiveMetaboliteFold.Statement.Divergent("Pethidine")
+        // And it earns no section, because only a duration consequence does.
+        ActiveMetaboliteFold.earnsOwnSection(entry, 180.0, 240.0, materiallyActive = true) shouldBe false
+    }
+
+    /**
+     * A clinical ratio with **enough formation** is "dose for dose"; with too little it is molecule-for-molecule.
+     *
+     * Codeine → morphine: the 10 : 1 ratio is right about the molecules and badly wrong about doses, because only a
+     * small part of a codeine dose is ever demethylated. The threshold is 50%.
+     */
+    @Test
+    fun `formation decides between comparable and stronger-molecule`() {
+        val entry = entryWith(
+            halfLife = 100.0,
+            potency = 900.0,
+            basis = MetabolitePotencyBasis.CLINICAL,
+            mechanism = MetaboliteMechanism.SCALED,
+        )
+
+        ActiveMetaboliteFold.statement(
+            entry, "Codeine", parentHalfLifeMinutes = 180.0, parentDurationMinutes = null,
+            formationFractionPct = 10.0, materiallyActive = true,
+        ) shouldBe ActiveMetaboliteFold.Statement.StrongerMolecule(9.0, "Codeine", "norketamine", 10.0)
+
+        ActiveMetaboliteFold.statement(
+            entry, "Codeine", parentHalfLifeMinutes = 180.0, parentDurationMinutes = null,
+            formationFractionPct = 80.0, materiallyActive = true,
+        ) shouldBe ActiveMetaboliteFold.Statement.Comparable(9.0, "Codeine")
+    }
+
+    /**
+     * A **non-clinical** basis never produces the unqualified comparative.
+     *
+     * The catalogue has carried receptor-affinity ratios — tramadol to M1 reads 20 000% from a "~200× MOR affinity"
+     * source — and printing that as "dose for dose" would be a twenty-thousand-fold overstatement.
+     */
+    @Test
+    fun `a receptor-affinity ratio is qualified, never comparable`() {
+        val entry = entryWith(
+            halfLife = 100.0,
+            potency = 20_000.0,
+            basis = MetabolitePotencyBasis.RECEPTOR_AFFINITY,
+            target = "MOR",
+            mechanism = MetaboliteMechanism.SCALED,
+        )
+        val statement = ActiveMetaboliteFold.statement(
+            entry, "Tramadol", parentHalfLifeMinutes = 360.0, parentDurationMinutes = null,
+            formationFractionPct = 90.0, materiallyActive = true,
+        )
+        statement shouldBe ActiveMetaboliteFold.Statement.Qualified(
+            ratio = 200.0,
+            parent = "Tramadol",
+            basis = MetabolitePotencyBasis.RECEPTOR_AFFINITY,
+            target = "MOR",
+        )
+    }
+
+    /**
+     * A **scaled** mechanism is required for any comparative; without it the ratio is merely qualified.
+     *
+     * A `MECHANISM` of `UNKNOWN` with a clinical ratio is a measurement without a claim, and the card hedges it rather
+     * than asserting strength.
+     */
+    @Test
+    fun `an unscaled mechanism qualifies its ratio`() {
+        val entry = entryWith(
+            halfLife = 100.0,
+            potency = 150.0,
+            basis = MetabolitePotencyBasis.CLINICAL,
+            mechanism = MetaboliteMechanism.UNKNOWN,
+        )
+        (ActiveMetaboliteFold.statement(
+            entry, "Parent", 180.0, null, formationFractionPct = 90.0, materiallyActive = true,
+        ) is ActiveMetaboliteFold.Statement.Qualified) shouldBe true
+    }
+
+    /** No measurement at all leaves the relationship, which is still new information rather than a failure. */
+    @Test
+    fun `no measurement leaves the relationship`() {
+        val entry = entryWith(halfLife = 100.0)
+        ActiveMetaboliteFold.statement(
+            entry, "Diazepam", parentHalfLifeMinutes = 4_320.0, parentDurationMinutes = null,
+            formationFractionPct = null, materiallyActive = true,
+        ) shouldBe ActiveMetaboliteFold.Statement.RelationshipOnly("norketamine", "Diazepam")
+    }
+
+    /**
+     * A **materially inactive** metabolite gets no duration sentence even when it lasts longer.
+     *
+     * Upstream's `isMateriallyActive` weighs the mechanism and the potency, not the `active` flag alone. Without this
+     * gate a long-lived but trivial species would claim the surface.
+     */
+    @Test
+    fun `a materially inactive metabolite earns nothing`() {
+        val entry = entryWith(halfLife = 10_000.0)
+        ActiveMetaboliteFold.earnsOwnSection(entry, 180.0, 240.0, materiallyActive = false) shouldBe false
     }
 }

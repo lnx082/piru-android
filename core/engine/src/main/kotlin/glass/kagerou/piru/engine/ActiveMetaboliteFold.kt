@@ -101,27 +101,141 @@ object ActiveMetaboliteFold {
     }
 
     /**
-     * Whether a metabolite outlasts the dose it came from.
+     * What can honestly be said about a metabolite beside its parent.
      *
-     * Ported from `ActiveMetabolite.earnsOwnSection`. This is the section's gate: **only a metabolite that outlives the
-     * dose gets its own surface.** A metabolite that clears faster than its parent is a pathway, not a live substance,
-     * and saying "also active" about it would send a reader looking for an effect that is not there.
-     *
-     * Measured against **the longer of** the parent's own half-life and its longest acute duration, because the claim
-     * is "this is still going when the parent is not" and the parent is perceptible for its duration, not merely for
-     * one half-life. A missing `parentDurationMinutes` leaves the half-life comparison, which is the chronic-medication
-     * case: an SSRI carries a half-life and no acute duration table.
+     * Ported from `ActiveMetabolite.statement(parentName:parentHalfLifeMinutes:parentDurationMinutes:)`. The order of
+     * the branches **is** the rule: divergence first, then a duration consequence, then potency, then a bare
+     * relationship. Each branch answers a stronger question than the one below it, so reordering them would let a
+     * potency ratio speak over a metabolite that simply lasts longer.
      */
-    fun outlastsDose(
-        metaboliteHalfLifeMinutes: Double?,
+    sealed class Statement {
+        /** The metabolite is still going after the duration the reader just read. */
+        data class OutlastsDuration(val metabolite: String, val parent: String) : Statement()
+
+        /** The same fact where there is no duration to point at — the chronic medications. */
+        data class PersistsBeyondParent(val metabolite: String, val parent: String) : Statement()
+
+        /** The only unqualified comparative: dose for dose. */
+        data class Comparable(val ratio: Double, val parent: String) : Statement()
+
+        /**
+         * A potency ratio between the two **molecules**, where too little of a dose converts for it to be a claim
+         * about doses. Codeine → morphine is the case: 10× is right molecule-for-molecule and badly wrong
+         * dose-for-dose.
+         */
+        data class StrongerMolecule(
+            val ratio: Double,
+            val parent: String,
+            val metabolite: String,
+            /** The share of a dose that becomes this metabolite, or null when unrecorded. */
+            val convertedPct: Double?,
+        ) : Statement()
+
+        /** A comparative that must carry its basis and target. */
+        data class Qualified(
+            val ratio: Double,
+            val parent: String,
+            val basis: MetabolitePotencyBasis?,
+            val target: String?,
+        ) : Statement()
+
+        /** Different pharmacology, not a stronger parent. Better described than quantified. */
+        data class Divergent(val parent: String) : Statement()
+
+        /** The relationship alone — new information to most readers, and not a failure state. */
+        data class RelationshipOnly(val metabolite: String, val parent: String) : Statement()
+    }
+
+    /**
+     * The formation share at or above which "dose for dose" means something.
+     *
+     * Upstream's threshold. Below it the same ratio is still true, but about **molecules** rather than doses, which is
+     * a different sentence and a different [Statement].
+     */
+    const val DOSE_EQUIVALENT_FORMATION_PCT: Double = 50.0
+
+    /**
+     * Resolves the statement for [entry] beside its parent.
+     *
+     * [materiallyActive] is the caller's answer to "is this worth speaking about at all" — upstream's
+     * `isMateriallyActive`, which weighs the mechanism and the potency rather than the `active` flag alone.
+     */
+    fun statement(
+        entry: Entry,
+        parentName: String,
         parentHalfLifeMinutes: Double?,
         parentDurationMinutes: Double?,
-    ): Boolean {
-        val metabolite = metaboliteHalfLifeMinutes ?: return false
-        val parentWindow = maxOf(parentHalfLifeMinutes ?: 0.0, parentDurationMinutes ?: 0.0)
-        // No parent figure at all means nothing can be claimed, so nothing is. A zero window would make every
-        // metabolite "outlast" it.
-        if (parentWindow <= 0.0) return false
-        return metabolite > parentWindow
+        formationFractionPct: Double?,
+        materiallyActive: Boolean,
+    ): Statement {
+        if (entry.mechanismVsParent == MetaboliteMechanism.DIVERGENT) return Statement.Divergent(parentName)
+
+        if (materiallyActive) {
+            val mine = entry.halfLifeMinutes
+            if (mine != null) {
+                if (parentDurationMinutes != null && parentDurationMinutes > 0) {
+                    // The duration decides when it exists, and the half-life is **not** consulted: a metabolite that
+                    // lasts as long as the parent's duration still outlasts the effect, which is the claim.
+                    if (mine >= parentDurationMinutes) {
+                        return Statement.OutlastsDuration(entry.name, parentName)
+                    }
+                } else if (parentHalfLifeMinutes != null && parentHalfLifeMinutes > 0 &&
+                    mine >= parentHalfLifeMinutes * 2
+                ) {
+                    // Twice as long, not merely longer: a metabolite that lingers a little has not earned a sentence
+                    // about outlasting anything.
+                    return Statement.PersistsBeyondParent(entry.name, parentName)
+                }
+            }
+        }
+
+        val clinical = entry.potencyVsParentPct?.takeIf {
+            entry.potencyBasis == MetabolitePotencyBasis.CLINICAL
+        }
+        if (clinical != null && entry.mechanismVsParent == MetaboliteMechanism.SCALED) {
+            val ratio = clinical / 100.0
+            // "Dose for dose" is a claim about doses and is only true when most of a dose actually becomes the
+            // metabolite. Without that term the ratio still means something — it means it about the molecules.
+            if (formationFractionPct != null && formationFractionPct >= DOSE_EQUIVALENT_FORMATION_PCT) {
+                return Statement.Comparable(ratio, parentName)
+            }
+            return Statement.StrongerMolecule(ratio, parentName, entry.name, formationFractionPct)
+        }
+
+        if (entry.potencyVsParentPct != null) {
+            return Statement.Qualified(
+                ratio = entry.potencyVsParentPct / 100.0,
+                parent = parentName,
+                basis = entry.potencyBasis,
+                target = entry.potencyTarget,
+            )
+        }
+
+        return Statement.RelationshipOnly(entry.name, parentName)
+    }
+
+    /**
+     * Whether a metabolite **earns a section of its own**.
+     *
+     * The separate, editorial question, kept apart from [statement] on purpose. Only a **duration** consequence earns
+     * one: a metabolite is a normal, expected part of how a drug works, and saying so at section volume overstates it.
+     * Oxymorphone is oxycodone's principal pathway and its 10 : 1 ratio is textbook, so promoting it to a headline
+     * implies news where there is none — and duplicates the metabolism table directly below.
+     *
+     * What a reader cannot get anywhere else on the screen is that the dose keeps working after the duration says it
+     * stopped. That is the whole warrant for the surface.
+     */
+    fun earnsOwnSection(
+        entry: Entry,
+        parentHalfLifeMinutes: Double?,
+        parentDurationMinutes: Double?,
+        materiallyActive: Boolean,
+    ): Boolean = when (
+        statement(entry, "", parentHalfLifeMinutes, parentDurationMinutes, null, materiallyActive)
+    ) {
+        is Statement.OutlastsDuration, is Statement.PersistsBeyondParent -> true
+        is Statement.Comparable, is Statement.StrongerMolecule, is Statement.Qualified,
+        is Statement.Divergent, is Statement.RelationshipOnly,
+        -> false
     }
 }
