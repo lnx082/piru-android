@@ -55,6 +55,17 @@ class TimelinePreferencesDeviceTest {
         compose.onNodeWithText(axisTitle).assertIsDisplayed()
         compose.onNodeWithText(zoomTitle).assertIsDisplayed()
         compose.onNodeWithText(compactTitle).assertIsDisplayed()
+
+        // **The rows that would do nothing are not on the screen.** Last release shipped two switches — modeled
+        // curves and gap compression — that wrote preferences nothing read, so tapping them changed nothing at all.
+        // This pins their absence, which makes that state inexpressible rather than merely fixed: the words are not
+        // in the app, so a row cannot be added back without this test failing.
+        for (gone in listOf("Modeled curves", "Compress empty time")) {
+            compose.onAllNodesWithText(gone).fetchSemanticsNodes().isEmpty() shouldBe true
+        }
+        // And exactly two switches, which with the three rows above is the whole menu.
+        compose.onAllNodes(isToggleable()).fetchSemanticsNodes().size shouldBe 2
+
         resetPreferences()
     }
 
@@ -77,19 +88,21 @@ class TimelinePreferencesDeviceTest {
         // title `Text` node does not reach a sibling `Switch`, which is exactly what failed when this tapped the
         // title.
         //
-        // Indexed to the **first** switch, which is the axis row: the screen draws it before the geometry blocks.
-        // Four switches exist while the axis is on, so `onNode` is ambiguous and `onAllNodes` is the honest form.
+        // Indexed to the **first** switch, which is the axis row: the screen draws it before the others. Two
+        // switches exist while the axis is on, so `onNode` is ambiguous and `onAllNodes` is the honest form.
         compose.onAllNodes(isToggleable())[0].assertIsOn().performClick()
         compose.waitForIdle()
 
-        // The geometry rows are gone; the two that still do something remain.
+        // The geometry row is gone; the two that still do something remain.
         compose.onAllNodesWithText(zoomTitle).fetchSemanticsNodes().isEmpty() shouldBe true
-        compose.onAllNodesWithText("Modeled curves").fetchSemanticsNodes().isEmpty() shouldBe true
-        compose.onAllNodesWithText("Compress empty time").fetchSemanticsNodes().isEmpty() shouldBe true
         compose.onNodeWithText(compactTitle).assertExists()
         compose.onNodeWithText(axisTitle).assertExists()
-        // Only two switches are left — the axis, off, and the bubble style. That the count fell from four to two is
-        // what proves the withdrawal, rather than a screen that never drew the rows at all.
+
+        // **Two switches, the same as before the tap** — and that is correct rather than a failure of the
+        // withdrawal. The axis switch is in the axis-off row list precisely so the user can turn the axis back on,
+        // and the bubble style stays. My first version asserted the count fell to one, which was wrong about the
+        // design: what withdraws is the **zoom row**, and that is what the assertion above names. A count cannot
+        // say *which* two switches are present, so the rows are asserted by name instead.
         compose.onAllNodes(isToggleable()).fetchSemanticsNodes().size shouldBe 2
         compose.onAllNodes(isToggleable())[0].assertIsOff()
 

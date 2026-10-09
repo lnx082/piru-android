@@ -34,6 +34,10 @@ import glass.kagerou.piru.data.TimelineBubbleStyleName
  * style, the vitals overlay and redose stacking. This port had **one** of them, `stackRedoses`, so the timeline drew
  * itself the same way for everybody and there was nowhere to say otherwise.
  *
+ * Three of the remaining six are here: zoom, the hour axis and the bubble style. The other two that describe the
+ * strip — modeled curves and gap compression — are **deliberately absent**, because this port has no
+ * concentration-curve layer and no vertical bubble strip, so neither could change anything. See `TimelineOptions`.
+ *
  * ## Why the state is re-read on every write rather than cached
  * Each value is held in a `remember`ed state initialised from the store and written back on change. That is the
  * shape `SettingsScreen` already uses, and it is right here for the same reason: **two surfaces draw the strip** —
@@ -55,8 +59,6 @@ fun TimelinePreferencesScreen(modifier: Modifier = Modifier) {
 
     var zoom by remember { mutableStateOf(store.timelineZoom()) }
     var showsAxis by remember { mutableStateOf(store.timelineShowsAxis()) }
-    var pkCurves by remember { mutableStateOf(store.timelinePKCurves()) }
-    var compressGaps by remember { mutableStateOf(store.timelineCompressGaps()) }
     var bubbleStyle by remember { mutableStateOf(TimelineBubbleStyleName.from(store.timelineBubbleStyle())) }
 
     val rows = TimelineOptions.rows(showsAxis)
@@ -123,18 +125,6 @@ fun TimelinePreferencesScreen(modifier: Modifier = Modifier) {
             }
         }
 
-        if (TimelineOptions.Row.PK_CURVES in rows) {
-            ToggleCard(
-                title = stringResource(R.string.journal_timeline_pk_curves),
-                detail = stringResource(R.string.journal_timeline_pk_curves_detail),
-                checked = pkCurves,
-                onCheckedChange = {
-                    pkCurves = it
-                    store.setTimelinePKCurves(it)
-                },
-            )
-        }
-
         if (TimelineOptions.Row.COMPACT_ENTRIES in rows) {
             ToggleCard(
                 title = stringResource(R.string.journal_timeline_compact),
@@ -147,17 +137,6 @@ fun TimelinePreferencesScreen(modifier: Modifier = Modifier) {
             )
         }
 
-        if (TimelineOptions.Row.COMPRESS_GAPS in rows) {
-            ToggleCard(
-                title = stringResource(R.string.journal_timeline_compress),
-                detail = stringResource(R.string.journal_timeline_compress_detail),
-                checked = compressGaps,
-                onCheckedChange = {
-                    compressGaps = it
-                    store.setTimelineCompressGaps(it)
-                },
-            )
-        }
     }
 }
 

@@ -45,11 +45,15 @@ class TimelineDeviceTest {
     fun theTimelineDrawsTitleAndCount() {
         compose.setContent { PiruTheme { TimelineScreen(AppNavigator()) } }
 
-        // 20 s against a screen that draws in well under a second, and it failed once anyway — on an emulator
-        // that had been up about an hour, in a run that took 6m53s for a suite that takes 71 s on a fresh boot.
-        // The whole suite came back green with **no code change** after restarting the AVD. So a timeout here
-        // means "restart the emulator" before it means "look for a bug".
-        compose.waitUntil(timeoutMillis = 20_000) {
+        // 120 s, not 20. The case draws in **3.7 s alone** and took **21.3 s** in a full-suite run — the same
+        // bimodality the tag cases have, where the whole run is sometimes six times slower and no measurement has
+        // found the cause. A 20 s budget sat inside that spread, so it failed on the slow runs and passed on the
+        // fast ones; 120 s is the budget every other spec in the suite already uses, and it is margin against a
+        // 3.7 s quiet run rather than a fudge.
+        //
+        // Restarting the AVD has cleared the slow mode every time it has appeared, so a timeout here means
+        // "restart the emulator" before it means "look for a bug in the app".
+        compose.waitUntil(timeoutMillis = 120_000) {
             compose.onAllNodesWithText("doses", substring = true).fetchSemanticsNodes().isNotEmpty()
         }
         compose.onNodeWithText("Timeline").assertIsDisplayed()

@@ -128,24 +128,36 @@ class TimelineZoomTest {
     /**
      * With the axis on, every row is offered.
      *
-     * The order is asserted because the menu draws in it: zoom first, then the curve mode, then the three toggles.
+     * The order is asserted because the menu draws in it: zoom first, then the two toggles.
      */
     @Test
     fun `the axis on offers every row in order`() {
         TimelineOptions.rows(showsAxis = true) shouldContainExactly listOf(
             TimelineOptions.Row.ZOOM,
-            TimelineOptions.Row.PK_CURVES,
             TimelineOptions.Row.SHOWS_AXIS,
             TimelineOptions.Row.COMPACT_ENTRIES,
-            TimelineOptions.Row.COMPRESS_GAPS,
         )
+    }
+
+    /**
+     * There is no row that cannot change anything.
+     *
+     * The assertion that would have caught last release's mistake. Two rows were shipped that wrote a preference
+     * nothing read — modeled curves, with no curve layer to draw, and gap compression, with no vertical strip to
+     * compress. Both looked entirely normal in the menu and did nothing. **This test pins the count**, so adding a
+     * row back means arguing with it.
+     */
+    @Test
+    fun `every row that exists does something`() {
+        TimelineOptions.Row.entries.size shouldBe 3
+        TimelineOptions.rows(showsAxis = true).size shouldBe TimelineOptions.Row.entries.size
     }
 
     /**
      * With the axis off, only the two rows that still do something are offered.
      *
-     * The gating rule. Zoom, curves and compression describe the strip's geometry; with the bubbles stacked as a
-     * plain list they change nothing, so offering them would be offering a control with no visible effect.
+     * The gating rule. Zoom describes the strip's geometry; with the entries stacked as a plain list it changes
+     * nothing, so offering it would be offering a control with no visible effect.
      */
     @Test
     fun `the axis off withdraws the geometry rows`() {
@@ -155,8 +167,6 @@ class TimelineZoomTest {
         )
         // Named individually too, so a failure says which row leaked through.
         TimelineOptions.offers(TimelineOptions.Row.ZOOM, showsAxis = false) shouldBe false
-        TimelineOptions.offers(TimelineOptions.Row.PK_CURVES, showsAxis = false) shouldBe false
-        TimelineOptions.offers(TimelineOptions.Row.COMPRESS_GAPS, showsAxis = false) shouldBe false
         // The axis toggle itself and the bubble style stay: the first would otherwise be a trap, the second
         // changes the rows rather than the strip's geometry.
         TimelineOptions.offers(TimelineOptions.Row.SHOWS_AXIS, showsAxis = false) shouldBe true

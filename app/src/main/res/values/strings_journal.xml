@@ -273,10 +273,6 @@
     <string name="journal_timeline_axis_detail">The hour scale down the left edge. With it off the entries stack as a plain list, and the options that only describe the strip are withdrawn.</string>
     <string name="journal_timeline_zoom">Zoom</string>
     <string name="journal_timeline_zoom_detail">How much of the day fits on screen. A pinch changes this too, and the two agree.</string>
-    <string name="journal_timeline_pk_curves">Modeled curves</string>
-    <string name="journal_timeline_pk_curves_detail">Draw the estimated concentration curves behind the entries. An estimate, not a measurement.</string>
     <string name="journal_timeline_compact">Compact entries</string>
     <string name="journal_timeline_compact_detail">Name and amount on one line, without the route. Leaves more width to the curves.</string>
-    <string name="journal_timeline_compress">Compress empty time</string>
-    <string name="journal_timeline_compress_detail">Collapse the quiet stretches between clusters so the busy parts are not pushed apart.</string>
 </resources>

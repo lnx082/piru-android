@@ -18,26 +18,31 @@ package glass.kagerou.piru.ui.journal
  */
 internal object TimelineOptions {
 
-    /** One row the menu should offer. */
+    /**
+     * One row the menu should offer.
+     *
+     * Only rows that **change what is drawn**. Upstream's menu has two more — modeled curves and gap compression —
+     * and neither is here: this port has no concentration-curve layer for the first to draw, and no vertical bubble
+     * strip with empty stretches for the second to collapse. A row a user can toggle with no effect is a lie about
+     * the app, and it is worse than an absent row because it costs a tap to discover.
+     */
     enum class Row {
         ZOOM,
-        PK_CURVES,
         SHOWS_AXIS,
         COMPACT_ENTRIES,
-        COMPRESS_GAPS,
     }
 
     /**
      * The rows to offer, in order.
      *
-     * With the axis on: all five. With it off: the axis toggle and the bubble style, and nothing else — because
+     * With the axis on: all three. With it off: the axis toggle and the bubble style, and nothing else — because
      * those two are the only ones that still describe what is on screen.
      *
      * The bubble style stays because it changes the rows themselves rather than the strip's geometry, which is why
      * upstream calls it "Compact Entries" and keeps it available either way.
      */
     fun rows(showsAxis: Boolean): List<Row> = if (showsAxis) {
-        listOf(Row.ZOOM, Row.PK_CURVES, Row.SHOWS_AXIS, Row.COMPACT_ENTRIES, Row.COMPRESS_GAPS)
+        listOf(Row.ZOOM, Row.SHOWS_AXIS, Row.COMPACT_ENTRIES)
     } else {
         listOf(Row.SHOWS_AXIS, Row.COMPACT_ENTRIES)
     }
