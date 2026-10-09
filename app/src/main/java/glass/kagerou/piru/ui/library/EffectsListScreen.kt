@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -98,7 +98,14 @@ fun EffectsListScreen(name: String, modifier: Modifier = Modifier) {
             }
         }
 
-        items(groups, key = { it.category }) { group ->
+        // Keyed on the **position** as well as the category, because the category is not a key.
+        //
+        // The uncategorised bucket's category is the empty string — the heading substitutes a name for it below — so
+        // two groups sharing a category produce **duplicate keys**, and Compose's lazy-list interval bookkeeping
+        // disagrees with its provider during a measure. That is not hypothetical: it is the
+        // `IndexOutOfBoundsException: Index 1, size 1` this screen threw in `SubstancePagesDeviceTest`, the same defect
+        // the tag screen had, and the same fix (`itemsIndexed` with the index in the key).
+        itemsIndexed(groups, key = { index, group -> "$index:${group.category}" }) { _, group ->
             PiruCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
