@@ -19,7 +19,7 @@ android {
         applicationId = "glass.kagerou.piru"
         minSdk = 30
         targetSdk = 37
-        versionCode = 10
+        versionCode = 11
         versionName = "0.6.0"
         // The widget's specs read the real store through `WidgetState.load`, which is
         // what a placed widget does — an in-memory database would test a database the
