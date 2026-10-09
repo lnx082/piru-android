@@ -284,4 +284,11 @@
     <string name="journal_filter_route">Route</string>
     <string name="journal_filter_clear">Clear all</string>
     <string name="journal_filter_tags">Tags</string>
+    <string name="journal_session_body_load">Still on board</string>
+    <string name="journal_session_body_load_total">%1$s %2$s · %3$d doses</string>
+    <string name="journal_session_body_load_remaining">%1$s %2$s still in the body</string>
+    <string name="journal_session_body_load_cleared">Cleared</string>
+    <string name="journal_session_body_load_metabolite">Cleared, though a metabolite may last longer</string>
+    <string name="journal_session_body_load_unmodeled">No half-life to model this with</string>
+    <string name="journal_session_body_load_open">Open</string>
 </resources>

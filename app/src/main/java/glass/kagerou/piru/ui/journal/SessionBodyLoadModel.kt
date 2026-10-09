@@ -294,6 +294,22 @@ internal object SessionBodyLoadModel {
         return null
     }
 
+    /**
+     * An amount as a reader should see it: no trailing `.0`, and a decimal point rather than a decimal comma.
+     *
+     * Two decisions, each of which is wrong in a way that looks fine:
+     *
+     * - **No trailing `.0`.** `150.0` reads as a measurement taken to a tenth of a milligram, and no dose is.
+     * - **`Locale.ROOT`, not the device's.** On a German or Chinese phone `"%.1f".format(150.5)` is `150,5` with a
+     *   comma. A number the app prints for a reader is fine localised; a number that could be copied into another
+     *   field is not, and a dose total belongs to the second group. This port has already had one locale-sensitive
+     *   formatting path crash it, so the locale is stated rather than inherited.
+     */
+    fun formatAmount(value: Double): String = when {
+        value == value.toLong().toDouble() -> value.toLong().toString()
+        else -> String.format(java.util.Locale.ROOT, "%.1f", value)
+    }
+
     /** Where in the future a clearance time falls, as a plain fact the caller localises. */
     fun describeClear(at: Instant, now: Instant, zone: ZoneId): String {
         val minutes = Duration.between(now, at).toMinutes()

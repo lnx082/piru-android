@@ -99,6 +99,10 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
     // checker needs the catalogue, which is a disk read.
     var safety by remember(sessionId) { mutableStateOf<List<InteractionGrouping.Group>>(emptyList()) }
 
+    // What is still on board at the session's end. Built beside the timeline states, which need the same catalogue
+    // and tints.
+    var bodyLoad by remember(sessionId) { mutableStateOf(SessionBodyLoadModel.Result()) }
+
     // A scope for the export: it is a suspend render plus a share intent.
     val scope = rememberCoroutineScope()
 
@@ -141,6 +145,22 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
 
         // The interaction warnings for this session's substances. Computed from the same checker the
         // interactions screen and the PDF use, so the three cannot disagree about a pair.
+        // The body load, from the same doses the timeline just drew. `Instant.now()` is passed rather than
+        // defaulted so the reading is taken once, with the same instant the timeline was framed against.
+        bodyLoad = runCatching {
+            val resolved = app.catalog()
+            SessionBodyLoadModel.make(
+                entries = doses,
+                catalog = resolved,
+                tintFor = { name -> tints[name.lowercase()] ?: P3Color.NEUTRAL },
+                fallbackTint = P3Color.NEUTRAL,
+                customNameFor = { canonical, product -> product ?: canonical },
+                // The port's catalogue has no active-metabolite accessor, so this is stated rather than defaulted:
+                // a silent `false` would read the same as "this substance has none".
+                hasActiveMetabolite = { false },
+            )
+        }.getOrDefault(SessionBodyLoadModel.Result())
+
         safety = runCatching {
             val resolved = app.catalog()
             val checker = InteractionChecker(resolved, resolved)
@@ -245,6 +265,15 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
                 SessionSafetyCard(
                     groups = safety,
                     onOpenPair = { a, b -> navigator.push(PushRoute.InteractionTimeline(a, b)) },
+                )
+            }
+
+            item {
+                // What is left in the body. Below the warnings a reader needs first, above the notes about what
+                // happened.
+                SessionBodyLoadCard(
+                    result = bodyLoad,
+                    onOpenSubstance = { name -> navigator.push(PushRoute.Substance(name)) },
                 )
             }
 

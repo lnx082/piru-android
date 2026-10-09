@@ -244,4 +244,11 @@
     <string name="journal_filter_route">途径</string>
     <string name="journal_filter_clear">全部清除</string>
     <string name="journal_filter_tags">标签</string>
+    <string name="journal_session_body_load">体内残留</string>
+    <string name="journal_session_body_load_total">%1$s %2$s · %3$d 剂</string>
+    <string name="journal_session_body_load_remaining">体内还剩 %1$s %2$s</string>
+    <string name="journal_session_body_load_cleared">已清除</string>
+    <string name="journal_session_body_load_metabolite">已清除，但代谢物可能持续更久</string>
+    <string name="journal_session_body_load_unmodeled">缺少半衰期，无法建模</string>
+    <string name="journal_session_body_load_open">打开</string>
 </resources>

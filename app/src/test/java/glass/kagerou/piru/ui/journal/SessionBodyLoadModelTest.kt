@@ -421,4 +421,47 @@ class SessionBodyLoadModelTest {
         substance.defaultRoute shouldBe RouteOfAdministration.ORAL
         substance.routes.size shouldBe 1
     }
+
+    // MARK: - Amounts
+
+    /**
+     * A whole amount has no trailing `.0`.
+     *
+     * `150.0` reads as a measurement taken to a tenth of a milligram, and no dose is. The failure this prevents is
+     * cosmetic and therefore survives review, which is why it is asserted rather than eyeballed.
+     */
+    @Test
+    fun `a whole amount has no decimal part`() {
+        SessionBodyLoadModel.formatAmount(150.0) shouldBe "150"
+        SessionBodyLoadModel.formatAmount(0.0) shouldBe "0"
+        SessionBodyLoadModel.formatAmount(1_000.0) shouldBe "1000"
+    }
+
+    /** A fractional amount keeps one decimal, which is the most a dose measurement can honestly carry. */
+    @Test
+    fun `a fractional amount keeps one decimal`() {
+        SessionBodyLoadModel.formatAmount(150.5) shouldBe "150.5"
+        SessionBodyLoadModel.formatAmount(0.5) shouldBe "0.5"
+        SessionBodyLoadModel.formatAmount(2.25) shouldBe "2.3"
+    }
+
+    /**
+     * The decimal separator is a **point** whatever the device's locale is.
+     *
+     * Asserted by setting a locale that uses a comma and reading the result back. Without `Locale.ROOT` in the
+     * format call this fails — and on a German or Chinese phone it would fail in the app, printing `150,5` where a
+     * dose total belongs.
+     */
+    @Test
+    fun `the decimal separator is a point regardless of locale`() {
+        val original = java.util.Locale.getDefault()
+        try {
+            java.util.Locale.setDefault(java.util.Locale.GERMANY)
+            SessionBodyLoadModel.formatAmount(150.5) shouldBe "150.5"
+            java.util.Locale.setDefault(java.util.Locale.SIMPLIFIED_CHINESE)
+            SessionBodyLoadModel.formatAmount(150.5) shouldBe "150.5"
+        } finally {
+            java.util.Locale.setDefault(original)
+        }
+    }
 }
