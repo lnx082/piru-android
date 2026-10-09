@@ -317,6 +317,11 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
             // rather than reading one, so neither card needs the store or the catalogue.
             inventory?.let { item { InventoryCard(it) } }
 
+            // The other card about the reader rather than the compound: what this user's own log says about this
+            // substance — how many doses, over what span, in what range, and most often what. It reads its own rows,
+            // because the fold needs all of them while the page's other sections need only a count.
+            item { HistoryCard(substanceName = name, defaultUnit = "mg") }
+
             item { AlsoActiveCard(activeNow) }
 
             // Says why the dose card is missing, where the page would otherwise just be missing its

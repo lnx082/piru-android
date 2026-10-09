@@ -310,4 +310,10 @@
     <string name="metabolite_target_unspecified">an unspecified target</string>
     <string name="metabolite_footnote">What the body makes from this dose. Not a measured level.</string>
     <string name="metabolite_open">Open</string>
+    <string name="history_title">Your history</string>
+    <string name="history_count">%1$d doses logged</string>
+    <string name="history_single_dose">%1$s %2$s</string>
+    <string name="history_dose_range">%1$s – %2$s %3$s</string>
+    <string name="history_most_common">Most common: %1$s %2$s</string>
+    <string name="history_show_all">Show all %1$d doses</string>
 </resources>

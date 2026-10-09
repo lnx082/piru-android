@@ -270,4 +270,10 @@
     <string name="metabolite_target_unspecified">未说明的靶点</string>
     <string name="metabolite_footnote">身体由这一剂生成的东西。不是实测水平。</string>
     <string name="metabolite_open">打开</string>
+    <string name="history_title">你的记录</string>
+    <string name="history_count">已记录 %1$d 剂</string>
+    <string name="history_single_dose">%1$s %2$s</string>
+    <string name="history_dose_range">%1$s – %2$s %3$s</string>
+    <string name="history_most_common">最常见：%1$s %2$s</string>
+    <string name="history_show_all">显示全部 %1$d 剂</string>
 </resources>
