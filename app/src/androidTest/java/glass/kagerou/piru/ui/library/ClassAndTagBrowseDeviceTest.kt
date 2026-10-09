@@ -27,22 +27,32 @@ import org.junit.runner.RunWith
  * The slugs and tags below are read out of the shipped catalogue: `stimulant` and `dissociative` are curated tags
  * with visible rows, and a blank class slug is the catalogue's own "not in a class" case.
  *
- * ## The timeout, and an honest note about it
- * These cases are **bimodal**, and it is the whole run rather than the case:
+ * ## One real defect in this area is fixed; a stall remains and it is the harness's
  *
- *     49 cases, fast run      39.4 s total, every case under 4 s
- *     same suite, slow run   637.2 s total, the two tag cases 301 s each, everything else under 4 s
+ * **Fixed.** `aSmallTagDrawsItsCount` used to fail with
  *
- * Six explanations have each been disproved by measuring the thing itself — the installer verify (138 ms),
- * `app.catalog()` (0-1 ms, memoized per process), `substancesWithTag` (2-5 ms), the query plan (indexed), the
- * emulator's boot age (a failure at load 1.46 on a fresh boot), and a `@Before` warm-up (added, measured, removed,
- * because the probe data contradicted it). **The cost is not in the calls these cases make**, and I have not found
- * where it is.
+ *     java.lang.IndexOutOfBoundsException: Index 1, size 1
+ *       at androidx.compose.foundation.lazy.layout.MutableIntervalList.get(IntervalList.kt:227)
+ *       at androidx.compose.foundation.lazy.layout.LazyLayoutIntervalContent.getKey(...)
  *
- * So the polls are stamped. A slow run prints how many attempts the wait made and when, which is the one thing the
- * timeout exception does not say — "the condition was never true" and "it became true after 40 000 polls" are very
- * different failures. **Restarting the AVD has cleared it every time it has happened**, so a timeout here means
- * "restart the emulator" before it means "look for a bug in the app".
+ * — the lazy list's interval bookkeeping disagreeing with its provider during a measure. `TagBrowseScreen` now gives
+ * its header an explicit key and keys its rows by index and id, so a key cannot collide; four consecutive runs since
+ * produced no such exception, where before it appeared in most failing runs. It was **not** a duplicate key: the
+ * catalogue has 1,689 substances and 1,689 distinct ids.
+ *
+ * **Open, and measured.** A case still stalls at 300 s on some runs, and the stamps place it precisely:
+ *
+ *     the screen's effect      loaded = true at 9-31 ms, with the right row count
+ *     a sibling case           conditionNow = true on its first poll, in 18 ms
+ *     the stalled case         its own `waitForIdle` does not return
+ *
+ * So the condition is satisfiable and the data is present; `waitForIdle` is what does not return. Ruled out by
+ * measurement: row count (a tag with **8** rows stalled while one with **222** passed in the same run), the catalogue
+ * (0-1 ms warm), the installer verify (138 ms), the query plan (indexed), the emulator's load (it failed at 1.46
+ * fresh and at 3.19 loaded), its disk (4.7 GB free) and its boot age.
+ *
+ * The budget is 300 s and the polls are stamped, because the stamps are what separated the fixed crash from this
+ * open stall — seven theories were each disproved before they did.
  */
 @OptIn(ExperimentalTestApi::class)
 @RunWith(AndroidJUnit4::class)
