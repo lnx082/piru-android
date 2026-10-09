@@ -525,7 +525,7 @@
     <string name="shell_effects_all_subtitle">这个物质被记录的全部效应，按类别分组。</string>
     <string name="shell_effects_all_empty">这个物质还没有记录任何效应。</string>
     <string name="shell_effects_all_uncategorised">其他</string>
-    <string name="shell_effects_all_open">全部 %1 项效应</string>
+    <string name="shell_effects_all_open">全部 %1$s 项效应</string>
     <string name="shell_health_metabolism">代谢</string>
     <string name="shell_health_grapefruit">西柚记录</string>
     <string name="shell_health_grapefruit_detail">对代谢会被西柚拖慢的物质（CYP3A4），在每次记录时多给一个西柚开关，这样记录里会留下这件事。</string>
@@ -586,13 +586,13 @@
     <string name="shell_descriptor_sequence">序列</string>
     <string name="shell_descriptor_supplied_form">供应形态</string>
     <string name="shell_descriptor_vial">常见规格</string>
-    <string name="shell_mg">%1 mg</string>
+    <string name="shell_mg">%1$s mg</string>
     <string name="shell_descriptor_solvent">溶解于</string>
     <string name="shell_descriptor_iu_per_mg">每毫克 IU</string>
-    <string name="shell_iu_per_mg">%1 IU/mg</string>
+    <string name="shell_iu_per_mg">%1$s IU/mg</string>
     <string name="shell_descriptor_storage">储存</string>
     <string name="shell_storage_light">避光</string>
-    <string name="shell_storage_stability">复溶后可稳定 %1</string>
+    <string name="shell_storage_stability">复溶后可稳定 %1$s</string>
     <string name="shell_section_forms">形态</string>
     <string name="shell_section_references">参考文献</string>
     <string name="shell_descriptor_salts">盐型</string>
@@ -643,9 +643,9 @@
     <string name="shell_advanced_target">受体靶点</string>
     <string name="shell_advanced_loading_targets">载入靶点…</string>
     <string name="shell_advanced_any">不限</string>
-    <string name="shell_advanced_target_chip">%1（%2）</string>
-    <string name="shell_advanced_ki_ceiling">Ki ≤ %1 nM</string>
-    <string name="shell_advanced_results">结果（%1）</string>
+    <string name="shell_advanced_target_chip">%1$s（%2$s）</string>
+    <string name="shell_advanced_ki_ceiling">Ki ≤ %1$s nM</string>
+    <string name="shell_advanced_results">结果（%1$s）</string>
     <string name="shell_advanced_no_filter">设置一个筛选条件后再搜索。</string>
     <string name="shell_advanced_no_results">没有符合这些条件的结合数据。</string>
     <string name="tools_advanced_search_title">高级搜索</string>
@@ -824,7 +824,7 @@
     <string name="shell_custom_substances_intro">你自创的物质，以及你对参考资料中已有物质的自定义修改。名称与目录中某物质一致时成为对它的修改；其他名称则新建一种。</string>
     <string name="shell_custom_substances_add">添加物质</string>
     <string name="shell_custom_substances_empty">还没有你自己的物质。</string>
-    <string name="shell_custom_substances_logged_as">记录名 %1</string>
+    <string name="shell_custom_substances_logged_as">记录名 %1$s</string>
     <string name="shell_custom_substances_editor">物质</string>
     <string name="shell_custom_substances_name">名称</string>
     <string name="shell_custom_substances_name_note">你记录时使用的名字，也是与参考资料匹配的依据。它是身份标识，之后再改会打断已有的剂量记录。</string>

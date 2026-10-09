@@ -559,7 +559,7 @@
     <string name="shell_effects_all_subtitle">Every effect reported for this substance, grouped by category.</string>
     <string name="shell_effects_all_empty">No effects are recorded for this substance.</string>
     <string name="shell_effects_all_uncategorised">Other</string>
-    <string name="shell_effects_all_open">All %1 effects</string>
+    <string name="shell_effects_all_open">All %1$s effects</string>
     <string name="shell_health_metabolism">Metabolism</string>
     <string name="shell_health_grapefruit">Grapefruit dose logging</string>
     <string name="shell_health_grapefruit_detail">Adds a per-dose grapefruit toggle for substances whose breakdown grapefruit slows (CYP3A4), so the entry records it.</string>
@@ -620,13 +620,13 @@
     <string name="shell_descriptor_sequence">Sequence</string>
     <string name="shell_descriptor_supplied_form">Supplied as</string>
     <string name="shell_descriptor_vial">Typical vial</string>
-    <string name="shell_mg">%1 mg</string>
+    <string name="shell_mg">%1$s mg</string>
     <string name="shell_descriptor_solvent">Dissolve in</string>
     <string name="shell_descriptor_iu_per_mg">IU per mg</string>
-    <string name="shell_iu_per_mg">%1 IU/mg</string>
+    <string name="shell_iu_per_mg">%1$s IU/mg</string>
     <string name="shell_descriptor_storage">Storage</string>
     <string name="shell_storage_light">keep out of light</string>
-    <string name="shell_storage_stability">stable %1 once reconstituted</string>
+    <string name="shell_storage_stability">stable %1$s once reconstituted</string>
     <string name="shell_section_forms">Forms</string>
     <string name="shell_section_references">References</string>
     <string name="shell_descriptor_salts">Salts</string>
@@ -677,9 +677,9 @@
     <string name="shell_advanced_target">Receptor target</string>
     <string name="shell_advanced_loading_targets">Loading targets…</string>
     <string name="shell_advanced_any">Any</string>
-    <string name="shell_advanced_target_chip">%1 (%2)</string>
-    <string name="shell_advanced_ki_ceiling">Ki ≤ %1 nM</string>
-    <string name="shell_advanced_results">Results (%1)</string>
+    <string name="shell_advanced_target_chip">%1$s (%2$s)</string>
+    <string name="shell_advanced_ki_ceiling">Ki ≤ %1$s nM</string>
+    <string name="shell_advanced_results">Results (%1$s)</string>
     <string name="shell_advanced_no_filter">Set a filter to search.</string>
     <string name="shell_advanced_no_results">No bindings match these filters.</string>
     <string name="tools_advanced_search_title">Advanced search</string>
@@ -858,7 +858,7 @@
     <string name="shell_custom_substances_intro">Substances you invented, and your own edits to ones the reference already has. A name matching a catalogue substance becomes an edit of it; any other name is a new one.</string>
     <string name="shell_custom_substances_add">Add a substance</string>
     <string name="shell_custom_substances_empty">Nothing of your own yet.</string>
-    <string name="shell_custom_substances_logged_as">logged as %1</string>
+    <string name="shell_custom_substances_logged_as">logged as %1$s</string>
     <string name="shell_custom_substances_editor">Substance</string>
     <string name="shell_custom_substances_name">Name</string>
     <string name="shell_custom_substances_name_note">What you log it under, and how it matches the reference. This is the identity and cannot be changed later without breaking your dose history.</string>

@@ -277,7 +277,7 @@
     <string name="toolsb_inventory_on_hand">On hand</string>
     <string name="toolsb_inventory_on_hand_footer">The exact amount you have now. Changing it is logged as a correction.</string>
     <string name="toolsb_inventory_baseline">Baseline</string>
-    <string name="toolsb_inventory_baseline_title">Baseline (100%)</string>
+    <string name="toolsb_inventory_baseline_title">Baseline (100%%)</string>
     <string name="toolsb_inventory_baseline_footer">The amount that counts as a full supply for the bar. Set to 0 to hide the bar.</string>
     <string name="toolsb_inventory_single_dose">Single dose</string>
     <string name="toolsb_inventory_single_dose_footer">Used to show how many doses you have left. Set to 0 to disable.</string>
@@ -450,7 +450,7 @@
     <string name="toolsb_usage_trends_readout_empty">Nothing logged in this window</string>
     <string name="toolsb_usage_section_weekday">Day of week</string>
     <string name="toolsb_usage_section_dose_levels">Dose levels</string>
-    <string name="toolsb_usage_dose_levels_low_coverage">Under 30% of entries could be placed on a ladder, so this is folded away</string>
+    <string name="toolsb_usage_dose_levels_low_coverage">Under 30%% of entries could be placed on a ladder, so this is folded away</string>
     <string name="toolsb_usage_dose_levels_coverage">Based on %1$d of %2$d entries with dose data</string>
     <string name="toolsb_usage_dose_levels_axis_weekly">weekly</string>
     <string name="toolsb_usage_dose_level_sub">Sub-threshold</string>

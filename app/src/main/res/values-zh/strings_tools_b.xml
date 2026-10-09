@@ -277,7 +277,7 @@
     <string name="toolsb_inventory_on_hand">现有量</string>
     <string name="toolsb_inventory_on_hand_footer">你现在的准确数量。修改会记为一次校正。</string>
     <string name="toolsb_inventory_baseline">基线</string>
-    <string name="toolsb_inventory_baseline_title">基准量（100%）</string>
+    <string name="toolsb_inventory_baseline_title">基准浓度（100%%）</string>
     <string name="toolsb_inventory_baseline_footer">视为满量的数量，用于进度条。设为 0 可隐藏进度条。</string>
     <string name="toolsb_inventory_single_dose">单次剂量</string>
     <string name="toolsb_inventory_single_dose_footer">用于显示你还剩多少剂。设为 0 可关闭。</string>
@@ -445,7 +445,7 @@
     <string name="toolsb_usage_trends_readout_empty">此时间范围内没有记录</string>
     <string name="toolsb_usage_section_weekday">星期分布</string>
     <string name="toolsb_usage_section_dose_levels">剂量水平</string>
-    <string name="toolsb_usage_dose_levels_low_coverage">只有不到 30% 的条目能落到剂量阶梯上，因此这里折叠收起</string>
+    <string name="toolsb_usage_dose_levels_low_coverage">只有不到 30%% 的条目能落到剂量阶梯上，因此这里折叠收起</string>
     <string name="toolsb_usage_dose_levels_coverage">基于 %2$d 条目中有剂量数据的 %1$d 条</string>
     <string name="toolsb_usage_dose_levels_axis_weekly">每周</string>
     <string name="toolsb_usage_dose_level_sub">阈下</string>

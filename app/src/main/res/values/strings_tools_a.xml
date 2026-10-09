@@ -62,7 +62,7 @@
     <string name="alcohol_strength">Strength</string>
     <!-- The gap between the field and this label is added at the call site: aapt2
          trims leading whitespace out of a resource. -->
-    <string name="alcohol_abv_suffix" formatted="false">% ABV</string>
+    <string name="alcohol_abv_suffix">% ABV</string>
     <string name="alcohol_name">Name</string>
     <string name="alcohol_optional">Optional</string>
     <string name="alcohol_grams">%1$d g</string>

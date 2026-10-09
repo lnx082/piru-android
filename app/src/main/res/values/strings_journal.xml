@@ -260,9 +260,9 @@
     <string name="journal_timeline_loading">Loading…</string>
     <string name="journal_timeline_count">%1$d doses</string>
     <string name="journal_active_now">Active now</string>
-    <string name="journal_active_now_count">%1 substances</string>
-    <string name="journal_active_now_dose">%1 %2 · %3</string>
-    <string name="journal_dose_count">%1 doses</string>
+    <string name="journal_active_now_count">%1$s substances</string>
+    <string name="journal_active_now_dose">%1$s %2$s · %3$s</string>
+    <string name="journal_dose_count">%1$s doses</string>
     <string name="journal_maintenance">Scheduled medications</string>
                 <string name="journal_session_interactions">Interactions</string>
     <string name="journal_session_interaction_pairs">%1$d combinations</string>

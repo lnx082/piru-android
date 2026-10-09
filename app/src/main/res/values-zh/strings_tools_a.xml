@@ -36,7 +36,7 @@
     <string name="alcohol_unit_ml">mL</string>
     <string name="alcohol_unit_fl_oz">液量盎司</string>
     <string name="alcohol_strength">浓度</string>
-    <string name="alcohol_abv_suffix" formatted="false">% 酒精度</string>
+    <string name="alcohol_abv_suffix">%% 酒精度</string>
     <string name="alcohol_name">名称</string>
     <string name="alcohol_optional">可选</string>
     <string name="alcohol_grams">%1$d g</string>
