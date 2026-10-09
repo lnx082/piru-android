@@ -111,6 +111,20 @@ data class PiruSettingsData(
         /** This port's key for whether the tab bar carries labels. */
         const val KEY_TAB_LABELS: String = "tabLabels"
 
+        /** This port's key for whether the journal offers the quick-log chip dock. */
+        const val KEY_SHOW_QUICK_LOG_DOCK: String = "showQuickLogDock"
+
+        /** This port's key for whether scheduled-med reminders are delivered. */
+        const val KEY_ADHERENCE_REMINDERS_ENABLED: String = "adherenceRemindersEnabled"
+
+        /**
+         * This port's key for how long after a scheduled time a reminder fires.
+         *
+         * An **offset** in minutes rather than a clock time: the item's own `reminderTimesJson` carries the schedule,
+         * and a second absolute time would be a second source of truth for the same thing.
+         */
+        const val KEY_ADHERENCE_REMINDER_OFFSET: String = "adherenceReminderOffsetMinutes"
+
         /** Whether [element] is present but explicitly unset, which is not the same as absent. */
         fun isExplicitlyUnset(element: JsonElement?): Boolean = element is JsonNull
 

@@ -378,6 +378,27 @@ fun SettingsScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
         item {
             PiruCard(
                 modifier = Modifier.fillMaxWidth(),
+                // Above the timeline preferences, because logging is the subject both of them are about: the timeline
+                // preferences change how the log is *drawn*, and this changes how it is *written*.
+                onClick = { navigator.push(PushRoute.LogPreferences) },
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        stringResource(R.string.shell_settings_logging),
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                    Text(
+                        stringResource(R.string.log_prefs_intro),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = PiruTheme.colors.secondaryLabel,
+                    )
+                }
+            }
+        }
+
+        item {
+            PiruCard(
+                modifier = Modifier.fillMaxWidth(),
                 onClick = { navigator.push(PushRoute.TimelinePreferences) },
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

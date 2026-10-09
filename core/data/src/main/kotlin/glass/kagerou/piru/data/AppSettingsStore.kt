@@ -224,22 +224,55 @@ class AppSettingsStore(private val context: Context) {
         prefs().edit().putBoolean(KEY_TAB_LABELS, value).apply()
     }
 
+    /** Whether the journal offers the quick-log chip dock. */
+    fun showQuickLogDock(): Boolean = prefs().getBoolean(KEY_SHOW_QUICK_LOG_DOCK, true)
+
+    fun setShowQuickLogDock(value: Boolean) {
+        prefs().edit().putBoolean(KEY_SHOW_QUICK_LOG_DOCK, value).apply()
+    }
+
+    /** Whether scheduled-med reminders are delivered. */
+    fun adherenceRemindersEnabled(): Boolean = prefs().getBoolean(KEY_ADHERENCE_REMINDERS_ENABLED, true)
+
+    fun setAdherenceRemindersEnabled(value: Boolean) {
+        prefs().edit().putBoolean(KEY_ADHERENCE_REMINDERS_ENABLED, value).apply()
+    }
+
+    /**
+     * Minutes after a scheduled time a reminder fires, clamped to a day.
+     *
+     * Clamped rather than trusted: a negative offset would fire *before* the dose is due, and more than a day would
+     * fire after the next one. Both are arithmetic the reminder scheduler should not have to defend against, so the
+     * store refuses to hold them — the same rule [timelineZoom] follows for its ladder.
+     */
+    fun adherenceReminderOffsetMinutes(): Int =
+        prefs().getInt(KEY_ADHERENCE_REMINDER_OFFSET, 0).coerceIn(0, 24 * 60)
+
+    fun setAdherenceReminderOffsetMinutes(value: Int) {
+        prefs().edit().putInt(KEY_ADHERENCE_REMINDER_OFFSET, value.coerceIn(0, 24 * 60)).apply()
+    }
+
+    /** An empty preferences file is the fresh-install state; nothing else needs clearing. */
     /** An empty preferences file is the fresh-install state; nothing else needs clearing. */
     fun clearForImport() {
         prefs().edit()
             .remove(SessionDay.DAY_BOUNDARY_HOUR_KEY)
             .remove(KEY_STACK_REDOSES)
             .remove(KEY_SOURCE_ORDER)
-            // The tab preferences are user state like the rest, so an import clears them.
             .remove(KEY_VISIBLE_TABS)
-        .remove(KEY_TIMELINE_ZOOM)
-        .remove(KEY_TIMELINE_COMPRESSION)
-        .remove(KEY_TIMELINE_PK_CURVES)
-        .remove(KEY_TIMELINE_SHOWS_AXIS)
-        .remove(KEY_TIMELINE_BUBBLE_STYLE)
-        .remove(KEY_QUICK_LOG_FIXED_ORDER)
-        .remove(KEY_QUICK_LOG_SUPPRESSED)
+            .remove(KEY_TIMELINE_ZOOM)
+            .remove(KEY_TIMELINE_COMPRESSION)
+            .remove(KEY_TIMELINE_PK_CURVES)
+            .remove(KEY_TIMELINE_SHOWS_AXIS)
+            .remove(KEY_TIMELINE_BUBBLE_STYLE)
+            .remove(KEY_QUICK_LOG_FIXED_ORDER)
+            .remove(KEY_QUICK_LOG_SUPPRESSED)
             .remove(KEY_TAB_LABELS)
+            // The three added after this chain was written. A reset that forgot one would leave the user
+            .remove(KEY_SHOW_QUICK_LOG_DOCK)
+            // with a preference they cannot see and cannot clear — the failure the chain exists to prevent.
+            .remove(KEY_ADHERENCE_REMINDERS_ENABLED)
+            .remove(KEY_ADHERENCE_REMINDER_OFFSET)
             .apply()
     }
 
@@ -292,6 +325,20 @@ class AppSettingsStore(private val context: Context) {
 
     /** Whether the bottom bar draws its labels. */
     const val KEY_TAB_LABELS: String = "tabLabels"
+
+    /** Whether the journal offers the quick-log chip dock. Defaults to true. */
+    const val KEY_SHOW_QUICK_LOG_DOCK: String = "showQuickLogDock"
+
+    /** Whether scheduled-med reminders are delivered at all. Defaults to true. */
+    const val KEY_ADHERENCE_REMINDERS_ENABLED: String = "adherenceRemindersEnabled"
+
+    /**
+     * How many minutes after a scheduled time a reminder fires. Defaults to `0` — at the scheduled time.
+     *
+     * Stored as an **offset** rather than a clock time, because the item's own `reminderTimesJson` already carries the
+     * schedule: a second absolute time would be a second source of truth for the same thing.
+     */
+    const val KEY_ADHERENCE_REMINDER_OFFSET: String = "adherenceReminderOffsetMinutes"
 
     /**
      * How the suppressed-recents list is joined.

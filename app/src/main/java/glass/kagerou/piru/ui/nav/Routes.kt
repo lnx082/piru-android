@@ -206,6 +206,15 @@ sealed interface PushRoute {
     data object TimelinePreferences : PushRoute
 
     /** Which tabs the bottom bar shows, their order, and whether they carry labels. */
+    /**
+     * The logging and medication-time preferences.
+     *
+     * A `PushRoute` and not a `ToolKind`: `ToolKind` is the **tools** list, and logging preferences are settings. The
+     * distinction is what keeps the calculators and the calculators-adjacent tools from acquiring a preferences page.
+     */
+    @Serializable
+    data object LogPreferences : PushRoute
+
     @Serializable
     data object TabSettings : PushRoute
 
@@ -346,6 +355,9 @@ fun PushRoute.key(): String = when (this) {
     is PushRoute.Tool -> "tool:${kind.wireValue}"
     is PushRoute.Insight -> "insight:${kind.wireValue}"
     PushRoute.TabRoot -> "root"
+    // A `key()` arm as well as a path: the two are separate exhaustiveness requirements, and the compiler named only
+    // the first — the route would have crashed at the first navigation rather than at the build.
+    PushRoute.LogPreferences -> "log-preferences"
     is PushRoute.InventoryItem -> "inventory:$id"
     is PushRoute.InventoryItemForm -> "inventory-form:${id ?: "new"}"
     is PushRoute.InteractionTimeline -> "interaction:$substanceA:$substanceB"

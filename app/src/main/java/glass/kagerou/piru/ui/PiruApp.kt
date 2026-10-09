@@ -115,6 +115,7 @@ import glass.kagerou.piru.ui.launch.LaunchSheetHost
 import glass.kagerou.piru.ui.launch.launchPrefs
 import glass.kagerou.piru.ui.settings.CustomSubstancesScreen
 import glass.kagerou.piru.ui.journal.TimelinePreferencesScreen
+import glass.kagerou.piru.ui.settings.LogPreferencesScreen
 
 /**
  * The app shell: five tabs, a push stack per tab, and a modal above them.
@@ -413,6 +414,7 @@ private fun DefaultDestination(route: PushRoute, navigator: AppNavigator) {
         is PushRoute.DrugClass -> ClassWriteUpScreen(route.className, navigator)
         PushRoute.About -> AboutScreen()
         PushRoute.TabSettings -> TabSettingsScreen(navigator)
+        PushRoute.LogPreferences -> LogPreferencesScreen()
         PushRoute.TimelinePreferences -> TimelinePreferencesScreen()
         PushRoute.CustomSubstances -> CustomSubstancesScreen()
         PushRoute.SubstanceDatabase -> SubstanceDatabaseScreen(navigator)

@@ -847,4 +847,15 @@
     <string name="antidepressant_class_title">抗抑郁药类别</string>
     <string name="antidepressant_acronym">%1$s —— %2$s</string>
     <string name="antidepressant_contested">分类器认为这一归类有争议：机制仍有争论，或该标签是为一款药新造的。</string>
+    <string name="log_prefs_title">记录</string>
+    <string name="log_prefs_intro">记录时日志页的行为。</string>
+    <string name="log_prefs_dock_title">快捷记录栏</string>
+    <string name="log_prefs_dock_note">在时间轴上方提供一行常用物质，重复服药只需一次点击。</string>
+    <string name="med_times_title">用药时间</string>
+    <string name="med_times_reminders">提醒</string>
+    <string name="med_times_reminders_note">为已安排的用药发送提醒。每一项也有自己的开关；这一个会全部静音。</string>
+    <string name="med_times_offset">提醒延迟</string>
+    <string name="med_times_offset_note">在预定时间之后多少分钟提醒。零表示按预定时间提醒，稍晚的提醒是跟随习惯，而不是坚持计划。</string>
+    <string name="med_times_offset_unit">分钟</string>
+    <string name="shell_settings_logging">记录</string>
 </resources>

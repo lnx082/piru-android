@@ -66,6 +66,9 @@ internal object SettingsSection {
         PiruSettingsData.KEY_SOURCE_ORDER,
         PiruSettingsData.KEY_VISIBLE_TABS,
         PiruSettingsData.KEY_TAB_LABELS,
+        PiruSettingsData.KEY_SHOW_QUICK_LOG_DOCK,
+        PiruSettingsData.KEY_ADHERENCE_REMINDERS_ENABLED,
+        PiruSettingsData.KEY_ADHERENCE_REMINDER_OFFSET,
     )
 
     /** Build the section from what this build stores. */
@@ -112,6 +115,15 @@ internal object SettingsSection {
                 } ?: JsonNull,
             )
             put(PiruSettingsData.KEY_TAB_LABELS, JsonPrimitive(settings.tabLabelsShown()))
+            put(PiruSettingsData.KEY_SHOW_QUICK_LOG_DOCK, JsonPrimitive(settings.showQuickLogDock()))
+            put(
+                PiruSettingsData.KEY_ADHERENCE_REMINDERS_ENABLED,
+                JsonPrimitive(settings.adherenceRemindersEnabled()),
+            )
+            put(
+                PiruSettingsData.KEY_ADHERENCE_REMINDER_OFFSET,
+                JsonPrimitive(settings.adherenceReminderOffsetMinutes()),
+            )
         }
         return PiruSettingsData(standard = standard, appGroup = appGroup)
     }
@@ -190,6 +202,9 @@ internal object SettingsSection {
         // interchangeable is what would make this line look wrong and be "fixed" into a bug.
         strings(PiruSettingsData.KEY_VISIBLE_TABS) { settings.setHiddenTabs(it) }
         bool(PiruSettingsData.KEY_TAB_LABELS) { settings.setTabLabelsShown(it) }
+        bool(PiruSettingsData.KEY_SHOW_QUICK_LOG_DOCK) { settings.setShowQuickLogDock(it) }
+        bool(PiruSettingsData.KEY_ADHERENCE_REMINDERS_ENABLED) { settings.setAdherenceRemindersEnabled(it) }
+        int(PiruSettingsData.KEY_ADHERENCE_REMINDER_OFFSET) { settings.setAdherenceReminderOffsetMinutes(it) }
 
         return applied
     }

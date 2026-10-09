@@ -881,4 +881,15 @@
     <string name="antidepressant_class_title">Antidepressant class</string>
     <string name="antidepressant_acronym">%1$s — %2$s</string>
     <string name="antidepressant_contested">The classifier calls this assignment contestable: the mechanism is argued over, or the label was coined for one drug.</string>
+    <string name="log_prefs_title">Logging</string>
+    <string name="log_prefs_intro">How the journal behaves while you are logging.</string>
+    <string name="log_prefs_dock_title">Quick-log dock</string>
+    <string name="log_prefs_dock_note">Offer a row of recent substances above the timeline, so a repeat dose is one tap.</string>
+    <string name="med_times_title">Medication times</string>
+    <string name="med_times_reminders">Reminders</string>
+    <string name="med_times_reminders_note">Deliver a reminder for scheduled medications. Each item has its own switch as well; this one silences all of them.</string>
+    <string name="med_times_offset">Reminder delay</string>
+    <string name="med_times_offset_note">Minutes after the scheduled time to remind. Zero reminds at the scheduled time, and a later reminder follows a habit rather than insisting on the plan.</string>
+    <string name="med_times_offset_unit">minutes</string>
+    <string name="shell_settings_logging">Logging</string>
 </resources>
