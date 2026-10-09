@@ -410,4 +410,8 @@
     <string name="education_classes_title">药物类别</string>
     <string name="education_classes_subtitle">同类药物的共同之处</string>
     <string name="education_footer">这些屏幕描述的是数据目录和模型给出的内容。</string>
+    <string name="equivalence_ratio">1 mg %1$s ≈ %2$s mg 地西泮</string>
+    <string name="equivalence_ratio_unavailable">这一行的来源中没有解析出可用的等效值。</string>
+    <string name="equivalence_card_title">地西泮等效</string>
+    <string name="equivalence_card_open">打开等效表</string>
 </resources>

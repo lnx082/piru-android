@@ -33,6 +33,7 @@ import glass.kagerou.piru.ui.components.PiruCard
 import glass.kagerou.piru.ui.nav.AppNavigator
 import glass.kagerou.piru.ui.theme.PiruTheme
 import glass.kagerou.piru.PiruApplication
+import glass.kagerou.piru.substance.BenzoEquivalence
 
 /**
  * The two published equivalence tables: oral morphine-milligram equivalents for
@@ -229,8 +230,32 @@ private fun BenzoRow(entry: SubstanceReader.BenzoEquivalentEntry) {
     PiruCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(entry.displayName, style = MaterialTheme.typography.titleSmall)
+
+            // The ratio, which this row was missing: it printed the dataset's sentence and never a converted figure,
+            // so the converter listed equivalences without converting anything. `ratio` is the tested form of the same
+            // arithmetic the entry carries — see `BenzoEquivalenceTest` for the case that keeps the two agreeing.
+            val ratio = BenzoEquivalence.ratio(entry.equivalent)
+            if (ratio != null) {
+                Text(
+                    stringResource(
+                        R.string.equivalence_ratio,
+                        entry.displayName,
+                        ratioText(ratio.diazepamPerMg),
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            } else {
+                // A row whose prose did not parse says so, rather than showing nothing: a blank line under a heading
+                // reads as a failure of the screen rather than of the source data.
+                Text(
+                    stringResource(R.string.equivalence_ratio_unavailable),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = PiruTheme.colors.secondaryLabel,
+                )
+            }
+
             entry.equivalent.displayText?.let { reference ->
-                Text(reference, style = MaterialTheme.typography.bodyMedium)
+                Text(reference, style = MaterialTheme.typography.bodySmall)
             }
             // The attribution is on every row rather than once at the top: a
             // number copied out of a list carries no header with it.
@@ -261,4 +286,15 @@ private fun EmptyState(text: String) {
         textAlign = TextAlign.Start,
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
     )
+}
+
+/**
+ * A ratio as a reader should see it: `20`, `0.5`, `2.4`.
+ *
+ * At most one decimal, because the dataset's figures are curated to that precision and printing `19.60` would claim two
+ * figures the source never stated. `Locale.ROOT` because the number sits inside a sentence.
+ */
+private fun ratioText(value: Double): String = when {
+    value == value.toLong().toDouble() -> value.toLong().toString()
+    else -> String.format(java.util.Locale.ROOT, "%.1f", value)
 }

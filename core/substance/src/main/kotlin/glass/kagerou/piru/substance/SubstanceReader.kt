@@ -3304,12 +3304,11 @@ class SubstanceReader(
          * or null when the cited prose did not parse to two usable numbers.
          */
         val diazepamPerMg: Double?
-            get() {
-                val dose = equivalent.doseMg ?: return null
-                val diazepam = equivalent.equivalentDiazepamMg ?: return null
-                if (dose <= 0 || diazepam <= 0) return null
-                return diazepam / dose
-            }
+            // The guard and the division live in [BenzoEquivalence.ratio], which is where the **converted figure** comes
+            // from too. This accessor had its own copy of the same three checks; two implementations of one rule are two
+            // answers waiting to diverge, and the app cannot be seen from here, so the rule came down to this module
+            // rather than being kept in step from above.
+            get() = BenzoEquivalence.ratio(equivalent)?.diazepamPerMg
     }
 
     /**

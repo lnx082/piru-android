@@ -493,4 +493,8 @@
     <string name="education_classes_subtitle">What the members of a family share</string>
     <string name="education_footer">These screens describe what the catalog and the model say.</string>
 
+    <string name="equivalence_ratio">1 mg %1$s ≈ %2$s mg diazepam</string>
+    <string name="equivalence_ratio_unavailable">No usable equivalence was parsed from this source row.</string>
+    <string name="equivalence_card_title">Diazepam equivalence</string>
+    <string name="equivalence_card_open">Open the equivalence table</string>
 </resources>
