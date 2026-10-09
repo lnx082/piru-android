@@ -878,4 +878,7 @@
     <string name="journal_entry_context_same_session">same session</string>
     <string name="journal_entry_context_overlaps">overlapping</string>
     <string name="journal_entry_context_open">Open</string>
+    <string name="antidepressant_class_title">Antidepressant class</string>
+    <string name="antidepressant_acronym">%1$s — %2$s</string>
+    <string name="antidepressant_contested">The classifier calls this assignment contestable: the mechanism is argued over, or the label was coined for one drug.</string>
 </resources>

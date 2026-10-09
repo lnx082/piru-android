@@ -844,4 +844,7 @@
     <string name="journal_entry_context_same_session">同一次记录</string>
     <string name="journal_entry_context_overlaps">有重叠</string>
     <string name="journal_entry_context_open">打开</string>
+    <string name="antidepressant_class_title">抗抑郁药类别</string>
+    <string name="antidepressant_acronym">%1$s —— %2$s</string>
+    <string name="antidepressant_contested">分类器认为这一归类有争议：机制仍有争论，或该标签是为一款药新造的。</string>
 </resources>

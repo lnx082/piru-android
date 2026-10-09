@@ -524,6 +524,19 @@ class DbSubstanceCatalog private constructor(
      * Prose per source. Read by nothing before this, so `downstream_signalling`'s 678 rows over 678 substances
      * were data with no screen.
      */
+    /**
+     * The curated `drug_class` for a logged name or alias, or null.
+     *
+     * Two steps, both of which can fail to resolve: the name to a catalogue id, and the id to a class. A name the
+     * catalogue has never heard of is null rather than an error — the class card simply does not draw.
+     */
+    fun drugClassFor(nameOrAlias: String): String? {
+        // \index.resolve\, which is what every other passthrough here uses. I wrote eader.idFor\ first, which does
+        // not exist: the name-to-id step belongs to the index, and the reader takes an id.
+        val id = index.resolve(nameOrAlias) ?: return null
+        return reader.drugClassFor(id)
+    }
+
     fun downstreamSignallingRows(nameOrAlias: String): List<DownstreamSignallingHit> {
         val id = index.resolve(nameOrAlias) ?: return emptyList()
         return reader.downstreamSignallingRows(id)

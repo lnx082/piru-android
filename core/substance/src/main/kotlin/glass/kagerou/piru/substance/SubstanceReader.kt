@@ -1362,6 +1362,22 @@ class SubstanceReader(
      * identically by two sources has one description and two attributions — and the section lists the text once
      * with both sources rather than twice.
      */
+    /**
+     * The curated `substances.drug_class` value, or null when the catalogue carries none.
+     *
+     * A **curated** normalised axis rather than a tag union, which is what makes it usable for a class comparison: the
+     * tags disagree with this column on exactly the compounds where precision matters — they call atomoxetine an SNRI,
+     * maprotiline a TCA, and vortioxetine and vilazodone SSRIs.
+     *
+     * Read by the antidepressant class card, which is this column's first reader in the port.
+     */
+    fun drugClassFor(substanceID: Long): String? {
+        return db.query("SELECT drug_class FROM substances WHERE id = ?", listOf(substanceID))
+            .firstOrNull()
+            ?.string("drug_class")
+            ?.takeIf { it.isNotBlank() }
+    }
+
     fun downstreamSignallingRows(substanceID: Long): List<DownstreamSignallingHit> {
         if (order.isEmpty()) return emptyList()
         return db.query(

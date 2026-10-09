@@ -116,6 +116,10 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
      */
     var bindings by remember(name) { mutableStateOf<List<BindingHit>>(emptyList()) }
     var signalling by remember { mutableStateOf<List<DownstreamSignallingHit>>(emptyList()) }
+
+    // The curated `drug_class`, which nothing in this port read before the class card. Null for most of the catalogue
+    // and for the four classes the antidepressant axis deliberately leaves out.
+    var drugClass by remember { mutableStateOf<String?>(null) }
     var offTargets by remember { mutableStateOf<List<OffTargetHit>>(emptyList()) }
     var pharmacogenetics by remember { mutableStateOf<List<PharmacogeneticHit>>(emptyList()) }
     var structure by remember { mutableStateOf<MoleculeShape?>(null) }
@@ -170,6 +174,10 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
         // Three tables this port shipped and never read: `downstream_signalling` (678 substances),
         // `off_targets` (165) and `pharmacogenetics` (169).
         signalling = runCatching { catalog.downstreamSignallingRows(canonical) }.getOrDefault(emptyList())
+
+        // The curated class, from the same name resolution as everything else. Read through the catalogue's own
+        // accessor, which resolves the name to an id and then the id to a class.
+        drugClass = runCatching { catalog.drugClassFor(canonical) }.getOrNull()
         offTargets = runCatching { catalog.offTargetRows(canonical) }.getOrDefault(emptyList())
         pharmacogenetics = runCatching { catalog.pharmacogeneticRows(canonical) }.getOrDefault(emptyList())
         // 958 of the catalogue's 1689 substances have a structure; the section hides for the rest.
@@ -304,6 +312,10 @@ fun SubstanceDetailScreen(name: String, navigator: AppNavigator, modifier: Modif
             spectrum.takeIf { it.isNotEmpty() }?.let { levels -> item { StrengthDialCard(levels) } }
             structure?.let { shape -> item { StructureCard(shape) } }
             item { DownstreamSignallingCard(signalling) }
+
+            // The antidepressant axis, beside the pharmacology it belongs with. Draws nothing for a substance outside
+            // the nine classes, which is most of the catalogue and all four of the deliberate departures.
+            item { AntidepressantClassCard(substanceName = name, curatedDrugClass = drugClass) }
             item { OffTargetCard(offTargets) }
             // CYP2D6 first, because it is the gene that most often changes an answer at the doses people take
             // and a reader should not have to scan the full list to find it.
