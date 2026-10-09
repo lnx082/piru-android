@@ -394,6 +394,28 @@ data class MetabolismHit(
      * [MetabolitePotencyBasis.CLINICAL] basis may scale the parent's effect.
      */
     val metaboliteMechanismVsParent: MetaboliteMechanism = MetaboliteMechanism.UNKNOWN,
+    /**
+     * The recorded **range** for the metabolite's half-life, when the catalogue carries bounds rather than one figure.
+     *
+     * Null alongside a non-null [metaboliteHalfLifeMinutes] is the ordinary case: a source that states a number rather
+     * than a span. Both present is a source that stated a span, and a reader showing one figure without the span would
+     * be claiming a precision the source withheld.
+     */
+    val metaboliteHalfLifeLowMinutes: Double? = null,
+    val metaboliteHalfLifeHighMinutes: Double? = null,
+
+    /** Minutes to the metabolite's peak, when recorded. */
+    val metaboliteTmaxMinutes: Double? = null,
+
+    /**
+     * Non-null when this species **only forms while a second drug is onboard**.
+     *
+     * Cocaethylene and ethylphenidate are the cases: they are real and they matter, but they are not what the parent
+     * turns into on its own. A surface that lists them beside norketamine would say "your body makes this from that
+     * dose", which is false for exactly the compounds a reader is most likely to misread.
+     */
+    val conditionalCombinationId: String? = null,
+
     /** The metabolite's own elimination half-life in minutes — the field a two-compartment parent-to-metabolite model needs. */
     val metaboliteHalfLifeMinutes: Double? = null,
     /** Percent of an administered parent dose that becomes this metabolite. */

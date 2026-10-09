@@ -1306,6 +1306,8 @@ class SubstanceReader(
                    m.metabolite_active, m.metabolite_potency_vs_parent_pct,
                    m.metabolite_potency_basis, m.metabolite_potency_target,
                    m.metabolite_mechanism_vs_parent, m.metabolite_half_life_min,
+                   m.metabolite_half_life_low_min, m.metabolite_half_life_high_min,
+                   m.metabolite_tmax_min, m.conditional_combination_id,
                    m.formation_fraction_pct, m.route,
                    src.slug AS source_slug, c.doi, c.pmid,
                    (SELECT h.half_life_minutes
@@ -1339,6 +1341,10 @@ class SubstanceReader(
                 ),
                 metaboliteHalfLifeMinutes = row.double("metabolite_own_half_life_min")
                     ?: row.double("metabolite_half_life_min"),
+                metaboliteHalfLifeLowMinutes = row.double("metabolite_half_life_low_min"),
+                metaboliteHalfLifeHighMinutes = row.double("metabolite_half_life_high_min"),
+                metaboliteTmaxMinutes = row.double("metabolite_tmax_min"),
+                conditionalCombinationId = row.string("conditional_combination_id"),
                 formationFractionPct = row.double("formation_fraction_pct"),
                 route = row.string("route"),
                 sourceSlug = row.string("source_slug").orEmpty(),
