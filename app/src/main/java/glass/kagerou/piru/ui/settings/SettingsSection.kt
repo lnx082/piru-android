@@ -69,6 +69,7 @@ internal object SettingsSection {
         PiruSettingsData.KEY_SHOW_QUICK_LOG_DOCK,
         PiruSettingsData.KEY_ADHERENCE_REMINDERS_ENABLED,
         PiruSettingsData.KEY_ADHERENCE_REMINDER_OFFSET,
+        PiruSettingsData.KEY_RECENT_SEARCHES,
     )
 
     /** Build the section from what this build stores. */
@@ -123,6 +124,12 @@ internal object SettingsSection {
             put(
                 PiruSettingsData.KEY_ADHERENCE_REMINDER_OFFSET,
                 JsonPrimitive(settings.adherenceReminderOffsetMinutes()),
+            )
+            // A list, so it is written as an array rather than a joined string: the separator the store uses is an
+            // implementation detail, and a file another build reads should not have to know it.
+            put(
+                PiruSettingsData.KEY_RECENT_SEARCHES,
+                buildJsonArray { for (term in settings.recentSearches()) add(JsonPrimitive(term)) },
             )
         }
         return PiruSettingsData(standard = standard, appGroup = appGroup)
@@ -205,6 +212,13 @@ internal object SettingsSection {
         bool(PiruSettingsData.KEY_SHOW_QUICK_LOG_DOCK) { settings.setShowQuickLogDock(it) }
         bool(PiruSettingsData.KEY_ADHERENCE_REMINDERS_ENABLED) { settings.setAdherenceRemindersEnabled(it) }
         int(PiruSettingsData.KEY_ADHERENCE_REMINDER_OFFSET) { settings.setAdherenceReminderOffsetMinutes(it) }
+        // Each term recorded through the public API rather than a bulk setter, so an import obeys the same
+        // de-duplication and cap a user's own searching does. Oldest first, because `recordSearch` moves each new term
+        // to the front — so replaying the file's order ends with the file's own order.
+        strings(PiruSettingsData.KEY_RECENT_SEARCHES) { terms ->
+            settings.clearRecentSearches()
+            for (term in terms.asReversed()) settings.recordSearch(term)
+        }
 
         return applied
     }

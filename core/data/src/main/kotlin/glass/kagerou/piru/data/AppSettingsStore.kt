@@ -238,6 +238,41 @@ class AppSettingsStore(private val context: Context) {
      */
     fun showQuickLogDock(): Boolean = prefs().getBoolean(KEY_SHOW_QUICK_LOG_DOCK, true)
 
+    /**
+     * The library's recent searches, most recent first.
+     *
+     * An explicit empty list and "never searched" are the **same** state here, unlike the quick-log suppression list
+     * where the difference matters: nothing can be removed from a history one term at a time, so the absent key and the
+     * empty list mean the same thing and both read as empty.
+     */
+    fun recentSearches(): List<String> = prefs()
+        .getString(KEY_RECENT_SEARCHES, null)
+        ?.split(SEPARATOR)
+        ?.filter { it.isNotBlank() }
+        .orEmpty()
+
+    /**
+     * Records a search, moving a repeat to the front and dropping the oldest past [RECENT_SEARCH_LIMIT].
+     *
+     * Case-insensitive de-duplication: "caffeine" and "Caffeine" are one search, and storing both would put two chips
+     * in the row that do the same thing.
+     *
+     * `commit()` rather than `apply()`: the caller has just left the field, and a write landing after the process dies
+     * loses the term the user just searched for. The suppression list does the same for the same reason.
+     */
+    fun recordSearch(term: String) {
+        val trimmed = term.trim()
+        if (trimmed.isEmpty()) return
+        val updated = (listOf(trimmed) + recentSearches().filterNot { it.equals(trimmed, ignoreCase = true) })
+            .take(RECENT_SEARCH_LIMIT)
+        prefs().edit().putString(KEY_RECENT_SEARCHES, updated.joinToString(SEPARATOR)).commit()
+    }
+
+    /** Forgets the search history. */
+    fun clearRecentSearches() {
+        prefs().edit().remove(KEY_RECENT_SEARCHES).commit()
+    }
+
     fun setShowQuickLogDock(value: Boolean) {
         prefs().edit().putBoolean(KEY_SHOW_QUICK_LOG_DOCK, value).apply()
     }
@@ -296,6 +331,7 @@ class AppSettingsStore(private val context: Context) {
             // with a preference they cannot see and cannot clear — the failure the chain exists to prevent.
             .remove(KEY_ADHERENCE_REMINDERS_ENABLED)
             .remove(KEY_ADHERENCE_REMINDER_OFFSET)
+            .remove(KEY_RECENT_SEARCHES)
             .apply()
     }
 
@@ -364,11 +400,26 @@ class AppSettingsStore(private val context: Context) {
     const val KEY_ADHERENCE_REMINDER_OFFSET: String = "adherenceReminderOffsetMinutes"
 
     /**
+     * The library's recent searches, most recent first.
+     *
+     * Joined with the same separator the suppression list uses, because a search term can contain any printable
+     * character — including the commas a simpler encoding would split on.
+     */
+    const val KEY_RECENT_SEARCHES: String = "recentSearches"
+
+    /**
      * How the suppressed-recents list is joined.
      *
      * A unit separator rather than a comma or a colon: an identity key is built from a substance name, and a name can
      * contain any printable character a user or the catalogue chose. `\u001F` cannot appear in one.
      */
     private const val SEPARATOR: String = "\u001F"
+    /**
+     * How many searches the history keeps.
+     *
+     * Eight: enough to cover a session's searching, few enough that the chip row stays one row. The cap
+     * is not a nicety — an unbounded list grows forever and turns a row of chips into a wall.
+     */
+    private const val RECENT_SEARCH_LIMIT: Int = 8
     }
 }

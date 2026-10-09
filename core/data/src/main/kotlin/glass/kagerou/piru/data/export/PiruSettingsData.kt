@@ -125,6 +125,14 @@ data class PiruSettingsData(
          */
         const val KEY_ADHERENCE_REMINDER_OFFSET: String = "adherenceReminderOffsetMinutes"
 
+        /**
+         * The library's recent searches, as an array of terms.
+         *
+         * An array rather than the store's separator-joined string: the separator is an implementation detail of how
+         * this port holds a small list, and a file another build reads should not have to know it.
+         */
+        const val KEY_RECENT_SEARCHES: String = "recentSearches"
+
         /** Whether [element] is present but explicitly unset, which is not the same as absent. */
         fun isExplicitlyUnset(element: JsonElement?): Boolean = element is JsonNull
 
