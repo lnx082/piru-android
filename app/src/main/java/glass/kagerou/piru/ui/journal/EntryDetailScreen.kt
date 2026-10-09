@@ -53,6 +53,7 @@ import glass.kagerou.piru.engine.InteractionData
 import androidx.compose.material3.Surface
 import glass.kagerou.piru.ui.meds.LocationPickerScreen
 import glass.kagerou.piru.ui.meds.PickedLocation
+import glass.kagerou.piru.model.P3Color
 
 /**
  * One logged dose, read and edited.
@@ -114,6 +115,10 @@ fun EntryDetailScreen(
     // Named `nearby` rather than `context`, because `context` is already this screen's `Context` — a shadowing
     // name here silently changed which object every `context.applicationContext` below referred to.
     var nearby by remember { mutableStateOf(EntryContext.Result(emptyList(), judged = false)) }
+
+    // What is still in the body from **this** dose. Built from the same model the session page uses, with the entry
+    // page's own heading and the cleared rows filtered out.
+    var bodyLoad by remember { mutableStateOf(SessionBodyLoadModel.Result()) }
     var saved by remember { mutableStateOf(false) }
 
     /**
@@ -205,6 +210,23 @@ fun EntryDetailScreen(
                 other.rowId != row.rowId &&
                     kotlin.math.abs(other.timestamp.time - row.timestamp.time) <= 24L * 3_600_000L
             }
+            // The body load for this one dose, from the same catalogue read as everything else here. The tints come
+            // from the palette the journal already resolves, so a row's dot matches the same substance elsewhere.
+            bodyLoad = runCatching {
+                val resolved = catalog ?: return@runCatching SessionBodyLoadModel.Result()
+                val tints = app.palette().tintsFor(setOf(row.substance))
+                SessionBodyLoadModel.make(
+                    entries = listOf(row),
+                    catalog = resolved,
+                    tintFor = { name -> tints[name.lowercase()] ?: P3Color.NEUTRAL },
+                    fallbackTint = P3Color.NEUTRAL,
+                    customNameFor = { canonical, product -> product ?: canonical },
+                    // No active-metabolite accessor in this port's catalogue, so it is stated rather than defaulted:
+                    // a silent `false` would read the same as "this substance has none".
+                    hasActiveMetabolite = { false },
+                )
+            }.getOrDefault(SessionBodyLoadModel.Result())
+
             EntryContext.neighbours(
                 entrySubstance = row.substance,
                 windowMinutes = window,
@@ -485,6 +507,15 @@ fun EntryDetailScreen(
 
                 // What else was going on. Before the unknown-dose note, because it is about the dose rather
                 // than about a gap in the data.
+                // What is still in the body from this dose. Above the context block, because it is about the dose
+                // itself rather than about what else was going on.
+                SessionBodyLoadCard(
+                    result = bodyLoad,
+                    onOpenSubstance = { name -> navigator.push(PushRoute.Substance(name)) },
+                    headingRes = R.string.journal_entry_in_your_body,
+                    activeOnly = true,
+                )
+
                 EntryContextCard(
                     result = nearby,
                     // A neighbour opens its own entry page, which is where its own context lives. The read is

@@ -54,13 +54,23 @@ internal fun SessionBodyLoadCard(
     result: SessionBodyLoadModel.Result,
     onOpenSubstance: (String) -> Unit,
     modifier: Modifier = Modifier,
+    headingRes: Int = R.string.journal_session_body_load,
+    /**
+     * Draw only what is **still** in the body, ignoring what has cleared.
+     *
+     * The entry page's setting. A single dose that has worn off contributes nothing there: that page asks what is in
+     * the reader now, and a cleared row would be a statement about the past on a page whose subject is one dose. The
+     * model already returns the two lists apart, so this is a filter rather than a second model.
+     */
+    activeOnly: Boolean = false,
 ) {
-    if (result.isEmpty) return
+    if (activeOnly && result.active.isEmpty()) return
+    if (!activeOnly && result.isEmpty) return
 
     PiruCard(modifier = modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
-                stringResource(R.string.journal_session_body_load),
+                stringResource(headingRes),
                 style = MaterialTheme.typography.titleSmall,
             )
 
@@ -85,7 +95,7 @@ internal fun SessionBodyLoadCard(
                 )
             }
 
-            for (row in result.cleared) {
+            for (row in if (activeOnly) emptyList() else result.cleared) {
                 BodyLoadRow(
                     colour = row.colour.toComposeColor(),
                     name = row.displayName,

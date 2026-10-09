@@ -293,4 +293,5 @@
     <string name="journal_session_body_load_open">Open</string>
     <string name="journal_session_recovery">Recovery tips</string>
     <string name="journal_session_recovery_all">All recovery tips</string>
+    <string name="journal_entry_in_your_body">In your body</string>
 </resources>
