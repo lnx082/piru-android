@@ -63,8 +63,12 @@ class TimelinePreferencesDeviceTest {
         for (gone in listOf("Modeled curves", "Compress empty time")) {
             compose.onAllNodesWithText(gone).fetchSemanticsNodes().isEmpty() shouldBe true
         }
-        // And exactly two switches, which with the three rows above is the whole menu.
-        compose.onAllNodes(isToggleable()).fetchSemanticsNodes().size shouldBe 2
+        // And exactly three switches, which with the rows above is the whole menu.
+        //
+        // It was two. The third is the **cardio lane**, added with its preference and its reader in `TimelineGraph` — so
+        // it is a row that does something, which is what this count exists to require. Moving it means arguing with the
+        // number here rather than editing a list elsewhere, which is the point of pinning it.
+        compose.onAllNodes(isToggleable()).fetchSemanticsNodes().size shouldBe 3
 
         resetPreferences()
     }
@@ -103,7 +107,10 @@ class TimelinePreferencesDeviceTest {
         // and the bubble style stays. My first version asserted the count fell to one, which was wrong about the
         // design: what withdraws is the **zoom row**, and that is what the assertion above names. A count cannot
         // say *which* two switches are present, so the rows are asserted by name instead.
-        compose.onAllNodes(isToggleable()).fetchSemanticsNodes().size shouldBe 2
+        // Three, not two: the **cardio lane** stays offered with the axis off, for the same reason the bubble style
+        // does — it describes content the session chart carries, and the lane draws whether or not the axis strip does.
+        // Withdrawing its switch would leave a lane the reader can see and cannot switch off.
+        compose.onAllNodes(isToggleable()).fetchSemanticsNodes().size shouldBe 3
         compose.onAllNodes(isToggleable())[0].assertIsOff()
 
         // And the preference itself is **kept**, so turning the axis back on restores it rather than resetting it.

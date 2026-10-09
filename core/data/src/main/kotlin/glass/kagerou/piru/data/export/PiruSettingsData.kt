@@ -86,6 +86,9 @@ data class PiruSettingsData(
         /** Upstream's key for whether the timeline draws its time axis. */
         const val KEY_TIMELINE_SHOWS_AXIS: String = "timelineShowsAxis"
 
+        /** This port's key for whether the session chart draws the cardio lane. */
+        const val KEY_TIMELINE_VITALS: String = "timelineVitalsShown"
+
         /** Upstream's key for the timeline's bubble style, a string on that side. */
         const val KEY_TIMELINE_BUBBLE_STYLE: String = "timelineBubbleStyle"
 

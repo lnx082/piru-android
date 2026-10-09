@@ -282,4 +282,6 @@
     <string name="share_title">分享此物质</string>
     <string name="share_detail_label">详细程度</string>
     <string name="share_button">分享</string>
+    <string name="journal_timeline_vitals">心率轨道</string>
+    <string name="journal_timeline_vitals_detail">在会话图表上绘制来自 Health Connect 的心率与血压。仅在 Health Connect 有该时间段读数时显示。</string>
 </resources>

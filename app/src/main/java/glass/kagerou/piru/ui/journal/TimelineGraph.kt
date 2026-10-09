@@ -117,6 +117,14 @@ fun TimelineGraph(
      * lane under the curves. [SessionVitals.empty] draws nothing at all — no lane, no
      * axis — so a session with no wearable looks exactly as it did before this existed.
      */
+    /**
+     * Whether to draw the cardio lane at all.
+     *
+     * A second parameter rather than a decision at the call site, so the graph keeps one rule — it draws a lane when
+     * there is one to draw — and the **preference** decides whether there is. Defaults to true, which is what every
+     * call site did before the switch existed; `JournalScreen` renders this graph too and has no vitals to pass.
+     */
+    showVitals: Boolean = true,
     vitals: SessionVitals = SessionVitals.empty,
     sampleCount: Int = 260,
 ) {
@@ -228,13 +236,16 @@ fun TimelineGraph(
         // down instead of burying it. The height is fixed rather than derived from the
         // data — a lane that grew with the sample count would make two sessions
         // incomparable, and this one is a companion strip, not a plot to be measured.
-        val cardioGap = if (vitals.isEmpty) 0f else 8f
+        // One decision, read four times below. Computing it once means a future fifth use cannot disagree with these —
+    // which is how the lane's four emptiness checks could drift apart.
+    val drawsVitals = showVitals && vitals.isEmpty.not()
+    val cardioGap = if (drawsVitals) 8f else 0f
         // The lane's height is a compromise between two things it has to show: a bpm range
         // that a resting heart rate makes small (30 bpm is an ordinary session), and a
         // scale legible at 8sp. At the upstream proportions a 30 bpm range put two guide
         // labels on the same pixel, so this is taller — the guides thin themselves out as
         // well, for the ranges where even this is not enough.
-        val cardioBandHeight = if (vitals.isEmpty) 0f else 72f
+        val cardioBandHeight = if (drawsVitals) 72f else 0f
         val cardioBand = cardioGap + cardioBandHeight
         val bottomGutter = clockBand + markerBands + cardioBand
         val plotWidth = widthPx - leftGutter - rightGutter
@@ -307,7 +318,7 @@ fun TimelineGraph(
 
                     // The cardio lane first, so the curves' fill and the cursor's rule
                     // are drawn over it rather than under.
-                    if (vitals.isEmpty.not()) {
+                    if (drawsVitals) {
                         drawCardioLane(
                             vitals = vitals,
                             start = start,

@@ -95,6 +95,11 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
     var markers by remember(sessionId) { mutableStateOf<List<DoseMarker>>(emptyList()) }
     var tints by remember(sessionId) { mutableStateOf<Map<String, P3Color>>(emptyMap()) }
     var vitals by remember(sessionId) { mutableStateOf(SessionVitals.empty) }
+    // Read once per session rather than per recomposition: a `SharedPreferences` hit while the reader drags the chart's
+    // cursor is a read on the frame path for a value that cannot change during a drag.
+    var showVitals by remember(sessionId) {
+        mutableStateOf(glass.kagerou.piru.data.AppSettingsStore(context).timelineVitalsShown())
+    }
     var loading by remember(sessionId) { mutableStateOf(true) }
 
     // The session's interaction warnings, folded by rule. Resolved here rather than in the card because the
@@ -265,6 +270,7 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
                             // view shows today's doses, and a session is the unit a
                             // heart-rate response belongs to —see the lane's own note.
                             vitals = vitals,
+                            showVitals = showVitals,
                         )
                     }
                 }

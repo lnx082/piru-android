@@ -322,4 +322,6 @@
     <string name="share_title">Share this substance</string>
     <string name="share_detail_label">Detail</string>
     <string name="share_button">Share</string>
+    <string name="journal_timeline_vitals">Cardio lane</string>
+    <string name="journal_timeline_vitals_detail">Draw heart rate and blood pressure from Health Connect along the session chart. Shown only when Health Connect has readings for that window.</string>
 </resources>

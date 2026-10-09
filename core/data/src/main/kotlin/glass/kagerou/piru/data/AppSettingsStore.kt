@@ -131,6 +131,13 @@ class AppSettingsStore(private val context: Context) {
     /** Show the hour axis down the left edge. */
     fun timelineShowsAxis(): Boolean = prefs().getBoolean(KEY_TIMELINE_SHOWS_AXIS, true)
 
+    /** Whether the session chart draws the cardio lane. */
+    fun timelineVitalsShown(): Boolean = prefs().getBoolean(KEY_TIMELINE_VITALS, true)
+
+    fun setTimelineVitalsShown(value: Boolean) {
+        prefs().edit().putBoolean(KEY_TIMELINE_VITALS, value).apply()
+    }
+
     fun setTimelineShowsAxis(value: Boolean) {
         prefs().edit().putBoolean(KEY_TIMELINE_SHOWS_AXIS, value).apply()
     }
@@ -322,6 +329,7 @@ class AppSettingsStore(private val context: Context) {
             .remove(KEY_TIMELINE_COMPRESSION)
             .remove(KEY_TIMELINE_PK_CURVES)
             .remove(KEY_TIMELINE_SHOWS_AXIS)
+            .remove(KEY_TIMELINE_VITALS)
             .remove(KEY_TIMELINE_BUBBLE_STYLE)
             .remove(KEY_QUICK_LOG_FIXED_ORDER)
             .remove(KEY_QUICK_LOG_SUPPRESSED)
@@ -378,6 +386,16 @@ class AppSettingsStore(private val context: Context) {
     const val KEY_TIMELINE_COMPRESSION: String = "timelineCompression"
     const val KEY_TIMELINE_PK_CURVES: String = "timelinePKCurves"
     const val KEY_TIMELINE_SHOWS_AXIS: String = "timelineShowsAxis"
+
+    /**
+     * Whether the session chart draws the cardio lane — heart rate and blood pressure from Health Connect.
+     *
+     * Defaults to true. The lane draws only when vitals exist, and vitals exist only because the reader granted Health
+     * Connect, so it is **already opt-in by permission**; defaulting this to off would make granting the permission
+     * draw nothing, which is the worse surprise. This switch is for a reader who has the permission for other reasons
+     * and does not want heart rate over their timeline.
+     */
+    const val KEY_TIMELINE_VITALS: String = "timelineVitalsShown"
     const val KEY_TIMELINE_BUBBLE_STYLE: String = "timelineBubbleStyle"
 
     const val KEY_VISIBLE_TABS: String = "visibleTabs"

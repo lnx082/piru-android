@@ -69,6 +69,7 @@ internal object SettingsSection {
         PiruSettingsData.KEY_SHOW_QUICK_LOG_DOCK,
         PiruSettingsData.KEY_ADHERENCE_REMINDERS_ENABLED,
         PiruSettingsData.KEY_ADHERENCE_REMINDER_OFFSET,
+        PiruSettingsData.KEY_TIMELINE_VITALS,
         PiruSettingsData.KEY_RECENT_SEARCHES,
     )
 
@@ -98,6 +99,7 @@ internal object SettingsSection {
             put(PiruSettingsData.KEY_TIMELINE_COMPRESSION, JsonPrimitive(settings.timelineCompressGaps()))
             put(PiruSettingsData.KEY_TIMELINE_PK_CURVES, JsonPrimitive(settings.timelinePKCurves()))
             put(PiruSettingsData.KEY_TIMELINE_SHOWS_AXIS, JsonPrimitive(settings.timelineShowsAxis()))
+            put(PiruSettingsData.KEY_TIMELINE_VITALS, JsonPrimitive(settings.timelineVitalsShown()))
             put(PiruSettingsData.KEY_TIMELINE_BUBBLE_STYLE, JsonPrimitive(settings.timelineBubbleStyle()))
 
             // The two list-valued preferences. An unset one is written as **null**, not as an empty array: for these
@@ -200,6 +202,7 @@ internal object SettingsSection {
         bool(PiruSettingsData.KEY_TIMELINE_COMPRESSION) { settings.setTimelineCompressGaps(it) }
         bool(PiruSettingsData.KEY_TIMELINE_PK_CURVES) { settings.setTimelinePKCurves(it) }
         bool(PiruSettingsData.KEY_TIMELINE_SHOWS_AXIS) { settings.setTimelineShowsAxis(it) }
+        bool(PiruSettingsData.KEY_TIMELINE_VITALS) { settings.setTimelineVitalsShown(it) }
         string(PiruSettingsData.KEY_TIMELINE_BUBBLE_STYLE) { settings.setTimelineBubbleStyle(it) }
         bool(PiruSettingsData.KEY_QUICK_LOG_FIXED_ORDER) { settings.setQuickLogFixedOrder(it) }
         strings(PiruSettingsData.KEY_QUICK_LOG_SUPPRESSED) { settings.setQuickLogSuppressedRecents(it.toSet()) }

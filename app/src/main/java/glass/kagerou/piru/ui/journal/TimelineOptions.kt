@@ -29,6 +29,14 @@ internal object TimelineOptions {
     enum class Row {
         ZOOM,
         SHOWS_AXIS,
+
+    /**
+     * The session chart's cardio lane: heart rate and blood pressure from Health Connect.
+     *
+     * Beside the axis because it is the same kind of question — what the chart draws — and this enum's order is the
+     * order the cards appear in, so the member's position is the feature's position.
+     */
+    VITALS,
         COMPACT_ENTRIES,
     }
 
@@ -42,9 +50,12 @@ internal object TimelineOptions {
      * upstream calls it "Compact Entries" and keeps it available either way.
      */
     fun rows(showsAxis: Boolean): List<Row> = if (showsAxis) {
-        listOf(Row.ZOOM, Row.SHOWS_AXIS, Row.COMPACT_ENTRIES)
+        listOf(Row.ZOOM, Row.SHOWS_AXIS, Row.COMPACT_ENTRIES, Row.VITALS)
     } else {
-        listOf(Row.SHOWS_AXIS, Row.COMPACT_ENTRIES)
+        // The cardio lane is on both lists, beside the bubble style and for the same reason: it describes content the
+        // session chart carries, and the lane is drawn whether or not the axis strip is. Hiding its switch when the axis
+        // is off would leave a lane the reader can see and cannot switch off.
+        listOf(Row.SHOWS_AXIS, Row.COMPACT_ENTRIES, Row.VITALS)
     }
 
     /**

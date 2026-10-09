@@ -59,6 +59,7 @@ fun TimelinePreferencesScreen(modifier: Modifier = Modifier) {
 
     var zoom by remember { mutableStateOf(store.timelineZoom()) }
     var showsAxis by remember { mutableStateOf(store.timelineShowsAxis()) }
+    var showsVitals by remember { mutableStateOf(store.timelineVitalsShown()) }
     var bubbleStyle by remember { mutableStateOf(TimelineBubbleStyleName.from(store.timelineBubbleStyle())) }
 
     val rows = TimelineOptions.rows(showsAxis)
@@ -84,6 +85,18 @@ fun TimelinePreferencesScreen(modifier: Modifier = Modifier) {
                     store.setTimelineShowsAxis(it)
                     // Nothing else is written: the withdrawn rows' preferences are **kept**, so turning the axis
                     // back on restores what the user had rather than resetting it.
+                },
+            )
+        }
+
+        if (TimelineOptions.Row.VITALS in rows) {
+            ToggleCard(
+                title = stringResource(R.string.journal_timeline_vitals),
+                detail = stringResource(R.string.journal_timeline_vitals_detail),
+                checked = showsVitals,
+                onCheckedChange = {
+                    showsVitals = it
+                    store.setTimelineVitalsShown(it)
                 },
             )
         }

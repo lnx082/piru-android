@@ -136,6 +136,9 @@ class TimelineZoomTest {
             TimelineOptions.Row.ZOOM,
             TimelineOptions.Row.SHOWS_AXIS,
             TimelineOptions.Row.COMPACT_ENTRIES,
+            // The cardio lane joined this list when its switch was added: it describes content the chart carries, so
+            // it is offered with the axis on like the bubble style is.
+            TimelineOptions.Row.VITALS,
         )
     }
 
@@ -149,7 +152,10 @@ class TimelineZoomTest {
      */
     @Test
     fun `every row that exists does something`() {
-        TimelineOptions.Row.entries.size shouldBe 3
+        // Four now, not three. The count is pinned deliberately — two rows once shipped that wrote nothing read, and
+        // the row added here does something: `TimelineGraph` draws or does not draw its cardio lane. **Adding a row
+        // means arguing with this number**, which is the whole point of it being here.
+        TimelineOptions.Row.entries.size shouldBe 4
         TimelineOptions.rows(showsAxis = true).size shouldBe TimelineOptions.Row.entries.size
     }
 
@@ -164,6 +170,9 @@ class TimelineZoomTest {
         TimelineOptions.rows(showsAxis = false) shouldContainExactly listOf(
             TimelineOptions.Row.SHOWS_AXIS,
             TimelineOptions.Row.COMPACT_ENTRIES,
+            // The cardio lane stays: it describes content the session chart carries and is drawn whether or not the
+            // axis strip is, so withdrawing its switch would leave a lane the reader can see and cannot switch off.
+            TimelineOptions.Row.VITALS,
         )
         // Named individually too, so a failure says which row leaked through.
         TimelineOptions.offers(TimelineOptions.Row.ZOOM, showsAxis = false) shouldBe false
@@ -171,6 +180,8 @@ class TimelineZoomTest {
         // changes the rows rather than the strip's geometry.
         TimelineOptions.offers(TimelineOptions.Row.SHOWS_AXIS, showsAxis = false) shouldBe true
         TimelineOptions.offers(TimelineOptions.Row.COMPACT_ENTRIES, showsAxis = false) shouldBe true
+        // And the cardio lane, for the same reason as the bubble style rather than the axis: it is content, not geometry.
+        TimelineOptions.offers(TimelineOptions.Row.VITALS, showsAxis = false) shouldBe true
     }
 
     /** The predicate and the list agree, so a call site drawing in a fixed order cannot disagree with a caller
