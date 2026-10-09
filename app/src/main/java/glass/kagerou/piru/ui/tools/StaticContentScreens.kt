@@ -114,7 +114,7 @@ fun ComedownGuideScreen(navigator: AppNavigator, modifier: Modifier = Modifier) 
     LaunchedEffect(navigator.dataVersion) {
         val catalog = app.catalog()
         val entries = app.database.doseEntryDao().all()
-        recent = recentGuidedCategories(entries, Instant.now(), catalog)
+        recent = ComedownCategories.recent(entries, Instant.now(), catalog)
     }
 
     LazyColumn(
@@ -153,13 +153,13 @@ fun ComedownGuideScreen(navigator: AppNavigator, modifier: Modifier = Modifier) 
         if (recent.isNotEmpty()) {
             item { SectionLabel(stringResource(R.string.comedown_recent_heading), Modifier.padding(top = 6.dp)) }
             items(recent, key = { it.wireValue }) { category ->
-                CategoryDisclosure(category)
+                ComedownCategoryRow(category)
             }
         }
 
         item { SectionLabel(stringResource(R.string.comedown_all_heading), Modifier.padding(top = 6.dp)) }
-        items(GUIDED_CATEGORIES.filter { it !in recent }, key = { it.wireValue }) { category ->
-            CategoryDisclosure(category)
+        items(ComedownCategories.GUIDED.filter { it !in recent }, key = { it.wireValue }) { category ->
+            ComedownCategoryRow(category)
         }
 
         item { SectionLabel(stringResource(R.string.comedown_basics_heading), Modifier.padding(top = 6.dp)) }
@@ -185,23 +185,6 @@ fun ComedownGuideScreen(navigator: AppNavigator, modifier: Modifier = Modifier) 
     }
 }
 
-/**
- * The eight classes the guide covers, in the order they are shown.
- *
- * Declaration order *is* the display order and is upstream's; it runs from the
- * classes with the most written about them to the ones with a shorter note.
- */
-private val GUIDED_CATEGORIES: List<SubstanceCategory> = listOf(
-    SubstanceCategory.STIMULANT,
-    SubstanceCategory.EMPATHOGEN,
-    SubstanceCategory.PSYCHEDELIC,
-    SubstanceCategory.DISSOCIATIVE,
-    SubstanceCategory.OPIOID,
-    SubstanceCategory.BENZODIAZEPINE,
-    SubstanceCategory.DEPRESSANT,
-    SubstanceCategory.CANNABINOID,
-)
-
 /** The seven general tips, in the original's fixed order. */
 private val UNIVERSAL_BASICS: List<Int> = listOf(
     R.string.comedown_basics_1,
@@ -212,35 +195,6 @@ private val UNIVERSAL_BASICS: List<Int> = listOf(
     R.string.comedown_basics_6,
     R.string.comedown_basics_7,
 )
-
-/**
- * The guided classes present in [entries] since 48 hours before [now],
- * newest-first and de-duplicated by first appearance.
- *
- * The cutoff is applied here rather than in a query so this is a pure function of
- * its inputs, which is what makes it testable and what the session detail's
- * recovery section shares. Running it over the log directly is why it belongs in
- * an effect: it resolves one substance per dose through the catalog.
- */
-private fun recentGuidedCategories(
-    entries: List<DoseEntryEntity>,
-    now: Instant,
-    catalog: SubstanceCatalog,
-): List<SubstanceCategory> {
-    val cutoff = now.minus(Duration.ofHours(48))
-    val guided = GUIDED_CATEGORIES.toSet()
-    val seen = mutableSetOf<SubstanceCategory>()
-    val out = mutableListOf<SubstanceCategory>()
-    // Newest first: the caller passes the log in the order a query would return
-    // it, and the first class seen is the most recent one.
-    for (entry in entries.sortedByDescending { it.timestamp.toInstant() }) {
-        val stamp = entry.timestamp.toInstant()
-        if (stamp.isBefore(cutoff)) continue
-        val category = catalog.lookup(entry.substance)?.category ?: continue
-        if (category in guided && seen.add(category)) out += category
-    }
-    return out
-}
 
 /**
  * One class's four tip groups.
@@ -504,12 +458,14 @@ private fun guide(category: SubstanceCategory): CategoryGuide = when (category) 
 /**
  * One class's fold-open row: the class, then its four groups of tips.
  *
- * Collapsed on arrival, including in the recent list — the original's
- * `DisclosureGroup` owns its own state and starts closed in both places, and
- * eight open groups is a screen nobody can scan.
+ * Collapsed on arrival, including in the recent list — the original's `DisclosureGroup` owns its own state and starts
+ * closed in both places, and eight open groups is a screen nobody can scan.
+ *
+ * `internal` and named for what it is, because the **session's recovery section is made of these** and needs the same
+ * row rather than a lookalike. A copy would drift from this one the first time a tip group changed.
  */
 @Composable
-private fun CategoryDisclosure(category: SubstanceCategory) {
+internal fun ComedownCategoryRow(category: SubstanceCategory) {
     var expanded by remember(category.wireValue) { mutableStateOf(false) }
     val tint = SubstanceColorGenerator
         .displayP3(category, category.wireValue)
@@ -617,7 +573,7 @@ fun HelpScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
             catalog = opened,
             fallbackTint = P3Color.NEUTRAL,
         )
-        activeCategories = recentGuidedCategories(all, Instant.now(), opened)
+        activeCategories = ComedownCategories.recent(all, Instant.now(), opened)
         // Only a dose the checker still counts as active is worth handing to
         // someone else; a summary of everything ever logged is not what the
         // share sheet is for.

@@ -291,4 +291,6 @@
     <string name="journal_session_body_load_metabolite">Cleared, though a metabolite may last longer</string>
     <string name="journal_session_body_load_unmodeled">No half-life to model this with</string>
     <string name="journal_session_body_load_open">Open</string>
+    <string name="journal_session_recovery">Recovery tips</string>
+    <string name="journal_session_recovery_all">All recovery tips</string>
 </resources>

@@ -251,4 +251,6 @@
     <string name="journal_session_body_load_metabolite">已清除，但代谢物可能持续更久</string>
     <string name="journal_session_body_load_unmodeled">缺少半衰期，无法建模</string>
     <string name="journal_session_body_load_open">打开</string>
+    <string name="journal_session_recovery">恢复建议</string>
+    <string name="journal_session_recovery_all">全部恢复建议</string>
 </resources>

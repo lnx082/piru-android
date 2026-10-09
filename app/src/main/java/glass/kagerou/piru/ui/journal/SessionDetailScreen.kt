@@ -58,6 +58,8 @@ import glass.kagerou.piru.ui.labels.CoreLabels
 import glass.kagerou.piru.engine.InteractionChecker
 import glass.kagerou.piru.ui.nav.PushRoute
 import glass.kagerou.piru.data.TimelineDisplay
+import glass.kagerou.piru.model.SubstanceCategory
+import glass.kagerou.piru.ui.tools.ComedownCategories
 
 /**
  * A session: its span, its curves, and the doses inside it.
@@ -103,6 +105,10 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
     // and tints.
     var bodyLoad by remember(sessionId) { mutableStateOf(SessionBodyLoadModel.Result()) }
 
+    // The recovery classes this session involved. Resolved from the same catalogue read as everything else on this
+    // screen, and empty for a session of substances the guide does not cover.
+    var recovery by remember(sessionId) { mutableStateOf<List<SubstanceCategory>>(emptyList()) }
+
     // A scope for the export: it is a suspend render plus a share intent.
     val scope = rememberCoroutineScope()
 
@@ -147,6 +153,11 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
         // interactions screen and the PDF use, so the three cannot disagree about a pair.
         // The body load, from the same doses the timeline just drew. `Instant.now()` is passed rather than
         // defaulted so the reading is taken once, with the same instant the timeline was framed against.
+        // The recovery classes, from the same catalogue and the same doses.
+        recovery = runCatching {
+            ComedownCategories.of(doses, app.catalog())
+        }.getOrDefault(emptyList())
+
         bodyLoad = runCatching {
             val resolved = app.catalog()
             SessionBodyLoadModel.make(
@@ -299,6 +310,17 @@ fun SessionDetailScreen(sessionId: String, navigator: AppNavigator, modifier: Mo
                         onChanged = { checkInRevision++ },
                     )
                 }
+
+            // Last, because a reader scrolls a session to see what happened and recovery guidance is what comes
+            // after it.
+            item {
+                SessionRecoveryCard(
+                    categories = recovery,
+                    // The route the tools list already uses for this screen, rather than a second one that would
+                    // render identically and be invisible in review.
+                    onOpenGuide = { navigator.push(PushRoute.Tool(PushRoute.ToolKind.COMEDOWN)) },
+                )
+            }
 
             item {
                 SessionNotesSection(
