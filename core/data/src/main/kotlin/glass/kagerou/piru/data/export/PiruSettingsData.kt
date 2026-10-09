@@ -9,6 +9,7 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.JsonArray
 
 /**
  * The `settings` section of a Piru-native file.
@@ -68,6 +69,48 @@ data class PiruSettingsData(
         /** Upstream's key for the redose-stacking preference. */
         const val KEY_STACK_REDOSES: String = "stackRedoses"
 
+        /**
+         * Upstream's key for how far the timeline is zoomed.
+         *
+         * Tagged a `Double` on that side, so a whole `2.0` arrives as `{"double":2}` — [doubleValue] accepts the
+         * integer tag for the same reason [intValue] accepts the double one.
+         */
+        const val KEY_TIMELINE_ZOOM: String = "timelineZoom"
+
+        /** Upstream's key for whether the timeline compresses the quiet stretches between doses. */
+        const val KEY_TIMELINE_COMPRESSION: String = "timelineCompression"
+
+        /** Upstream's key for whether the timeline draws a modelled PK curve. */
+        const val KEY_TIMELINE_PK_CURVES: String = "timelinePKCurves"
+
+        /** Upstream's key for whether the timeline draws its time axis. */
+        const val KEY_TIMELINE_SHOWS_AXIS: String = "timelineShowsAxis"
+
+        /** Upstream's key for the timeline's bubble style, a string on that side. */
+        const val KEY_TIMELINE_BUBBLE_STYLE: String = "timelineBubbleStyle"
+
+        /** Upstream's key for whether the quick-log chips keep a fixed order. */
+        const val KEY_QUICK_LOG_FIXED_ORDER: String = "quickLogFixedOrder"
+
+        /** Upstream's key for the quick-log chips the user has removed. */
+        const val KEY_QUICK_LOG_SUPPRESSED: String = "quickLogSuppressedRecents"
+
+        /**
+         * **This port's own** keys, which upstream has no slot for.
+         *
+         * The reference stores source order inside its `SubstanceStore` and its dock labels as a `data` blob, so
+         * there is nothing to match on that side and nothing to collide with either. Exporting them under this
+         * build's own names means a round trip through this build restores them, and a file from iOS simply does not
+         * carry them — which is what an absent key already means.
+         */
+        const val KEY_SOURCE_ORDER: String = "sourceOrder"
+
+        /** This port's key for the tab bar entries the user has hidden. */
+        const val KEY_VISIBLE_TABS: String = "visibleTabs"
+
+        /** This port's key for whether the tab bar carries labels. */
+        const val KEY_TAB_LABELS: String = "tabLabels"
+
         /** Whether [element] is present but explicitly unset, which is not the same as absent. */
         fun isExplicitlyUnset(element: JsonElement?): Boolean = element is JsonNull
 
@@ -94,6 +137,46 @@ data class PiruSettingsData(
             val inner = obj?.get("int") ?: obj?.get("double") ?: element
             val primitive = inner as? JsonPrimitive ?: return null
             return primitive.intOrNull ?: primitive.doubleOrNull?.toInt()
+        }
+
+        /**
+         * The double [element] carries, or null.
+         *
+         * Accepts the `int` tag as well as `double`, for the mirror of [intValue]'s reason: a whole zoom stored as an
+         * integer on the other side arrives as `{"int":2}`, and reading it as absent would reset a setting that is
+         * present and unambiguous.
+         */
+        fun doubleValue(element: JsonElement?): Double? {
+            if (element == null || element is JsonNull) return null
+            val obj = element as? JsonObject
+            val inner = obj?.get("double") ?: obj?.get("int") ?: element
+            val primitive = inner as? JsonPrimitive ?: return null
+            return primitive.doubleOrNull ?: primitive.intOrNull?.toDouble()
+        }
+
+        /** The string [element] carries, or null. An empty string is a value, not an absence. */
+        fun stringValue(element: JsonElement?): String? {
+            if (element == null || element is JsonNull) return null
+            val obj = element as? JsonObject
+            val inner = obj?.get("string") ?: element
+            return (inner as? JsonPrimitive)?.takeIf { it.isString }?.content
+        }
+
+        /**
+         * The string list [element] carries, or null when it is absent.
+         *
+         * **An explicitly empty list is a value, not an absence**: "the user removed every quick-log chip" and "this
+         * file has no opinion about the chips" are different statements, and collapsing them would resurrect chips the
+         * user had deleted. That is why this returns a value for an empty array rather than falling through to null.
+         */
+        fun stringListValue(element: JsonElement?): List<String>? {
+            if (element == null || element is JsonNull) return null
+            val obj = element as? JsonObject
+            // Upstream tags a list as `{"strings":[…]}`; a bare array is accepted for the same tolerance the scalar
+            // readers show.
+            val inner = obj?.get("strings") ?: element
+            val array = inner as? JsonArray ?: return null
+            return array.mapNotNull { primitive -> (primitive as? JsonPrimitive)?.takeIf { it.isString }?.content }
         }
     }
 }
