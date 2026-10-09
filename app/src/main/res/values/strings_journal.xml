@@ -275,4 +275,13 @@
     <string name="journal_timeline_zoom_detail">How much of the day fits on screen. A pinch changes this too, and the two agree.</string>
     <string name="journal_timeline_compact">Compact entries</string>
     <string name="journal_timeline_compact_detail">Name and amount on one line, without the route. Leaves more width to the curves.</string>
+    <string name="journal_filter_search">Search doses</string>
+    <string name="journal_filter_search_hint">Name, note or tag. A leading # searches tags only.</string>
+    <string name="journal_filter_clear_short">Clear</string>
+    <string name="journal_filter_title">Filter</string>
+    <string name="journal_filter_title_count">Filter (%1$d)</string>
+    <string name="journal_filter_category">Category</string>
+    <string name="journal_filter_route">Route</string>
+    <string name="journal_filter_clear">Clear all</string>
+    <string name="journal_filter_tags">Tags</string>
 </resources>

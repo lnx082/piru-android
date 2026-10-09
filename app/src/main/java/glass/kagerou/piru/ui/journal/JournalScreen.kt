@@ -47,6 +47,11 @@ import glass.kagerou.piru.data.entity.SessionEntity
 import glass.kagerou.piru.engine.SubstanceCatalog
 import androidx.compose.ui.graphics.Color
 import glass.kagerou.piru.data.TimelineDisplay
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Checkbox
 
 /**
  * The journal's root: the day's curves, then the day's doses.
@@ -77,6 +82,11 @@ fun JournalScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
     val app = context.applicationContext as PiruApplication
 
     var entries by remember { mutableStateOf<List<DoseEntryEntity>>(emptyList()) }
+
+    // What the user is narrowing the journal to. Held here rather than saved: a filter is a question asked once, and
+    // a journal that reopened still filtered would hide doses with no visible reason.
+    var filter by remember { mutableStateOf(JournalFilter()) }
+    var filterMenuOpen by remember { mutableStateOf(false) }
     var states by remember { mutableStateOf<List<ActiveSubstanceState>>(emptyList()) }
     var markers by remember { mutableStateOf<List<glass.kagerou.piru.engine.DoseMarker>>(emptyList()) }
     var tints by remember { mutableStateOf<Map<String, P3Color>>(emptyMap()) }
@@ -284,13 +294,29 @@ fun JournalScreen(navigator: AppNavigator, modifier: Modifier = Modifier) {
             // reflected on return rather than on the next launch.
             display = TimelineDisplay.read(context)
 
+            // Applied **before** the grouping, so a day whose doses are all filtered out disappears rather than
+            // drawing a heading with nothing under it.
+            val visible = filter.apply(entries) { name -> catalog?.lookup(name)?.category }
+
             val days = sessionDays(
-                entries = entries,
+                entries = visible,
                 sessions = sessionsById,
                 zone = zone,
                 today = today,
                 displayTitleFor = { name -> catalog?.lookup(name)?.displayTitle ?: name },
             )
+            // The search field and the facet menu. Above the list, because they change what the list is.
+            item(key = "journal-filter") {
+                JournalFilterBar(
+                    filter = filter,
+                    onFilterChange = { filter = it },
+                    // Derived from the loaded rows, sorted so the menu does not reorder itself as the user toggles.
+                    availableTags = entries.flatMap { it.tags }.distinct().sorted(),
+                    menuOpen = filterMenuOpen,
+                    onMenuOpenChange = { filterMenuOpen = it },
+                )
+            }
+
             for (day in days) {
                 item(key = "day-${day.date}") {
                     Column(modifier = Modifier.padding(top = 8.dp)) {
